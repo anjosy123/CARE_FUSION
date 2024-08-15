@@ -14,7 +14,7 @@
     />
 
     <!-- Title -->
-    <title>Mediplus - Free Medical and Doctor Directory HTML Template.</title>
+    <title>CareFusion - A complete palliative care coordination system.</title>
 
     <!-- Favicon -->
     <link rel="icon" href="{% static 'img/favicon.png' %}"/>
@@ -52,7 +52,7 @@
 
   <body>
     <!-- Preloader -->
-    {% comment %}
+    
     <div class="preloader">
       <div class="loader">
         <div class="loader-outter"></div>
@@ -69,11 +69,11 @@
         </div>
       </div>
     </div>
-    {% endcomment %}
+    
     <!-- End Preloader -->
 
     <!-- Get Pro Button -->
-    <ul class="pro-features">
+    {% comment %} <ul class="pro-features">
       <a class="get-pro" href="#">Get Pro</a>
       <li class="big-title">Pro Version Available on Themeforest</li>
       <li class="title">Pro Version Features</li>
@@ -96,7 +96,7 @@
           >Buy Pro Version</a
         >
       </div>
-    </ul>
+    </ul> {% endcomment %}
 
     <!-- Header Area -->
     <header class="header">
@@ -110,18 +110,19 @@
                 <li><a href="#">About</a></li>
                 <li><a href="#">Doctors</a></li>
                 <li><a href="#">Contact</a></li>
-                <li><a href="#">FAQ</a></li>
+                {% comment %} <li><a href="{% url 'account_login' %}">Login</a></li> {% endcomment %}
+                <li><a href="{% url 'account_login' %}">Login</a></li>
               </ul>
               <!-- End Contact -->
             </div>
             <div class="col-lg-6 col-md-7 col-12">
               <!-- Top Contact -->
               <ul class="top-contact">
-                <li><i class="fa fa-phone"></i>+880 1234 56789</li>
+                <li><i class="fa fa-phone"></i>+91 9876543210</li>
                 <li>
                   <i class="fa fa-envelope"></i
-                  ><a href="mailto:support@yourmail.com"
-                    >support@yourmail.com</a
+                  ><a href="mailto:support@carefusion.com"
+                    >support@carefusion.com</a
                   >
                 </li>
               </ul>
@@ -159,7 +160,7 @@
                           <li><a href="index.html">Home Page 1</a></li>
                         </ul>
                       </li>
-                      <li><a href="#">Doctos </a></li>
+                      <li><a href="#">Find providers </a></li>
                       <li><a href="#">Services </a></li>
                       <li>
                         <a href="#"
@@ -213,9 +214,7 @@
                     <span>Trust!</span>
                   </h1>
                   <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                    Mauris sed nisl pellentesque, faucibus libero eu, gravida
-                    quam.
+                    Palliative care coordination system.
                   </p>
                   <div class="button">
                     <a href="#" class="btn">Get Appointment</a>
