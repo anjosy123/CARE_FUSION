@@ -1,14 +1,20 @@
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-from django.contrib import messages
+# from django.contrib import messages
 from .forms import UserRegisterForm
 
 # Create your views here.
-@login_required
 def home_view(request):
-    return render(request, 'index.html')
-def account_page(request):
-    return render(request, 'accounts/account_page.html')
+    return render(request, 'pages/index.html')
+
+def about(request):
+    return render(request, 'pages/about.html')
+
+def regOrg(request):
+    return render(request, 'pages/regOrg.html')
+
+def contact(request):
+    return render(request, 'pages/contact.html')
+
 def register(request):
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)

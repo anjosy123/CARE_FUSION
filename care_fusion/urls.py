@@ -17,15 +17,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import TemplateView
-
-# class CustomTemplateView(TemplateView):
-#     def get(self, request, *args, **kwargs):
-#         print("CustomTemplateView called")
-#         return super().get(request, *args, **kwargs)
+from accounts import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('home/', TemplateView.as_view(template_name='dashboard/ home.html'), name='home'),
-    path('', TemplateView.as_view(template_name='index.html'), name='home'),
+    path('', TemplateView.as_view(template_name='pages/index.html'), name='home'),
     path('accounts/', include('allauth.urls')),
+    path('about/', views.about, name='about'),
+    path('regOrg/', views.regOrg, name='regOrg'),
+    path('contact/', views.contact, name='contact'),
 ]
