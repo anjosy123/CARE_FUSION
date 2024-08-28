@@ -1,6 +1,9 @@
-{% comment %} {% extends "base/base.html" %}
-
-{% load i18n %}
+{% extends "base/base.html" %}
+{% load static %}
+{% block body %}
+    <h1>login</h1>
+{% endblock body %}
+{% comment %} {% load i18n %}
 {% load account socialaccount %}
 
 {% block head_title %}{% trans "Sign In" %}{% endblock %}
@@ -52,5 +55,6 @@
     </div>
   </div>
 </div>
-{% endblock %} {% endcomment %}
+{% endblock %}  {% endcomment %}
+
 

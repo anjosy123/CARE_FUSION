@@ -5,11 +5,14 @@ from.import views
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('regOrg/', views.regOrg, name='regOrg'),
     path('contact/', views.contact, name='contact'),
     path('about/', views.about, name='about'),
-    path('login/', views.loginn, name='login'),
-    path('signup/', views.signup, name='signup'),
+    path('index/',views.index, name='index'),
+    path('organizations/', views.organizations, name='organizations'),
+    path('services/', views.services, name='services'),
     path('', TemplateView.as_view(template_name='pages/index.html'), name='home'),
     path('accounts/', include('allauth.urls')),
+    path('login/', views.handlelogin, name='handlelogin'),
+    path('signup/', views.handlesignup, name='handlesignup'),
+    path('logout/', views.handlelogout, name='handlelogout'),
 ]

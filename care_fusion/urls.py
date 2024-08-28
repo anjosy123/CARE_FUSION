@@ -24,6 +24,12 @@ urlpatterns = [
     path('', TemplateView.as_view(template_name='pages/index.html'), name='home'),
     path('accounts/', include('allauth.urls')),
     path('about/', views.about, name='about'),
-    path('regOrg/', views.regOrg, name='regOrg'),
+    path('organizations/', views.organizations, name='organizations'),
     path('contact/', views.contact, name='contact'),
+    path('services/', views.services, name='services'),
+    path('index/', views.index, name='index'),
+    path('login/', views.handlelogin, name='login'),
+    path('signup/', views.handlesignup, name='signup'),
+    path('logout/', views.handlelogout, name='logout'),
+    
 ]
