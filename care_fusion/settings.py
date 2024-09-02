@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 import os
 from pathlib import Path
+from django.contrib.messages import constants as messages
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -81,6 +82,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'care_fusion.wsgi.application'
+
+APPEND_SLASH = False
 
 
 # Database
@@ -167,3 +170,8 @@ DEFAULT_FROM_EMAIL = 'carefusion.ai@gmail.com'
 
 # Add this line to specify custom allauth template directory
 ACCOUNT_TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates', 'account')
+
+
+MESSAGE_TAGS={
+    messages.ERROR:'danger'
+}

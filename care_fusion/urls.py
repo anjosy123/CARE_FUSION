@@ -22,7 +22,7 @@ from accounts import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', TemplateView.as_view(template_name='pages/index.html'), name='home'),
-    path('accounts/', include('allauth.urls')),
+    path('accounts/', include('accounts.urls')),
     path('about/', views.about, name='about'),
     path('organizations/', views.organizations, name='organizations'),
     path('contact/', views.contact, name='contact'),
@@ -31,5 +31,6 @@ urlpatterns = [
     path('login/', views.handlelogin, name='login'),
     path('signup/', views.handlesignup, name='signup'),
     path('logout/', views.handlelogout, name='logout'),
+    path('accounts/', include('allauth.urls')),
     
 ]
