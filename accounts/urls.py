@@ -3,7 +3,8 @@ from django.views.generic import TemplateView
 from.import views
 from .views import handlesignup
 from .views import handlelogin
-
+from .views import handlelogout
+from .views import home_view, index, about, organizations, contact, services, handlelogin, handlesignup, handlelogout
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -18,5 +19,6 @@ urlpatterns = [
     path('login', handlelogin),
     path('signup/', handlesignup, name='signup'),
     path('signup', handlesignup),
-    path('logout/', views.handlelogout, name='handlelogout'),
+    path('logout/', handlelogout, name='logout'),
+    path('logout', handlelogout),
 ]

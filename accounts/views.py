@@ -1,6 +1,6 @@
 from django.shortcuts import render,HttpResponse,redirect
 from django.contrib import messages
-from django.contrib.auth import authenticate,login
+from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.models import User
 from django.urls import reverse
 
@@ -71,10 +71,9 @@ def handlesignup(request):
     return render(request, 'account/signup.html')
 
 def handlelogout(request):
-    return render(request, 'account/logout.html')
-
-# def register(request):
-#     if request.method == 'POST':
-#         form = UserRegisterForm(request.POST)
-#         if form.is_valid():
-#             form.save()
+    if request.user.is_authenticated:  # Check if the user is logged in
+        logout(request)
+        messages.info(request, "Logout Success")
+    else:
+        messages.warning(request, "You are not logged in.")  # Optional message for not logged in users
+    return redirect(reverse('login'))
