@@ -86,7 +86,7 @@
                 <li><a href="/about">About</a></li>
                 <li><a href="/organizations">Organizations</a></li>
                 <li><a href="/contact">Contact</a></li>
-                <li><a href="{% url 'account_login' %}">Sign In</a></li>
+                {% comment %} <li><a href="{% url 'account_login' %}">Sign In</a></li> {% endcomment %}
               </ul>
               <!-- End Contact -->
         </div>
@@ -174,7 +174,7 @@
                       {% endif %}
 
 
-                      <li><a href="contact.html">Contact Us</a></li>
+                      {% comment %} <li><a href="contact.html">Contact Us</a></li> {% endcomment %}
                     </ul>
                   </nav>
                 </div>
