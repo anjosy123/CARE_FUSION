@@ -1,6 +1,6 @@
 from django.shortcuts import render,HttpResponse,redirect
 from django.contrib import messages
-# from .forms import UserRegisterForm
+from django.contrib.auth import authenticate,login
 from django.contrib.auth.models import User
 from django.urls import reverse
 
@@ -24,6 +24,18 @@ def services(request):
     return render(request, 'pages/services.html')
 
 def handlelogin(request):
+    if request.method == "POST":
+        uname = request.POST.get("username")
+        pass1 = request.POST.get("pass1")
+        myuser = authenticate(username = uname,password = pass1)
+        if myuser is not None:
+            login(request,myuser)
+            messages.success(request, "Login Success")
+            return redirect('/')
+        else:
+            messages.success(request, "Invalid Credentials")
+            return redirect(reverse('login'))
+        
     return render(request, 'account/login.html')
 
 def handlesignup(request):
@@ -38,20 +50,24 @@ def handlesignup(request):
         
         try:
             if User.objects.get(username=uname):
-                return HttpResponse("USERNAME IS TAKEN")
+                messages.info(request,"UserName Is Taken")
+                return redirect(reverse('signup'))
         except:
             pass
         
         try:
             if User.objects.get(email=email):
-                return HttpResponse("EMAIL IS TAKEN")
+                messages.info(request,"Email Is Taken")
+                return redirect(reverse('signup'))
         except:
             pass
         
         # print(uname,email,password,confirmpassword)
         myuser=User.objects.create_user(uname,email,password)
         myuser.save()
-        return HttpResponse("Signup Succesful")
+        messages.success(request,"Signup Success Please Login!")
+        return redirect(reverse('login'))
+    
     return render(request, 'account/signup.html')
 
 def handlelogout(request):
