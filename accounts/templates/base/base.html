@@ -156,7 +156,7 @@
                         <ul class="dropdown">
                           <li><a href="/login">Sign In</a></li>
                           <li><a href="/signup">Sign Up</a></li>
-                          <li><a href="/logout">Logout</a></li>
+                          {% comment %} <li><a href="/logout">Logout</a></li> {% endcomment %}
                         </ul>
                       </li>
                       {% else %}
@@ -190,13 +190,14 @@
         </div>
       </div>
       <!--/ End Header Inner -->
-
+      {% if messages %}
       {% for message in messages %}
       <div class="alert alert-{{message.tags}} alert-dismissible fade show" role="alert">
         <strong></strong> {{message}}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
       {% endfor %}
+      {% endif %}
 
     </header>
 

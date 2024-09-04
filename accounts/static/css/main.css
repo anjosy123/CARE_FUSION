@@ -1,6 +1,6 @@
 body
 {
-    background-image: url('../img/bg_signup.jpg');
+    background-image: url('../img/new_signup_bg.jpg');
     background-repeat: no-repeat;
     background-size: 100%;
 }
@@ -17,4 +17,9 @@ p
 {
     color: white;
     font-size: large;
+}
+#gp
+{
+    width: 100%;
+    box-sizing: border-box;
 }
