@@ -20,7 +20,7 @@
 
         </div>
     <div class="col-md-4 mt-2">
-      <h4 class="text-white text-center">Sign Up</h4>
+      <h4 class="text-black text-center">Sign Up</h4>
 
 
       {% for message in messages %}
@@ -35,16 +35,16 @@
 
       <form action="{% url 'signup' %}" method="post">
         {% csrf_token %}
-        <label class="text-white mt-2">UserName</label>
+        <label class="text-black mt-2">UserName</label>
         <div class="form-group">
           <input type="text" class="form-control" id="username" name="username" required>
-        <label class="text-white mt-2">Email</label>
+        <label class="text-black mt-2">Email</label>
         <div class="form-group">
           <input type="Email" class="form-control" id="email" name="email" required>
-          <label class="text-white mt-2">Password</label>
+          <label class="text-black mt-2">Password</label>
           <div class="form-group">
             <input type="password" class="form-control" id="passw1" name="pass1" required>
-          <label class="text-white mt-2">Confirm Password</label>
+          <label class="text-black mt-2">Confirm Password</label>
             <div class="form-group">
               <input type="password" class="form-control" id="passw2" name="pass2" required>
         </div>
