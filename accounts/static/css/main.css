@@ -15,16 +15,11 @@ body
 }
 p
 {
-    color: rgb(8, 8, 8);
+    color: white;
     font-size: large;
 }
 #gp
 {
     width: 100%;
     box-sizing: border-box;
-}
-
-label 
-{
-    color: black;
 }

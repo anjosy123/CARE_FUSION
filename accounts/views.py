@@ -1,9 +1,8 @@
 from django.shortcuts import render,HttpResponse,redirect
 from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
-from django.contrib.auth.models import User  # Keep this import
-from django.urls import reverse  # Import reverse for URL resolution
-from .models import Organization  # Correctly import Organization from your models
+from django.contrib.auth.models import User
+from django.urls import reverse
 
 # Create your views here.
 def home_view(request):
@@ -14,6 +13,9 @@ def index(request):
 
 def about(request):
     return render(request, 'pages/about.html')
+
+def organizations(request):
+    return render(request, 'pages/organizations.html')
 
 def contact(request):
     return render(request, 'pages/contact.html')
@@ -75,70 +77,3 @@ def handlelogout(request):
     else:
         messages.warning(request, "You are not logged in.")  # Optional message for not logged in users
     return redirect(reverse('login'))
-
-def organizations_home(request):
-    return render(request, 'pages/organizations.html')
-
-def handle_org_login(request):
-    if request.method == "POST":
-        org_username = request.POST.get("org_username")
-        org_password = request.POST.get("org_pass1")
-        
-        # Authenticate the user
-        org_user = authenticate(username=org_username, password=org_password)
-        
-        if org_user is not None:
-            login(request, org_user)
-            messages.success(request, "Organization Login Success")
-            return redirect('organizations_home')  # Redirect to the organizations home page
-        else:
-            messages.error(request, "Invalid Credentials")
-            return redirect(reverse('org_login'))  # Redirect back to the login page
-
-    return render(request, 'account/org_login.html')
-
-def handle_org_signup(request):
-    if request.method == 'POST':
-        orgusername = request.POST['org_username']
-        orgemail = request.POST['org_email']
-        orgpassword = request.POST['org_pass1']
-        orgconfpassword = request.POST['org_pass2']
-        orgname = request.POST.get('org_name')  # Assuming you add this field in the form
-        orgaddress = request.POST.get('org_address')  # Assuming you add this field in the form
-        orgphone = request.POST.get('org_phone')  # Assuming you add this field in the form
-
-        # Check if passwords match
-        if orgpassword != orgconfpassword:
-            messages.error(request, "Passwords do not match.")
-            return render(request, 'account/org_signup.html')
-
-        # Check if the username already exists
-        if User.objects.filter(username=orgusername).exists():  # Change to filter by username
-            messages.error(request, "Username already exists. Please choose a different one.")
-            return render(request, 'account/org_signup.html')
-
-        try:
-            # Create user
-            user = User.objects.create_user(username=orgusername, email=orgemail, password=orgpassword)
-            user.save()
-
-            # Create organization
-            organization = Organization.objects.create(
-                name=orgname,
-                email=orgemail,
-                address=orgaddress,
-                phone_number=orgphone,
-                user=user  # This should work correctly now
-            )
-            organization.save()
-
-            messages.success(request, "User and organization created successfully.")
-            return redirect('login')
-        except Exception as e:
-            messages.error(request, str(e))
-            return render(request, 'account/org_signup.html')
-
-    return render(request, 'account/org_signup.html')
-
-def handle_org_logout(request):
-    return render(request, 'account/org_logout.html')

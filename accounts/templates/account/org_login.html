@@ -32,14 +32,15 @@
       <a class="btn btn-sm btn-block btn-light mt-2" id="gp" href="{% provider_login_url 'google' %}">Login With <img src="https://img.icons8.com/color/30/000000/google-logo.png"/></a> 
       <p class="text-center mt-1">OR</p>
 
-      <form action="{% url 'login' %}" method="post">
+      <form action="{% url 'accounts:org_login' %}" method="post"> <!-- Updated URL -->
         {% csrf_token %}
         <label class="text-black mt-2">UserName</label>
         <div class="form-group">
           <input type="text" class="form-control" id="username" name="org_username" required>
-          <label class="text-black mt-2">Password</label>
-          <div class="form-group">
-            <input type="password" class="form-control" id="passw1" name="org_pass1" required>
+        </div>
+        <label class="text-black mt-2">Password</label>
+        <div class="form-group">
+          <input type="password" class="form-control" id="passw1" name="org_pass1" required>
         </div>
         <div class="d-grid gap-2 mt-4">
           <button class="btn btn-primary" type="submit">Login</button>
@@ -47,14 +48,7 @@
       </form>
       <br><br>
       <p>Not a User? <a href={% url 'accounts:org_signup' %}>SignUp</a></p>
-    
-    
-    
     </div>
-
-
-
-
   </body>
   <script>
     // Hide the alert after 5 seconds
@@ -63,7 +57,7 @@
         if (alert) {
             alert.classList.remove('show');
             alert.classList.add('fade');
-            alert.style.display = 'none'; // Optionally set display to none
+            alert.style.display = 'none'; 
         }
     }, 5000); // 5000 milliseconds = 5 seconds
   </script>

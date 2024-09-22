@@ -23,9 +23,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', TemplateView.as_view(template_name='pages/index.html'), name='home'),
     path('', include('accounts.urls')),
-    path('accounts/', include(('accounts.urls', 'accounts'), namespace='accounts')),
-
+    path('accounts/', include('accounts.urls')),
     path('about/', views.about, name='about'),
+    path('organizations/', views.organizations, name='organizations'),
     path('contact/', views.contact, name='contact'),
     path('services/', views.services, name='services'),
     path('index/', views.index, name='index'),
