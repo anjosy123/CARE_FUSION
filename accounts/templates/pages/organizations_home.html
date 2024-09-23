@@ -14,7 +14,7 @@
     />
 
     <!-- Title -->
-    <title>Palliative Home</title>
+    <title>{% block title %} {% endblock %}</title>
 
     <!-- Favicon -->
     <link rel="icon" href="{% static 'img/favicon.png' %}"/>
@@ -48,9 +48,33 @@
     <link rel="stylesheet" href="{% static 'css/normalize.css' %}" />
     <link rel="stylesheet" href="{% static 'style.css' %}" />
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/form-validation.css' %}">
   </head>
 
   <body>
+    <!-- Preloader --> 
+    
+    <div class="preloader">
+      <div class="loader">
+        <div class="loader-outter"></div>
+        <div class="loader-inner"></div>
+
+        <div class="indicator">
+          <svg width="16px" height="12px">
+            <polyline id="back" points="1 6 4 6 6 11 10 1 12 6 15 6"></polyline>
+            <polyline
+              id="front"
+              points="1 6 4 6 6 11 10 1 12 6 15 6"
+            ></polyline>
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <!-- End Preloader -->
+
+
+
     <!-- Header Area -->
     <header class="header">
       <!-- Topbar -->
@@ -62,6 +86,7 @@
               <ul class="top-link">
                 <li><a href="/about">About</a></li>
                 <li><a href="/contact">Contact</a></li>
+                {% comment %} <li><a href="{% url 'account_login' %}">Sign In</a></li> {% endcomment %}
               </ul>
               <!-- End Contact -->
         </div>
@@ -102,7 +127,7 @@
                 <div class="main-menu">
                   <nav class="navigation">
                     <ul class="nav menu">
-                      <li><a href="/index">Home</a></li>
+                      <li><a href="pages/index">Home</a></li>
                       <li><a href="/services">Services </a></li>
                       <li>
                         <a href="#"
@@ -123,33 +148,43 @@
 
                       {% if not request.user.is_authenticated %}
 
-                        <!-- New Organization Dropdown -->
-                <li class="active">
-                    <a href="#"
-                    >New Organization ? <i class="icofont-rounded-down"></i
-                    ></a>
-                    <ul class="dropdown">
-                        <li><a href="{% url 'login_organization' %}">Sign In</a></li>  <!-- Updated to correct URL name -->
-                        <li><a href="{% url 'register_organization' %}">Sign Up</a></li>  <!-- Ensure this is correct -->
-                    </ul>
-                </li>
-            {% else %}
-                <li class="active">
-                    <a href="#"
-                    >Welcome {{request.user}} <i class="icofont-rounded-down"></i
-                    ></a>
-                    <ul class="dropdown">
-                        <li><a href="/logout">Logout</a></li>
-                    </ul>
-                </li>
-            {% endif %}
+
+                      <li class="active">
+                        <a href="#"
+                          >New Organization? <i class="icofont-rounded-down"></i
+                        ></a>
+                        <ul class="dropdown">
+                          <li><a href="{% url 'org_login' %}">Sign In</a></li>
+                          <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
+                          {% comment %} <li><a href="/logout">Logout</a></li> {% endcomment %}
+                        </ul>
+                      </li>
+                      {% else %}
+                      <li class="active">
+                        <a href="#"
+                          >Welcome {{request.user}} <i class="icofont-rounded-down"></i
+                        ></a>
+                        <ul class="dropdown">
+                          <li><a href="{% url 'org_logout' %}">Logout</a></li>
+                        </ul>
+                      </li>
+                      
+                      
+                      
+                      {% endif %}
 
 
+                      {% comment %} <li><a href="contact.html">Contact Us</a></li> {% endcomment %}
                     </ul>
                   </nav>
                 </div>
                 <!--/ End Main Menu -->
-             </div>
+              </div>
+              <div class="col-lg-2 col-12">
+                <div class="get-quote">
+                    <a href="providers.html" class="btn">Find Providers</a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -166,7 +201,13 @@
 
     </header>
 
+    {% block body %}
     
+    {% endblock body %}
+
+    {% block content %}
+    
+    {% endblock content %}
     
     <!-- Footer Area -->
     <footer id="footer" class="footer">
@@ -178,7 +219,8 @@
               <div class="single-footer">
                 <h2>About Us</h2>
                 <p>
-                    Our Palliative Care Coordination System connects patients with local palliative care providers, offering a seamless platform for accessing compassionate care. We provide tools for easy service selection, caregiver coordination, and real-time support, ensuring quality care for those in need.
+                  Lorem ipsum dolor sit am consectetur adipisicing elit do
+                  eiusmod tempor incididunt ut labore dolore magna.
                 </p>
                 <!-- Social -->
                 <ul class="social">
@@ -380,28 +422,6 @@
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
     <!-- Main JS -->
     <script src="{% static 'js/main.js' %}"></script>
-    <script>
-        function handleFindProvidersClick() {
-            {% if not request.user.is_authenticated %}
-                // Create a popup message
-                const message = document.createElement('div');
-                message.innerText = 'Please log in to access this feature.';
-                message.style.position = 'fixed';
-                message.style.top = '20px';
-                message.style.right = '20px';
-                message.style.backgroundColor = '#f8d7da';
-                message.style.color = '#721c24';
-                message.style.padding = '10px';
-                message.style.border = '1px solid #f5c6cb';
-                message.style.zIndex = '1000';
-                document.body.appendChild(message);
-
-                // Remove the message after a few seconds
-                setTimeout(() => {
-                    document.body.removeChild(message);
-                }, 3000); // Message disappears after 3 seconds
-            {% endif %}
-        }
-    </script>
+    <script src="{% static 'js/form-validation.js' %}"></script>
   </body>
 </html>

@@ -1,4 +1,7 @@
 from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.utils import timezone
+from django.contrib.auth.hashers import make_password, check_password
 
 # Create your models here.
 class User(models.Model):
@@ -9,3 +12,74 @@ class User(models.Model):
     
     def __str__(self):
         return self.name
+    
+class OrganizationManager(BaseUserManager):
+    def create_user(self, org_username, org_email, org_name, org_address, org_phone, org_password=None):
+        if not org_username:
+            raise ValueError('The Username field is required')
+        if not org_email:
+            raise ValueError('The Email field is required')
+
+        email = self.normalize_email(org_email)
+        user = self.model(
+            org_username=org_username,
+            org_email=email,
+            org_name=org_name,
+            org_address=org_address,
+            org_phone=org_phone,
+        )
+        user.set_password(org_password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, org_username, org_email, org_name, org_address, org_phone, org_password=None):
+        user = self.create_user(
+            org_username,
+            org_email,
+            org_name,
+            org_address,
+            org_phone,
+            org_password=org_password,
+        )
+        user.is_admin = True
+        user.save(using=self._db)
+        return user
+
+class Organizations(AbstractBaseUser, PermissionsMixin):
+    org_username = models.CharField(max_length=100, unique=True)
+    org_email = models.EmailField(unique=True)
+    org_name = models.CharField(max_length=100)
+    org_address = models.TextField()
+    org_phone = models.CharField(max_length=12)
+    org_password = models.CharField(max_length=128, default='defaultpassword')  # Add default value
+    last_login = models.DateTimeField(default=timezone.now)
+
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='organization_set',  # Add related_name to avoid conflict
+        blank=True,
+        help_text='The groups this user belongs to.',
+        verbose_name='groups',
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='organization_set',  # Add related_name to avoid conflict
+        blank=True,
+        help_text='Specific permissions for this user.',
+        verbose_name='user permissions',
+    )
+
+    objects = OrganizationManager()
+
+    USERNAME_FIELD = 'org_username'
+    REQUIRED_FIELDS = ['org_email', 'org_name', 'org_address', 'org_phone']
+
+    def __str__(self):
+        return self.org_name
+
+    def set_password(self, raw_password):
+        self.org_password = make_password(raw_password)
+        self.save()
+
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.org_password)

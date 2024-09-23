@@ -22,15 +22,16 @@ from accounts import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', TemplateView.as_view(template_name='pages/index.html'), name='home'),
-    path('', include('accounts.urls')),
-    path('accounts/', include('accounts.urls')),
+    path('accounts/', include('accounts.urls')),  # Include accounts URLs
     path('about/', views.about, name='about'),
-    path('organizations/', views.organizations, name='organizations'),
     path('contact/', views.contact, name='contact'),
     path('services/', views.services, name='services'),
     path('index/', views.index, name='index'),
-    path('login/', views.handlelogin, name='login'),
-    path('signup/', views.handlesignup, name='signup'),
     path('logout/', views.handlelogout, name='logout'),
     path('accounts/', include('allauth.urls')),
+    path('organizations/', views.organizations_home, name='organizations'),  # Ensure this line is present
+    path('login/', views.handlelogin, name='login'),
+    path('signup/', views.handlesignup, name='signup'),
+    path('org_login/', views.handle_org_login, name='org_login'),
+    path('org_signup/', views.register_organization, name='org_signup'),  # Add the org_signup path
 ]
