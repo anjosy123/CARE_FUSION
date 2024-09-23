@@ -117,7 +117,7 @@
               <div class="col-lg-3 col-md-3 col-12">
                 <!-- Start Logo -->
                 <div class="logo">
-                  <a href="/index"
+                  <a href="{% url 'index' %}"
                     ><img
                       src="{% static 'img/logo.png' %}"
                       alt="#"
@@ -136,7 +136,7 @@
                 <div class="main-menu">
                   <nav class="navigation">
                     <ul class="nav menu">
-                      <li><a href="/index">Home</a></li>
+                      <li><a href="{% url 'index' %}">Home</a></li>
                       <li><a href="/services">Services </a></li>
                       <li>
                         <a href="#"
@@ -190,7 +190,11 @@
               </div>
               <div class="col-lg-2 col-12">
                 <div class="get-quote">
-                  <a href="providers.html" class="btn">Find Providers</a>
+                  {% if request.user.is_authenticated %}
+                    <a href="{% url 'providers_list' %}" class="btn">Find Providers</a>
+                  {% else %}
+                    <a href="{% url 'restricted_providers' %}" class="btn">Find Providers</a>
+                  {% endif %}
                 </div>
               </div>
             </div>

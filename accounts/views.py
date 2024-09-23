@@ -132,3 +132,15 @@ def org_logout(request):
         auth_logout(request)
         messages.success(request, "You have been successfully logged out.")
     return redirect('index')  # Redirect to the home page after logout
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+
+def restricted_providers(request):
+    if not request.user.is_authenticated:
+        messages.warning(request, "Only registered users can use this functionality.")
+        return redirect('login')
+    return redirect('providers_list')
+
+def providers_list(request):
+    return render(request, 'pages/providers_list.html')
