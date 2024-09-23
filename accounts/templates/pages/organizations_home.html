@@ -127,8 +127,8 @@
                 <div class="main-menu">
                   <nav class="navigation">
                     <ul class="nav menu">
-                      <li><a href="pages/index">Home</a></li>
-                      <li><a href="/services">Services </a></li>
+                      <li><a href="{% url 'pages/index' %}">Home</a></li>
+                      <li><a href="{% url 'pages/services' %}">Services </a></li>
                       <li>
                         <a href="#"
                           >Pages <i class="icofont-rounded-down"></i
@@ -180,11 +180,11 @@
                 </div>
                 <!--/ End Main Menu -->
               </div>
-              <div class="col-lg-2 col-12">
+              {% comment %} <div class="col-lg-2 col-12">
                 <div class="get-quote">
                     <a href="providers.html" class="btn">Find Providers</a>
                 </div>
-              </div>
+              </div> {% endcomment %}
             </div>
           </div>
         </div>

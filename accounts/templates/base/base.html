@@ -17,7 +17,7 @@
     <title>{% block title %} {% endblock %}</title>
 
     <!-- Favicon -->
-    <link rel="icon" href="{% static 'img/favicon.png' %}" />
+    <link rel="icon" href="{% static 'img/favicon.png' %}"/>
 
     <!-- Google Fonts -->
     <link
@@ -51,8 +51,8 @@
   </head>
 
   <body>
-    <!-- Preloader -->
-
+    <!-- Preloader --> 
+    
     <div class="preloader">
       <div class="loader">
         <div class="loader-outter"></div>
@@ -69,8 +69,10 @@
         </div>
       </div>
     </div>
-
+    
     <!-- End Preloader -->
+
+
 
     <!-- Header Area -->
     <header class="header">
@@ -82,16 +84,12 @@
               <!-- Contact -->
               <ul class="top-link">
                 <li><a href="/about">About</a></li>
-                <li>
-                  <a href="{% url 'organizations_home' %}">Organizations</a>
-                </li>
+                <li><a href="{% url 'organizations' %}">Organizations</a></li>
                 <li><a href="/contact">Contact</a></li>
-                {% comment %}
-                <li><a href="{% url 'account_login' %}">Sign In</a></li>
-                {% endcomment %}
+                {% comment %} <li><a href="{% url 'account_login' %}">Sign In</a></li> {% endcomment %}
               </ul>
               <!-- End Contact -->
-            </div>
+        </div>
             <div class="col-lg-6 col-md-7 col-12">
               <!-- Top Contact -->
               <ul class="top-contact">
@@ -117,14 +115,7 @@
               <div class="col-lg-3 col-md-3 col-12">
                 <!-- Start Logo -->
                 <div class="logo">
-                  <a href="{% url 'index' %}"
-                    ><img
-                      src="{% static 'img/logo.png' %}"
-                      alt="#"
-                      width="178px"
-                      height="37px"
-                      object-fit="contain;"
-                  /></a>
+                  <a href="/index"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" object-fit="contain;"/></a>
                 </div>
                 <!-- End Logo -->
                 <!-- Mobile Nav -->
@@ -136,7 +127,7 @@
                 <div class="main-menu">
                   <nav class="navigation">
                     <ul class="nav menu">
-                      <li><a href="{% url 'index' %}">Home</a></li>
+                      <li><a href="/index">Home</a></li>
                       <li><a href="/services">Services </a></li>
                       <li>
                         <a href="#"
@@ -157,32 +148,33 @@
 
                       {% if not request.user.is_authenticated %}
 
+
                       <li class="active">
                         <a href="#"
                           >New user ? <i class="icofont-rounded-down"></i
                         ></a>
                         <ul class="dropdown">
-                          <li><a href="{% url 'login' %}">Sign In</a></li>
-                          <li><a href="{% url 'signup' %}">Sign Up</a></li>
-                          {% comment %}
-                          <li><a href="/logout">Logout</a></li>
-                          {% endcomment %}
+                          <li><a href="/login">Sign In</a></li>
+                          <li><a href="/signup">Sign Up</a></li>
+                          {% comment %} <li><a href="/logout">Logout</a></li> {% endcomment %}
                         </ul>
                       </li>
                       {% else %}
                       <li class="active">
                         <a href="#"
-                          >Welcome {{request.user}}
-                          <i class="icofont-rounded-down"></i
+                          >Welcome {{request.user}} <i class="icofont-rounded-down"></i
                         ></a>
                         <ul class="dropdown">
-                          <li><a href="{% url 'logout' %}">Logout</a></li>
+                          <li><a href="/logout">Logout</a></li>
                         </ul>
                       </li>
+                      
+                      
+                      
+                      {% endif %}
 
-                      {% endif %} {% comment %}
-                      <li><a href="contact.html">Contact Us</a></li>
-                      {% endcomment %}
+
+                      {% comment %} <li><a href="contact.html">Contact Us</a></li> {% endcomment %}
                     </ul>
                   </nav>
                 </div>
@@ -190,11 +182,7 @@
               </div>
               <div class="col-lg-2 col-12">
                 <div class="get-quote">
-                  {% if request.user.is_authenticated %}
-                    <a href="{% url 'providers_list' %}" class="btn">Find Providers</a>
-                  {% else %}
-                    <a href="{% url 'restricted_providers' %}" class="btn">Find Providers</a>
-                  {% endif %}
+                    <a href="providers.html" class="btn" id="find-providers-btn">Find Providers</a>
                 </div>
               </div>
             </div>
@@ -202,24 +190,25 @@
         </div>
       </div>
       <!--/ End Header Inner -->
-      {% if messages %} {% for message in messages %}
-      <div
-        class="alert alert-{{message.tags}} alert-dismissible fade show"
-        role="alert"
-      >
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{message.tags}} alert-dismissible fade show" role="alert">
         <strong></strong> {{message}}
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="alert"
-          aria-label="Close"
-        ></button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
-      {% endfor %} {% endif %}
+      {% endfor %}
+      {% endif %}
+
     </header>
 
-    {% block body %} {% endblock body %} {% block content %} {% endblock content %}
+    {% block body %}
+    
+    {% endblock body %}
 
+    {% block content %}
+    
+    {% endblock content %}
+    
     <!-- Footer Area -->
     <footer id="footer" class="footer">
       <!-- Footer Top -->
@@ -381,7 +370,9 @@
           <div class="row">
             <div class="col-lg-12 col-md-12 col-12">
               <div class="copyright-content">
-                <p>© Copyright 2024 | All Rights Reserved by Anjosy A J</p>
+                <p>
+                  © Copyright 2024 | All Rights Reserved by Anjosy A J
+                </p>
               </div>
             </div>
           </div>
@@ -401,7 +392,7 @@
     <script src="{% static 'js/easing.js' %}"></script>
     <!-- Color JS -->
     <script src="{% static 'js/colors.js' %}"></script>
-    <!-- Popper JS -->
+    <!-- Popper JS -->  
     <script src="{% static 'js/popper.min.js' %}"></script>
     <!-- Bootstrap Datepicker JS -->
     <script src="{% static 'js/bootstrap-datepicker.js' %}"></script>
@@ -431,5 +422,29 @@
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
     <!-- Main JS -->
     <script src="{% static 'js/main.js' %}"></script>
+
+    <!-- Add this div for the warning message -->
+    <div id="warning-message" class="alert alert-warning alert-dismissible fade show" role="alert" style="display: none;">
+        You are not a registered user, please sign in.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Add this script to handle the button click event -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('find-providers-btn').addEventListener('click', function(event) {
+                event.preventDefault();
+                {% if not request.user.is_authenticated %}
+                var warningMessage = document.getElementById('warning-message');
+                warningMessage.style.display = 'block';
+                setTimeout(function() {
+                    warningMessage.style.display = 'none';
+                }, 5000); // Hide the message after 5 seconds
+                {% else %}
+                window.location.href = 'providers.html';
+                {% endif %}
+            });
+        });
+    </script>
   </body>
 </html>
