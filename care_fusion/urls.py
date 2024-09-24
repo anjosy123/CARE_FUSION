@@ -33,5 +33,6 @@ urlpatterns = [
     path('login/', views.handlelogin, name='login'),
     path('signup/', views.handlesignup, name='signup'),
     path('org_login/', views.handle_org_login, name='org_login'),
-    path('org_signup/', views.register_organization, name='org_signup'),  # Add the org_signup path
+    path('org_signup/', views.register_organization, name='org_signup'), 
+    path('providers/', views.providers_list, name='providers'),# Add the org_signup path
 ]

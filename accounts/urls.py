@@ -7,7 +7,7 @@ from .views import handlelogout
 from .views import index, about, organizations_home, handle_org_login, contact, services, handlelogin, handlesignup, handlelogout
 from .views import register_organization  # Import your views
 from .views import org_logout
-from .views import restricted_providers, providers_list
+from .views import restricted_providers, providers_list, providers_list
 
 urlpatterns = [
     path('', index, name='index'),
@@ -25,5 +25,5 @@ urlpatterns = [
     path('org_signup/', register_organization, name='org_signup'),  # URL for organization signup
     path('org_logout/', org_logout, name='org_logout'),
     path('restricted_providers/', restricted_providers, name='restricted_providers'),
-    path('providers_list/', providers_list, name='providers_list'),
+    path('providers/', views.providers_list, name='providers'),
 ]

@@ -14,7 +14,7 @@
     />
 
     <!-- Title -->
-    <title>{% block title %} {% endblock %}</title>
+    <title>Organizations Home</title>
 
     <!-- Favicon -->
     <link rel="icon" href="{% static 'img/favicon.png' %}"/>
@@ -127,8 +127,8 @@
                 <div class="main-menu">
                   <nav class="navigation">
                     <ul class="nav menu">
-                      <li><a href="{% url 'pages/index' %}">Home</a></li>
-                      <li><a href="{% url 'pages/services' %}">Services </a></li>
+                      <li><a href="{% url 'index' %}">Home</a></li>
+                      <li><a href="{% url 'services' %}">Services </a></li>
                       <li>
                         <a href="#"
                           >Pages <i class="icofont-rounded-down"></i
@@ -200,14 +200,6 @@
       {% endif %}
 
     </header>
-
-    {% block body %}
-    
-    {% endblock body %}
-
-    {% block content %}
-    
-    {% endblock content %}
     
     <!-- Footer Area -->
     <footer id="footer" class="footer">

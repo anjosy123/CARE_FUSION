@@ -17,13 +17,13 @@ def about(request):
 
 def organizations_home(request):
     # Your logic here
-    return render(request, 'pages/organizations_home.html')  
+        return render(request, 'pages/organizations_home.html')
 
 def contact(request):
     return render(request, 'pages/contact.html')
 
 def services(request):
-    return render(request, 'pages/services.html')
+    return render(request, 'pages/org_service_page.html')
 
 def handlelogin(request):
     if request.method == "POST":
@@ -88,7 +88,7 @@ def handle_org_login(request):
         org_user = authenticate(request, username=username, password=password)
         if org_user is not None:
             login(request, org_user)
-            return redirect('organizations_home')  # Redirect to the organizations home page
+            return redirect('services')  # Redirect to the organizations home page
         else:
             messages.error(request, "Invalid username or password")
             return redirect('org_login')
@@ -140,7 +140,7 @@ def restricted_providers(request):
     if not request.user.is_authenticated:
         messages.warning(request, "Only registered users can use this functionality.")
         return redirect('login')
-    return redirect('providers_list')
+    return redirect('pages/providers_list.html')
 
 def providers_list(request):
     return render(request, 'pages/providers_list.html')

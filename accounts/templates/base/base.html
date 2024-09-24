@@ -84,7 +84,7 @@
               <!-- Contact -->
               <ul class="top-link">
                 <li><a href="/about">About</a></li>
-                <li><a href="{% url 'organizations' %}">Organizations</a></li>
+                <li><a href="{% url 'organizations_home' %}">Organizations</a></li>
                 <li><a href="/contact">Contact</a></li>
                 {% comment %} <li><a href="{% url 'account_login' %}">Sign In</a></li> {% endcomment %}
               </ul>
@@ -154,8 +154,8 @@
                           >New user ? <i class="icofont-rounded-down"></i
                         ></a>
                         <ul class="dropdown">
-                          <li><a href="/login">Sign In</a></li>
-                          <li><a href="/signup">Sign Up</a></li>
+                          <li><a href="{% url 'login' %}">Sign In</a></li>
+                          <li><a href="{% url 'signup' %}">Sign Up</a></li>
                           {% comment %} <li><a href="/logout">Logout</a></li> {% endcomment %}
                         </ul>
                       </li>
@@ -165,7 +165,7 @@
                           >Welcome {{request.user}} <i class="icofont-rounded-down"></i
                         ></a>
                         <ul class="dropdown">
-                          <li><a href="/logout">Logout</a></li>
+                          <li><a href="{% url 'logout' %}">Logout</a></li>
                         </ul>
                       </li>
                       
@@ -182,7 +182,7 @@
               </div>
               <div class="col-lg-2 col-12">
                 <div class="get-quote">
-                    <a href="providers.html" class="btn" id="find-providers-btn">Find Providers</a>
+                    <a href="{% url 'providers' %}" class="btn" id="find-providers-btn">Find Providers</a>
                 </div>
               </div>
             </div>
@@ -441,7 +441,7 @@
                     warningMessage.style.display = 'none';
                 }, 5000); // Hide the message after 5 seconds
                 {% else %}
-                window.location.href = 'providers.html';
+                window.location.href = "{% url 'providers' %}";
                 {% endif %}
             });
         });
