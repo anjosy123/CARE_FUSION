@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.contrib.auth.hashers import make_password, check_password
 
 # Create your models here.
-class User(models.Model):
+class Patient(models.Model):
     name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=100)
@@ -45,15 +45,17 @@ class OrganizationManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-class Organizations(AbstractBaseUser, PermissionsMixin):
-    org_username = models.CharField(max_length=100, unique=True)
+class Organizations(models.Model):
+    org_regid = models.CharField(max_length=100, unique=True)
     org_email = models.EmailField(unique=True)
     org_name = models.CharField(max_length=100)
     org_address = models.TextField()
     org_phone = models.CharField(max_length=12)
     org_password = models.CharField(max_length=128, default='defaultpassword')  # Add default value
-    last_login = models.DateTimeField(default=timezone.now)
-
+    approve=models.BooleanField(default=False) 
+    pincode = models.CharField(max_length=10)
+    
+    
     groups = models.ManyToManyField(
         'auth.Group',
         related_name='organization_set',  # Add related_name to avoid conflict

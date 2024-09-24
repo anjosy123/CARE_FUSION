@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit User</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Roboto", sans-serif;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        width: 400px;
+        text-align: center;
+      }
+
+      h1 {
+        margin-bottom: 20px;
+        color: #2c3e50;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        text-align: left;
+        font-weight: 500;
+        color: #34495e;
+      }
+
+      input[type="text"],
+      input[type="email"] {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #bdc3c7;
+        border-radius: 4px;
+        font-size: 16px;
+      }
+
+      button {
+        background-color: #2980b9;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+
+      button:hover {
+        background-color: #3498db;
+      }
+
+      a {
+        display: inline-block;
+        margin-top: 20px;
+        text-decoration: none;
+        color: #2980b9;
+        font-weight: 500;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Edit User: {{ user.username }}</h1>
+      <form method="POST">
+        {% csrf_token %}
+        <label for="username">Username:</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          value="{{ user.username }}"
+          required
+        />
+
+        <label for="email">Email:</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          value="{{ user.email }}"
+          required
+        />
+
+        <label for="first_name">First Name:</label>
+        <input
+          type="text"
+          id="first_name"
+          name="first_name"
+          value="{{ user.first_name }}"
+          required
+        />
+
+        <label for="last_name">Last Name:</label>
+        <input
+          type="text"
+          id="last_name"
+          name="last_name"
+          value="{{ user.last_name }}"
+          required
+        />
+
+        <button type="submit">Update User</button>
+      </form>
+      <a href="{% url 'manage_users' %}">Back to User Management</a>
+    </div>
+  </body>
+</html>
