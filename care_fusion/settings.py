@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 import os
 from pathlib import Path
+import pymysql
+pymysql.install_as_MySQLdb()
+
 from django.contrib.messages import constants as messages
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -86,10 +89,27 @@ APPEND_SLASH = False
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'djongo',
+#         'NAME': 'care_fusion',
+#         'CLIENT': {
+#             'host': 'localhost',
+#             'port': 27017,  # Default MongoDB port
+#         }
+#     }
+# }
+
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'care_fusion',
+        'USER': 'root',
+        'PASSWORD': '',
+        'HOST': 'localhost',
+        'PORT': '3306',
+        
     }
 }
 
@@ -158,13 +178,15 @@ SOCIALACCOUNT_QUERY_EMAIL = True
 ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = 'none'
+
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'carefusion.ai@gmail.com'
-EMAIL_HOST_PASSWORD = 'carefusion@123'
-DEFAULT_FROM_EMAIL = 'carefusion.ai@gmail.com'
+EMAIL_HOST_USER = 'anjosyaj2025@mca.ajce.in'
+EMAIL_HOST_PASSWORD = '66IYPetof2@'
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # Remove CRISPY_TEMPLATE_PACK setting
 

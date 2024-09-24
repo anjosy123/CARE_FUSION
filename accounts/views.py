@@ -3,8 +3,9 @@ from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.models import User
 from django.urls import reverse
-from .models import Organizations
-
+from .models import Organizations,User
+import random
+from django.core.mail import send_mail
 # Create your views here.
 def home_view(request):
     return render(request, 'pages/index.html')
@@ -27,11 +28,10 @@ def services(request):
 
 def handlelogin(request):
     if request.method == "POST":
-        uname = request.POST.get("username")
+        uname = request.POST.get("email")
         pass1 = request.POST.get("pass1")
-        myuser = authenticate(username = uname,password = pass1)
-        if myuser is not None:
-            login(request,myuser)
+        myuser = User.objects.get(email=uname)
+        if myuser.password == pass1:
             messages.success(request, "Login Success")
             return redirect('/')
         else:
@@ -65,7 +65,7 @@ def handlesignup(request):
             pass
         
         # print(uname,email,password,confirmpassword)
-        myuser=User.objects.create_user(uname,email,password)
+        myuser=User(name=uname,email=email,password=password,role="User")
         myuser.save()
         messages.success(request,"Signup Success Please Login!")
         return redirect(reverse('login'))
@@ -144,3 +144,64 @@ def restricted_providers(request):
 
 def providers_list(request):
     return render(request, 'pages/providers_list.html')
+
+user_pins={}
+
+def forgot_password(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email)
+            # Generate a random 4-digit code
+            code = random.randint(1000, 9999)
+            user_pins[email] = code
+
+            # Send email with the code
+            send_mail(
+                'Password Reset Code',
+                f'Your password reset code is {code}.',
+                'admin@yourdomain.com',  # Change to your domain
+                [email],
+                fail_silently=False,
+            )
+            # Redirect to the verification page
+            return redirect('verify_code', email=email)
+        except User.DoesNotExist:
+            messages.error(request, 'Invalid email address.')
+    return render(request, 'forgot_password.html')
+
+# Verify code view
+def verify_code(request, email):
+    if request.method == 'POST':
+        entered_code = request.POST.get('pin')
+        correct_code = user_pins.get(email)
+
+        if correct_code and str(entered_code) == str(correct_code):
+            # Redirect to reset password page
+            return redirect('reset_password', email=email)
+        else:
+            messages.error(request, 'Invalid code. Please try again.')
+
+    return render(request, 'verifycode.html',{'email': email})
+
+# Reset password view
+def reset_password(request, email):
+    if request.method == 'POST':
+        new_password1 = request.POST.get('new_password1')
+        new_password2 = request.POST.get('new_password2')
+
+        if new_password1 == new_password2:
+            try:
+                user = User.objects.get(email=email)
+                user.password = new_password1  # Directly set the password
+                user.save()  # Save the changes to the database
+                messages.success(request, 'Password has been reset successfully.')
+                return redirect('login')
+            except User.DoesNotExist:
+                messages.error(request, 'Invalid user.')
+        else:
+            messages.error(request, 'Passwords do not match.')
+
+    return render(request, 'resetpassword.html',{'email':email})
+
+

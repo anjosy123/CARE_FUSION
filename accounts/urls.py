@@ -17,13 +17,16 @@ urlpatterns = [
     path('services/', services, name='services'),
     path('', TemplateView.as_view(template_name='pages/index.html'), name='home'),
     path('accounts/', include('allauth.urls')),
-    path('login', handlelogin),
-    path('signup', handlesignup),
-    path('logout', handlelogout),
+    path('login', handlelogin,name='login'),
+    path('signup', handlesignup,name='signup'),
+    path('logout', handlelogout,name='logout'),
     path('organizations/', organizations_home, name='organizations_home'), 
     path('org_login/', handle_org_login, name='org_login'),  # URL for organization login
     path('org_signup/', register_organization, name='org_signup'),  # URL for organization signup
     path('org_logout/', org_logout, name='org_logout'),
     path('restricted_providers/', restricted_providers, name='restricted_providers'),
     path('providers/', views.providers_list, name='providers'),
+    path('forgot-password/', views.forgot_password, name='forgot_password'),
+    path('verify-code/<str:email>/', views.verify_code, name='verify_code'),
+    path('reset-password/<str:email>/', views.reset_password, name='reset_password'),
 ]

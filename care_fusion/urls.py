@@ -21,18 +21,5 @@ from accounts import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', TemplateView.as_view(template_name='pages/index.html'), name='home'),
-    path('accounts/', include('accounts.urls')),  # Include accounts URLs
-    path('about/', views.about, name='about'),
-    path('contact/', views.contact, name='contact'),
-    path('services/', views.services, name='services'),
-    path('index/', views.index, name='index'),
-    path('logout/', views.handlelogout, name='logout'),
-    path('accounts/', include('allauth.urls')),
-    path('organizations/', views.organizations_home, name='organizations'),  # Ensure this line is present
-    path('login/', views.handlelogin, name='login'),
-    path('signup/', views.handlesignup, name='signup'),
-    path('org_login/', views.handle_org_login, name='org_login'),
-    path('org_signup/', views.register_organization, name='org_signup'), 
-    path('providers/', views.providers_list, name='providers'),# Add the org_signup path
+    path('',include('accounts.urls')),
 ]
