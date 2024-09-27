@@ -60,6 +60,12 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
+# Session settings in settings.py
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # One week
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Option to expire session on browser close
+SESSION_SAVE_EVERY_REQUEST = True  # Extend session on every request
+
+
 ROOT_URLCONF = 'care_fusion.urls'
 
 TEMPLATES = [
@@ -166,7 +172,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 SITE_ID = 2
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = 'patients_dashboard'
 
 
 SOCIALACCOUNT_PROVIDERS = { 'google': {

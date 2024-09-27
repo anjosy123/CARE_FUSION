@@ -45,6 +45,12 @@ class OrganizationManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
+class Contact(models.Model):
+    name = models.CharField(max_length=30)
+    email = models.EmailField()
+    phoneNumber = models.CharField(max_length=12)
+    description = models.TextField()
+
 class Organizations(models.Model):
     org_regid = models.CharField(max_length=100, unique=True)
     org_email = models.EmailField(unique=True)
@@ -54,7 +60,6 @@ class Organizations(models.Model):
     org_password = models.CharField(max_length=128, default='defaultpassword')  # Add default value
     approve=models.BooleanField(default=False) 
     pincode = models.CharField(max_length=10)
-    
     
     groups = models.ManyToManyField(
         'auth.Group',

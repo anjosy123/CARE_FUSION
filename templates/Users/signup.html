@@ -94,6 +94,21 @@
         }
       });
 
+      // Username validation 
+      const usernameInput = document.getElementById('username');
+      const usernameError = document.getElementById('usernameError');
+
+      usernameInput.addEventListener('input', function() {
+        const usernameValue = usernameInput.value;
+        const usernameRegex = /^[A-Za-z\s]+$/; // Allows alphabets and spaces
+        if (!usernameRegex.test(usernameValue)) {
+          usernameError.textContent = "Username must contain only alphabets and spaces.";
+        } else {
+          usernameError.textContent = '';
+        }
+      });
+
+
       // Email validation
       const emailInput = document.getElementById('email');
       const emailError = document.getElementById('emailError');

@@ -1,13 +1,10 @@
 from django.urls import path, include
 from django.views.generic import TemplateView
 from.import views
-from .views import handlesignup, organizations_home
-from .views import handlelogin
-from .views import handlelogout
-from .views import index, about, organizations_home, handle_org_login, contact, services, handlelogin, handlesignup, handlelogout
+from .views import index, about, organizations_home, contact, services, handlelogin, handlesignup, handlelogout
 from .views import register_organization  # Import your views
 from .views import org_logout
-from .views import restricted_providers, providers_list, providers_list
+from .views import restricted_providers
 
 urlpatterns = [
     path('', index, name='index'),
@@ -20,7 +17,7 @@ urlpatterns = [
     path('login', handlelogin,name='login'),
     path('signup', handlesignup,name='signup'),
     path('logout', handlelogout,name='logout'),
-    path('organizations/', organizations_home, name='organizations_home'), 
+    path('organizations_home', organizations_home, name='organizations_home'), 
     path('org_login/', views.handle_org_login, name='org_login'),  # URL for organization login
     path('org_signup/', register_organization, name='org_signup'),  # URL for organization signup
     path('org_logout/', org_logout, name='org_logout'),
@@ -35,4 +32,6 @@ urlpatterns = [
     path('delete-user/<int:user_id>/', views.delete_user, name='delete_user'),
     path('approve-organizations/', views.approve_organizations, name='approve_organizations'),
     path('approve-organization/<int:org_id>/', views.approve_organization, name='approve_organization'),
+    path('patients_dashboard/',views.patients_dashboard, name='patients_dashboard'),
+    path('palliatives_dashboard',views.palliatives_dashboard, name='palliatives_dashboard'),
 ]
