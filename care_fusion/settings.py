@@ -60,6 +60,14 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
+
+# Session settings in settings.py
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # One week
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Option to expire session on browser close
+SESSION_SAVE_EVERY_REQUEST = True  # Extend session on every request
+
+
 ROOT_URLCONF = 'care_fusion.urls'
 
 TEMPLATES = [
@@ -84,22 +92,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'care_fusion.wsgi.application'
 
 APPEND_SLASH = False
-
-
-# Database
-# https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'djongo',
-#         'NAME': 'care_fusion',
-#         'CLIENT': {
-#             'host': 'localhost',
-#             'port': 27017,  # Default MongoDB port
-#         }
-#     }
-# }
-
 
 DATABASES = {
     'default': {
@@ -166,7 +158,9 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 SITE_ID = 2
-LOGIN_REDIRECT_URL = '/'
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'patients_dashboard'
+LOGOUT_REDIRECT_URL = 'index'
 
 
 SOCIALACCOUNT_PROVIDERS = { 'google': {

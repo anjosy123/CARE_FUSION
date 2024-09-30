@@ -14,7 +14,7 @@
     />
 
     <!-- Title -->
-    <title>Organizations Services</title>
+    <title>{% block title %} {% endblock %}</title>
 
     <!-- Favicon -->
     <link rel="icon" href="{% static 'img/favicon.png' %}"/>
@@ -48,7 +48,6 @@
     <link rel="stylesheet" href="{% static 'css/normalize.css' %}" />
     <link rel="stylesheet" href="{% static 'style.css' %}" />
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}" />
-    <link rel="stylesheet" href="{% static 'css/form-validation.css' %}">
   </head>
 
   <body>
@@ -85,6 +84,7 @@
               <!-- Contact -->
               <ul class="top-link">
                 <li><a href="/about">About</a></li>
+                <li><a href="/organizations_home">Organizations</a></li>
                 <li><a href="/contact">Contact</a></li>
                 {% comment %} <li><a href="{% url 'account_login' %}">Sign In</a></li> {% endcomment %}
               </ul>
@@ -127,8 +127,8 @@
                 <div class="main-menu">
                   <nav class="navigation">
                     <ul class="nav menu">
-                      <li><a href="{% url 'index' %}">Home</a></li>
-                      <li><a href="{% url 'services' %}">Services </a></li>
+                      <li><a href="/index">Home</a></li>
+                      <li><a href="/services">Services </a></li>
                       <li>
                         <a href="#"
                           >Pages <i class="icofont-rounded-down"></i
@@ -151,11 +151,11 @@
 
                       <li class="active">
                         <a href="#"
-                          >New Organization? <i class="icofont-rounded-down"></i
+                          >New user ? <i class="icofont-rounded-down"></i
                         ></a>
                         <ul class="dropdown">
-                          <li><a href="{% url 'org_login' %}">Sign In</a></li>
-                          <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
+                          <li><a href="/login">Sign In</a></li>
+                          <li><a href="/signup">Sign Up</a></li>
                           {% comment %} <li><a href="/logout">Logout</a></li> {% endcomment %}
                         </ul>
                       </li>
@@ -165,10 +165,12 @@
                           >Welcome {{request.user}} <i class="icofont-rounded-down"></i
                         ></a>
                         <ul class="dropdown">
-                          <li><a href="{% url 'org_logout' %}">Logout</a></li>
+                          <li><a href="/logout">Logout</a></li>
                         </ul>
                       </li>
-
+                      
+                      
+                      
                       {% endif %}
 
 
@@ -178,17 +180,16 @@
                 </div>
                 <!--/ End Main Menu -->
               </div>
-              {% comment %} <div class="col-lg-2 col-12">
+              <div class="col-lg-2 col-12">
                 <div class="get-quote">
                     <a href="providers.html" class="btn">Find Providers</a>
                 </div>
-              </div> {% endcomment %}
+              </div>
             </div>
           </div>
         </div>
       </div>
       <!--/ End Header Inner -->
-      <h1>Patients Home</h1>
       {% if messages %}
       {% for message in messages %}
       <div class="alert alert-{{message.tags}} alert-dismissible fade show" role="alert">
@@ -199,6 +200,14 @@
       {% endif %}
 
     </header>
+
+    {% block body %}
+    
+    {% endblock body %}
+
+    {% block content %}
+    
+    {% endblock content %}
     
     <!-- Footer Area -->
     <footer id="footer" class="footer">
@@ -413,6 +422,5 @@
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
     <!-- Main JS -->
     <script src="{% static 'js/main.js' %}"></script>
-    <script src="{% static 'js/form-validation.js' %}"></script>
   </body>
 </html>

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organization Detail</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <h1>Organization: {{ organization.org_name }}</h1>
+    <p><strong>Address:</strong> {{ organization.org_address }}</p>
+    <p><strong>Pincode:</strong> {{ organization.pincode }}</p>
+    <p><strong>Phone:</strong> {{ organization.org_phone }}</p>
+    <!-- Add any other fields you want to display from the organization model -->
+</body>
+</html>
