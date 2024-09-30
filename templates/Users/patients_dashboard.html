@@ -154,7 +154,11 @@
     <div class="content">
       <!-- Header -->
       <div class="header">
+<<<<<<< HEAD
         <h3>Welcome, {{request.session.username}}</h3>
+=======
+        <h3>Welcome, Patient!</h3>
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
       </div>
 
       <!-- Welcome Message Section -->
@@ -180,7 +184,10 @@
                   placeholder="Enter your name"
                   required
                   oninput="validateFullName();"
+<<<<<<< HEAD
                   value="{{request.session.username}}"
+=======
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
                 />
                 <div class="invalid-feedback">
                   Please enter a valid name (no special characters or numbers).
@@ -195,7 +202,10 @@
                   placeholder="Enter your email"
                   required
                   oninput="validateEmail();"
+<<<<<<< HEAD
                   value="{{request.session.email}}"
+=======
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
                 />
                 <div class="invalid-feedback">
                   Please enter a valid email address.
@@ -212,10 +222,16 @@
                   placeholder="e.g., +91xxxxxxxxxx"
                   required
                   oninput="validatePhone();"
+<<<<<<< HEAD
                   value="{{request.session.phone}}"
                 />
                 <div class="invalid-feedback">
                   Phone number must be 12 digits, starting with + followed by
+=======
+                />
+                <div class="invalid-feedback">
+                  Phone number must be 13 digits, starting with + followed by
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
                   the country code.
                 </div>
               </div>
@@ -262,6 +278,7 @@
           <div class="card-header">Search for Palliative Organizations</div>
           <div class="card-body">
             <!-- Search Form -->
+<<<<<<< HEAD
             <form
               class="d-flex"
               action="{% url 'patients_dashboard' %}"
@@ -280,17 +297,36 @@
                 Search
               </button>
             </form>
+=======
+            <form class="d-flex" action="{% url 'patients_dashboard' %}" method="GET" role="search">
+              <input
+                class="form-control me-2"
+                type="search"
+                name="q" 
+                placeholder="Search by organization name, address, or pincode"
+                value="{{ query }}"  
+                aria-label="Search"
+              />
+              <button class="btn btn-outline-success" type="submit">Search</button>
+            </form>
+            
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
           </div>
         </div>
       </div>
 
       <!-- Display Search Results -->
       <div class="mt-4">
+<<<<<<< HEAD
         {% comment %} <h4>Search Results</h4> {% endcomment %}
+=======
+        <h4>Search Results</h4>
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
         <ul class="list-group">
           {% if organizations %}
             {% for organization in organizations %}
               <li class="list-group-item">
+<<<<<<< HEAD
                 <strong>{{ organization.org_name }}</strong><br />
                 Address: {{ organization.org_address }}<br />
                 Pincode: {{ organization.pincode }}<br />
@@ -304,10 +340,24 @@
             <li class="list-group-item">
               No organizations found matching your search criteria.
             </li>
+=======
+                <strong>{{ organization.org_name }}</strong><br>
+                Address: {{ organization.org_address }}<br>
+                Pincode: {{ organization.pincode }}<br>
+                Contact: {{ organization.org_phone }}
+              </li>
+            {% endfor %}
+          {% else %}
+            <li class="list-group-item">No organizations found matching your search criteria.</li>
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
           {% endif %}
         </ul>
       </div>
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
       <!-- Book an Appointment Section -->
       <div id="bookAppointment" class="mt-4 hidden">
         <div class="card">
@@ -374,11 +424,17 @@
       </div>
     </div>
 
+<<<<<<< HEAD
     {% comment %}
     <div class="footer">
       <p>&copy; 2024 Patient Dashboard. All Rights Reserved.</p>
     </div>
     {% endcomment %}
+=======
+    {% comment %} <div class="footer">
+      <p>&copy; 2024 Patient Dashboard. All Rights Reserved.</p>
+    </div> {% endcomment %}
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
 
     <script>
       // Function to show the relevant section and hide others

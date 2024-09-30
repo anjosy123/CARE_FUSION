@@ -14,7 +14,7 @@
     />
 
     <!-- Title -->
-    <title>{% block title %} {% endblock %}</title>
+    <title>Organizations Services</title>
 
     <!-- Favicon -->
     <link rel="icon" href="{% static 'img/favicon.png' %}"/>
@@ -48,6 +48,7 @@
     <link rel="stylesheet" href="{% static 'css/normalize.css' %}" />
     <link rel="stylesheet" href="{% static 'style.css' %}" />
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/form-validation.css' %}">
   </head>
 
   <body>
@@ -84,7 +85,10 @@
               <!-- Contact -->
               <ul class="top-link">
                 <li><a href="/about">About</a></li>
-                <li><a href="{% url 'organizations_home' %}">Organizations</a></li>
+<<<<<<<< HEAD:templates/base.html
+                <li><a href="/organizations_home">Organizations</a></li>
+========
+>>>>>>>> c836822a135e3af93d885c499392c758f76484f1:templates/Users/patient_home.html
                 <li><a href="/contact">Contact</a></li>
                 {% comment %} <li><a href="{% url 'account_login' %}">Sign In</a></li> {% endcomment %}
               </ul>
@@ -127,8 +131,8 @@
                 <div class="main-menu">
                   <nav class="navigation">
                     <ul class="nav menu">
-                      <li><a href="/index">Home</a></li>
-                      <li><a href="/services">Services </a></li>
+                      <li><a href="{% url 'index' %}">Home</a></li>
+                      <li><a href="{% url 'services' %}">Services </a></li>
                       <li>
                         <a href="#"
                           >Pages <i class="icofont-rounded-down"></i
@@ -151,11 +155,11 @@
 
                       <li class="active">
                         <a href="#"
-                          >New user ? <i class="icofont-rounded-down"></i
+                          >New Organization? <i class="icofont-rounded-down"></i
                         ></a>
                         <ul class="dropdown">
-                          <li><a href="{% url 'login' %}">Sign In</a></li>
-                          <li><a href="{% url 'signup' %}">Sign Up</a></li>
+                          <li><a href="{% url 'org_login' %}">Sign In</a></li>
+                          <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
                           {% comment %} <li><a href="/logout">Logout</a></li> {% endcomment %}
                         </ul>
                       </li>
@@ -165,12 +169,10 @@
                           >Welcome {{request.user}} <i class="icofont-rounded-down"></i
                         ></a>
                         <ul class="dropdown">
-                          <li><a href="{% url 'logout' %}">Logout</a></li>
+                          <li><a href="{% url 'org_logout' %}">Logout</a></li>
                         </ul>
                       </li>
-                      
-                      
-                      
+
                       {% endif %}
 
 
@@ -180,24 +182,17 @@
                 </div>
                 <!--/ End Main Menu -->
               </div>
-<<<<<<< HEAD
               {% comment %} <div class="col-lg-2 col-12">
                 <div class="get-quote">
-                    <a href="{% url 'providers' %}" class="btn" id="find-providers-btn">Find Providers</a>
+                    <a href="providers.html" class="btn">Find Providers</a>
                 </div>
               </div> {% endcomment %}
-=======
-              <div class="col-lg-2 col-12">
-                <div class="get-quote">
-                    <a href="{% url 'providers' %}" class="btn" id="find-providers-btn">Find Providers</a>
-                </div>
-              </div>
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
             </div>
           </div>
         </div>
       </div>
       <!--/ End Header Inner -->
+      <h1>Patients Home</h1>
       {% if messages %}
       {% for message in messages %}
       <div class="alert alert-{{message.tags}} alert-dismissible fade show" role="alert">
@@ -208,14 +203,6 @@
       {% endif %}
 
     </header>
-
-    {% block body %}
-    
-    {% endblock body %}
-
-    {% block content %}
-    
-    {% endblock content %}
     
     <!-- Footer Area -->
     <footer id="footer" class="footer">
@@ -430,29 +417,6 @@
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
     <!-- Main JS -->
     <script src="{% static 'js/main.js' %}"></script>
-
-    <!-- Add this div for the warning message -->
-    <div id="warning-message" class="alert alert-warning alert-dismissible fade show" role="alert" style="display: none;">
-        You are not a registered user, please sign in.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-
-    <!-- Add this script to handle the button click event -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('find-providers-btn').addEventListener('click', function(event) {
-                event.preventDefault();
-                {% if not request.user.is_authenticated %}
-                var warningMessage = document.getElementById('warning-message');
-                warningMessage.style.display = 'block';
-                setTimeout(function() {
-                    warningMessage.style.display = 'none';
-                }, 5000); // Hide the message after 5 seconds
-                {% else %}
-                window.location.href = "{% url 'providers' %}";
-                {% endif %}
-            });
-        });
-    </script>
+    <script src="{% static 'js/form-validation.js' %}"></script>
   </body>
 </html>

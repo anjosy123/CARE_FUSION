@@ -1,5 +1,171 @@
+<<<<<<< HEAD
 {% extends "base/base.html" %}
 {% load static %}
 {% block body %}
 <h1>Welcome to the contact page</h1>
 {% endblock body %}
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .contact-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .contact-container h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .form-group textarea {
+            resize: none;
+            height: 120px;
+        }
+
+        .form-group input[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+
+        .form-group input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        .error {
+            color: red;
+            font-size: 14px;
+            display: none;
+        }
+
+        input:invalid {
+            border-color: red;
+        }
+
+        input:valid {
+            border-color: green;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="contact-container">
+        <h2>Contact Us</h2>
+        <form action="/contact" method="POST" id="contactForm">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" name="fname" placeholder="Your name" required pattern="^[A-Za-z ]+$" oninput="validateName()">
+                <span id="nameError" class="error">Only alphabets and spaces are allowed.</span>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" placeholder="Your email" required oninput="validateEmail()">
+                <span id="emailError" class="error">Please enter a valid email address.</span>
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" placeholder="Your phone number" required pattern="^\+?[1-9][0-9]{11}$" oninput="validatePhone()">
+                <span id="phoneError" class="error">Please enter a valid 12-digit phone number with country code. Full zeros or characters are not allowed.</span>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">How can I help You?</label>
+                <textarea id="description" name="description" placeholder="Your message" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <input type="submit" value="Submit">
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function validateName() {
+            const nameField = document.getElementById('name');
+            const nameError = document.getElementById('nameError');
+            const nameRegex = /^[A-Za-z ]+$/;
+
+            if (nameRegex.test(nameField.value)) {
+                nameError.style.display = 'none';
+            } else {
+                nameError.style.display = 'block';
+            }
+        }
+
+        function validateEmail() {
+            const emailField = document.getElementById('email');
+            const emailError = document.getElementById('emailError');
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+            if (emailRegex.test(emailField.value)) {
+                emailError.style.display = 'none';
+            } else {
+                emailError.style.display = 'block';
+            }
+        }
+
+        function validatePhone() {
+            const phoneField = document.getElementById('phone');
+            const phoneError = document.getElementById('phoneError');
+            const phoneRegex = /^\+?[1-9][0-9]{11}$/;  // Validates 12 digits including country code
+
+            if (phoneRegex.test(phoneField.value) && !/^0+$/.test(phoneField.value)) {
+                phoneError.style.display = 'none';
+            } else {
+                phoneError.style.display = 'block';
+            }
+        }
+    </script>
+
+</body>
+</html>
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1

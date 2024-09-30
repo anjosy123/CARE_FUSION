@@ -1,11 +1,16 @@
 from django.shortcuts import render,redirect,get_object_or_404
+<<<<<<< HEAD
 # from django.contrib.auth.decorators import login_required
+=======
+from django.contrib.auth.decorators import login_required
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
 from django.contrib.sessions.models import Session  # Import Session
 from django.contrib.auth import login  # Import login for session authentication
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
 from django.urls import reverse
+<<<<<<< HEAD
 from .models import Organizations
 from django.contrib.auth import get_user_model
 import random
@@ -14,6 +19,12 @@ from django.core.mail import send_mail
 from django.contrib.auth.hashers import check_password
 from django.views.decorators.cache import cache_control
 # from django.http import HttpResponse
+=======
+from .models import Organizations,Patient,Contact
+from django.contrib.auth import get_user_model
+import random
+from django.core.mail import send_mail
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
 # Create your views here.
 from django.contrib.auth import logout as auth_logout
 from django.shortcuts import redirect
@@ -32,6 +43,19 @@ def organizations_home(request):
         return render(request, 'Organizations/organizations_home.html')
 
 def contact(request):
+<<<<<<< HEAD
+=======
+    if request.method=="POST":
+        name = request.POST.get("fname")
+        email = request.POST.get("email")
+        cphone = request.POST.get("phone")
+        desc = request.POST.get("description")
+        query = Contact(fname=name,email=email,phone=cphone,description=desc)
+        query.save()
+        messages.success(request,"Thanks For Reaching Us! We will get back you soon...")
+        return redirect('contact')
+    
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
     return render(request, 'contact.html')
 
 def services(request):
@@ -39,13 +63,17 @@ def services(request):
 
 def admin_dashboard(request):
     return render(request, 'Admin/admin.html')
+<<<<<<< HEAD
 
+=======
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
 
 def handlelogin(request):
     if request.method == "POST":
         uname = request.POST.get("email")
         pass1 = request.POST.get("pass1")
         try:
+<<<<<<< HEAD
             # Fetch user by email
             myuser = User.objects.get(email=uname)
             
@@ -82,6 +110,29 @@ def handlelogin(request):
 
     return render(request, 'Users/login.html')
 
+=======
+            myuser = Patient.objects.get(email=uname)
+            if myuser.email == "admin@gmail.com" and myuser.password == "Admin@123":
+                # Set session for admin user
+                request.session['user_id'] = myuser.id  # Save user ID in session
+                request.session['role'] = 'admin'       # Store user role in session
+                return redirect('admin_dashboard')
+            else:
+                if myuser.password == pass1:
+                    # Set session for normal user
+                    request.session['user_id'] = myuser.id
+                    request.session['role'] = 'user'
+                    messages.success(request, "Login Success")
+                    return redirect('patients_dashboard')  # Redirect after successful login
+                else:
+                    messages.error(request, "Invalid Credentials")
+                    return redirect('login')
+        except Patient.DoesNotExist:
+            messages.error(request, "Invalid Email")
+            return redirect('login')
+        
+    return render(request, 'Users/login.html')
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
 
 def handlesignup(request):
     if request.method == "POST":
@@ -94,21 +145,25 @@ def handlesignup(request):
             return redirect(reverse('signup'))
         
         try:
-            if User.objects.get(username=uname):
+            if Patient.objects.get(username=uname):
                 messages.info(request,"UserName Is Taken")
                 return redirect(reverse('signup'))
         except:
             pass
         
         try:
-            if User.objects.get(email=email):
+            if Patient.objects.get(email=email):
                 messages.info(request,"Email Is Taken")
                 return redirect(reverse('signup'))
         except:
             pass
         
         # print(uname,email,password,confirmpassword)
+<<<<<<< HEAD
         myuser=User.objects.create_user(username=uname,email=email,password=password)
+=======
+        myuser=Patient(name=uname,email=email,password=password,role="User")
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
         myuser.save()
         messages.success(request,"Signup Success Please Login!")
         return redirect(reverse('login'))
@@ -117,13 +172,22 @@ def handlesignup(request):
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def handlelogout(request):
+<<<<<<< HEAD
     if request.user.is_authenticated or request.session.get('user_id'):
         logout(request)  # Clear Django's auth session
+=======
+    if request.user.is_authenticated or request.session.get('user_id') or request.session.get('org_id'):
+        logout(request)
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
         request.session.flush()  # Clear session data
         messages.info(request, "Logout Success")
     else:
         messages.warning(request, "You are not logged in.")
+<<<<<<< HEAD
     return redirect('login')
+=======
+    return redirect('index')
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
 
 def handle_org_login(request):
     if request.method == "POST":
@@ -193,6 +257,12 @@ def register_organization(request):
     
     return render(request, 'Organizations/org_signup.html')  # Render the registration form
 
+<<<<<<< HEAD
+=======
+from django.contrib.auth import logout as auth_logout
+from django.shortcuts import redirect
+from django.contrib import messages
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
 
 def org_logout(request):
     if request.user.is_authenticated:
@@ -218,7 +288,11 @@ def forgot_password(request):
     if request.method == 'POST':
         email = request.POST.get('email')
         try:
+<<<<<<< HEAD
             user = User.objects.get(email=email)
+=======
+            user = Patient.objects.get(email=email)
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
             # Generate a random 4-digit code
             code = random.randint(1000, 9999)
             user_pins[email] = code
@@ -233,7 +307,11 @@ def forgot_password(request):
             )
             # Redirect to the verification page
             return redirect('verify_code', email=email)
+<<<<<<< HEAD
         except User.DoesNotExist:
+=======
+        except Patient.DoesNotExist:
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
             messages.error(request, 'Invalid email address.')
     return render(request, 'Forgot_Password/forgot_password.html')
 
@@ -259,7 +337,11 @@ def reset_password(request, email):
 
         if new_password1 == new_password2:
             try:
+<<<<<<< HEAD
                 user = User.objects.get(email=email)
+=======
+                user = Patient.objects.get(email=email)
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
                 user.password = new_password1  # Directly set the password
                 user.save()  # Save the changes to the database
                 messages.success(request, 'Password has been reset successfully.')
@@ -315,6 +397,7 @@ def approve_organization(request, org_id):
     return redirect('approve_organizations')
 
 
+<<<<<<< HEAD
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def patients_dashboard(request):
     # Check if the user is logged in via session
@@ -333,10 +416,26 @@ def patients_dashboard(request):
         # If the session is empty, redirect to login page
         messages.warning(request, "Please sign in to access the dashboard.")
         return redirect('login')
+=======
+@login_required
+def patients_dashboard(request):
+    query = request.GET.get('q', '')  # Get the search query from the URL
+    if query:
+        organizations = Organizations.objects.filter(org_name__icontains=query, approve=1)  # Use 'approve=1' instead of 'is_approved'
+    else:
+        organizations = Organizations.objects.filter(approve=1)  # Fetch all approved organizations if no search query is provided
+
+    # Render the template with the organizations
+    return render(request, 'Users/patients_dashboard.html', {
+        'organizations': organizations,
+        'query': query,
+    })
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
 
 
 
 def palliatives_dashboard(request):
+<<<<<<< HEAD
     return render(request, 'Organizations/palliatives_dashboard.html')
 
 def organization_detail(request, id):
@@ -348,3 +447,6 @@ def organization_detail(request, id):
 
     # Render the organization details in the template
     return render(request, 'organization_detail.html', {'organization': organization})
+=======
+    return render(request, 'Organizations/palliatives_dashboard.html')
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1

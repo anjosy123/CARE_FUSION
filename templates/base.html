@@ -14,10 +14,17 @@
     />
 
     <!-- Title -->
-    <title>{% block title %} {% endblock %}</title>
+<<<<<<< HEAD
+    <title>Organizations Services</title>
 
     <!-- Favicon -->
     <link rel="icon" href="{% static 'img/favicon.png' %}"/>
+=======
+    <title>{% block title %} {% endblock %}</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="{% static 'img/favicon.png' %}" />
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
 
     <!-- Google Fonts -->
     <link
@@ -48,11 +55,20 @@
     <link rel="stylesheet" href="{% static 'css/normalize.css' %}" />
     <link rel="stylesheet" href="{% static 'style.css' %}" />
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}" />
+<<<<<<< HEAD
+    <link rel="stylesheet" href="{% static 'css/form-validation.css' %}">
   </head>
 
   <body>
     <!-- Preloader --> 
     
+=======
+  </head>
+
+  <body>
+    <!-- Preloader -->
+
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
     <div class="preloader">
       <div class="loader">
         <div class="loader-outter"></div>
@@ -69,11 +85,17 @@
         </div>
       </div>
     </div>
+<<<<<<< HEAD
     
     <!-- End Preloader -->
 
 
 
+=======
+
+    <!-- End Preloader -->
+
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
     <!-- Header Area -->
     <header class="header">
       <!-- Topbar -->
@@ -84,12 +106,26 @@
               <!-- Contact -->
               <ul class="top-link">
                 <li><a href="/about">About</a></li>
+<<<<<<< HEAD
+<<<<<<<< HEAD:templates/base.html
                 <li><a href="/organizations_home">Organizations</a></li>
+========
+>>>>>>>> c836822a135e3af93d885c499392c758f76484f1:templates/Users/patient_home.html
                 <li><a href="/contact">Contact</a></li>
                 {% comment %} <li><a href="{% url 'account_login' %}">Sign In</a></li> {% endcomment %}
               </ul>
               <!-- End Contact -->
         </div>
+=======
+                <li><a href="/organizations_home">Organizations</a></li>
+                <li><a href="{% url 'contact' %}">Contact</a></li>
+                {% comment %}
+                <li><a href="{% url 'account_login' %}">Sign In</a></li>
+                {% endcomment %}
+              </ul>
+              <!-- End Contact -->
+            </div>
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
             <div class="col-lg-6 col-md-7 col-12">
               <!-- Top Contact -->
               <ul class="top-contact">
@@ -115,7 +151,18 @@
               <div class="col-lg-3 col-md-3 col-12">
                 <!-- Start Logo -->
                 <div class="logo">
+<<<<<<< HEAD
                   <a href="/index"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" object-fit="contain;"/></a>
+=======
+                  <a href="/index"
+                    ><img
+                      src="{% static 'img/logo.png' %}"
+                      alt="#"
+                      width="178px"
+                      height="37px"
+                      object-fit="contain;"
+                  /></a>
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
                 </div>
                 <!-- End Logo -->
                 <!-- Mobile Nav -->
@@ -127,8 +174,13 @@
                 <div class="main-menu">
                   <nav class="navigation">
                     <ul class="nav menu">
+<<<<<<< HEAD
+                      <li><a href="{% url 'index' %}">Home</a></li>
+                      <li><a href="{% url 'services' %}">Services </a></li>
+=======
                       <li><a href="/index">Home</a></li>
                       <li><a href="/services">Services </a></li>
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
                       <li>
                         <a href="#"
                           >Pages <i class="icofont-rounded-down"></i
@@ -148,7 +200,17 @@
 
                       {% if not request.user.is_authenticated %}
 
+<<<<<<< HEAD
 
+                      <li class="active">
+                        <a href="#"
+                          >New Organization? <i class="icofont-rounded-down"></i
+                        ></a>
+                        <ul class="dropdown">
+                          <li><a href="{% url 'org_login' %}">Sign In</a></li>
+                          <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
+                          {% comment %} <li><a href="/logout">Logout</a></li> {% endcomment %}
+=======
                       <li class="active">
                         <a href="#"
                           >New user ? <i class="icofont-rounded-down"></i
@@ -156,40 +218,65 @@
                         <ul class="dropdown">
                           <li><a href="/login">Sign In</a></li>
                           <li><a href="/signup">Sign Up</a></li>
-                          {% comment %} <li><a href="/logout">Logout</a></li> {% endcomment %}
+                          {% comment %}
+                          <li><a href="/logout">Logout</a></li>
+                          {% endcomment %}
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
                         </ul>
                       </li>
                       {% else %}
                       <li class="active">
                         <a href="#"
+<<<<<<< HEAD
                           >Welcome {{request.user}} <i class="icofont-rounded-down"></i
+                        ></a>
+                        <ul class="dropdown">
+                          <li><a href="{% url 'org_logout' %}">Logout</a></li>
+                        </ul>
+                      </li>
+
+                      {% endif %}
+
+
+                      {% comment %} <li><a href="contact.html">Contact Us</a></li> {% endcomment %}
+=======
+                          >Welcome {{request.user}}
+                          <i class="icofont-rounded-down"></i
                         ></a>
                         <ul class="dropdown">
                           <li><a href="/logout">Logout</a></li>
                         </ul>
                       </li>
-                      
-                      
-                      
-                      {% endif %}
 
-
-                      {% comment %} <li><a href="contact.html">Contact Us</a></li> {% endcomment %}
+                      {% endif %} {% comment %}
+                      <li><a href="contact.html">Contact Us</a></li>
+                      {% endcomment %}
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
                     </ul>
                   </nav>
                 </div>
                 <!--/ End Main Menu -->
               </div>
-              <div class="col-lg-2 col-12">
+<<<<<<< HEAD
+              {% comment %} <div class="col-lg-2 col-12">
                 <div class="get-quote">
                     <a href="providers.html" class="btn">Find Providers</a>
                 </div>
+              </div> {% endcomment %}
+=======
+              <div class="col-lg-2 col-12">
+                <div class="get-quote">
+                  <a href="providers.html" class="btn">Find Providers</a>
+                </div>
               </div>
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
             </div>
           </div>
         </div>
       </div>
       <!--/ End Header Inner -->
+<<<<<<< HEAD
+      <h1>Patients Home</h1>
       {% if messages %}
       {% for message in messages %}
       <div class="alert alert-{{message.tags}} alert-dismissible fade show" role="alert">
@@ -200,15 +287,27 @@
       {% endif %}
 
     </header>
+    
+=======
+      {% if messages %} {% for message in messages %}
+      <div
+        class="alert alert-{{message.tags}} alert-dismissible fade show"
+        role="alert"
+      >
+        <strong></strong> {{message}}
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      {% endfor %} {% endif %}
+    </header>
 
-    {% block body %}
-    
-    {% endblock body %}
+    {% block body %} {% endblock body %} {% block content %} {% endblock content%}
 
-    {% block content %}
-    
-    {% endblock content %}
-    
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
     <!-- Footer Area -->
     <footer id="footer" class="footer">
       <!-- Footer Top -->
@@ -370,9 +469,13 @@
           <div class="row">
             <div class="col-lg-12 col-md-12 col-12">
               <div class="copyright-content">
+<<<<<<< HEAD
                 <p>
                   © Copyright 2024 | All Rights Reserved by Anjosy A J
                 </p>
+=======
+                <p>© Copyright 2024 | All Rights Reserved by Anjosy A J</p>
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
               </div>
             </div>
           </div>
@@ -392,7 +495,11 @@
     <script src="{% static 'js/easing.js' %}"></script>
     <!-- Color JS -->
     <script src="{% static 'js/colors.js' %}"></script>
+<<<<<<< HEAD
     <!-- Popper JS -->  
+=======
+    <!-- Popper JS -->
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
     <script src="{% static 'js/popper.min.js' %}"></script>
     <!-- Bootstrap Datepicker JS -->
     <script src="{% static 'js/bootstrap-datepicker.js' %}"></script>
@@ -422,5 +529,9 @@
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
     <!-- Main JS -->
     <script src="{% static 'js/main.js' %}"></script>
+<<<<<<< HEAD
+    <script src="{% static 'js/form-validation.js' %}"></script>
+=======
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
   </body>
 </html>

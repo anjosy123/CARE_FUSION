@@ -45,6 +45,15 @@ class OrganizationManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
+<<<<<<< HEAD
+=======
+class Contact(models.Model):
+    name = models.CharField(max_length=30)
+    email = models.EmailField()
+    phoneNumber = models.CharField(max_length=12)
+    description = models.TextField()
+
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
 class Organizations(models.Model):
     org_regid = models.CharField(max_length=100, unique=True)
     org_email = models.EmailField(unique=True)
@@ -55,7 +64,10 @@ class Organizations(models.Model):
     approve=models.BooleanField(default=False) 
     pincode = models.CharField(max_length=10)
     
+<<<<<<< HEAD
     
+=======
+>>>>>>> c836822a135e3af93d885c499392c758f76484f1
     groups = models.ManyToManyField(
         'auth.Group',
         related_name='organization_set',  # Add related_name to avoid conflict
