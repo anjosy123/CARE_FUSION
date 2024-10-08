@@ -21,7 +21,7 @@ urlpatterns = [
     path('user_notification_dashboard', views.user_notification_dashboard, name='user_notification_dashboard'),
     # Organization login, signup, and logout
     path('organizations_home', organizations_home, name='organizations_home'), 
-    path('org_login', views.handle_org_login, name='org_login'),  # Organization login
+    # path('org_login', views.handle_org_login, name='org_login'),  # Organization login
     path('org_signup', register_organization, name='org_signup'),  # Organization signup
     path('org_logout', org_logout, name='org_logout'),
     
@@ -58,4 +58,9 @@ urlpatterns = [
     path('edit-service-request/<int:request_id>/', views.edit_service_request, name='edit_service_request'),
     path('delete-service-request/<int:request_id>/', views.delete_service_request, name='delete_service_request'),
 
+    # Organizations Services
+    path('services/', views.service_list, name='service_list'),
+    path('services/create/', views.service_create, name='service_create'),
+    path('services/<int:pk>/edit/', views.service_edit, name='service_edit'),
+    path('services/<int:pk>/delete/', views.service_delete, name='service_delete'),
 ]

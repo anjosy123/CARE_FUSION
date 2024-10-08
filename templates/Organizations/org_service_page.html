@@ -154,7 +154,7 @@
                           >New Organization? <i class="icofont-rounded-down"></i
                         ></a>
                         <ul class="dropdown">
-                          <li><a href="{% url 'org_login' %}">Sign In</a></li>
+                          {% comment %} <li><a href="{% url 'org_login' %}">Sign In</a></li> {% endcomment %}
                           <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
                           {% comment %} <li><a href="/logout">Logout</a></li> {% endcomment %}
                         </ul>

@@ -3,15 +3,6 @@ from django.db import models
 from django.contrib.auth.models import BaseUserManager, User
 from django.contrib.auth.hashers import make_password, check_password
 
-# Create your models here.
-# class Patient(models.Model):
-#     name = models.CharField(max_length=100)
-#     email = models.EmailField(unique=True)
-#     password = models.CharField(max_length=100)
-#     role = models.CharField(max_length=10, choices=[('patient','Patient'),('caretaker', 'Caretaker')])
-    
-#     def __str__(self):
-#         return self.name
     
 class OrganizationManager(BaseUserManager):
     def create_user(self, org_username, org_email, org_name, org_address, org_phone, org_password=None):
@@ -52,15 +43,20 @@ class Contact(models.Model):
     description = models.TextField()
 
 class Organizations(models.Model):
-    org_regid = models.CharField(max_length=100, unique=True)
     org_email = models.EmailField(unique=True)
+    org_regid = models.CharField(max_length=100, unique=True)
     org_name = models.CharField(max_length=100)
     org_address = models.TextField()
     org_phone = models.CharField(max_length=12)
-    org_password = models.CharField(max_length=128, default='defaultpassword')  # Add default value
+    org_password = models.CharField(max_length=128, default='defaultpassword' )  # Increased length to store hashed password
     approve=models.BooleanField(default=False) 
     pincode = models.CharField(max_length=10)
     
+    def set_password(self, raw_password):
+        self.org_password = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.org_password)
     
     groups = models.ManyToManyField(
         'auth.Group',
@@ -85,13 +81,6 @@ class Organizations(models.Model):
     def __str__(self):
         return self.org_name
 
-    def set_password(self, raw_password):
-        self.org_password = make_password(raw_password)
-        self.save()
-
-    def check_password(self, raw_password):
-        return check_password(raw_password, self.org_password)
-    
 class ServiceRequest(models.Model):
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),
@@ -104,6 +93,7 @@ class ServiceRequest(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     doctor_referral = models.FileField(upload_to='referrals/', null=True, blank=True)
     additional_notes = models.TextField(blank=True)
+    service = models.ForeignKey('Service', on_delete=models.SET_NULL, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
@@ -113,3 +103,18 @@ class ServiceRequest(models.Model):
         self.status = self.status.upper()  # Ensure status is always uppercase
         super().save(*args, **kwargs)
     
+
+class Service(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    organization = models.ForeignKey(Organizations, on_delete=models.CASCADE, related_name='services')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.organization.org_name}"
+
+    class Meta:
+        unique_together = ['name', 'organization']
+        ordering = ['name']

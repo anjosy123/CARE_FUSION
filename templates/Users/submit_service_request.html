@@ -27,7 +27,6 @@
         </div>
     </div>
 </section>
-
 <section class="service-request section">
     <div class="container">
         <div class="row">
@@ -39,7 +38,18 @@
                     <div class="card-body">
                         <form id="serviceRequestForm" method="post" enctype="multipart/form-data">
                             {% csrf_token %}
-                            {{ form.as_p }}
+                            <div class="form-group">
+                                <label for="{{ form.service.id_for_label }}">Select Service:</label>
+                                {{ form.service }}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ form.doctor_referral.id_for_label }}">Doctor's Referral:</label>
+                                {{ form.doctor_referral }}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ form.additional_notes.id_for_label }}">Additional Notes:</label>
+                                {{ form.additional_notes }}
+                            </div>
                             <div class="form-group text-center mt-4">
                                 <button type="submit" class="btn btn-primary">Submit Request</button>
                             </div>
@@ -50,10 +60,6 @@
         </div>
     </div>
 </section>
-{% endblock %}
-
-{% block custom_footer %}
-<!-- You can add any custom footer content specific to this page here -->
 {% endblock %}
 
 {% block extra_js %}

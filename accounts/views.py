@@ -4,21 +4,21 @@ from django.contrib import messages
 from django.contrib.auth import logout, get_user_model
 from django.urls import reverse
 from django.core.mail import send_mail
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import check_password, make_password
 from django.views.decorators.cache import cache_control, never_cache
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 # from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.core.mail import send_mail
 from care_fusion import settings
-from .models import Organizations,Contact,ServiceRequest
 from django.core.files.storage import default_storage
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-import random, logging, os
-from .forms import ServiceRequestForm   
+import random, logging, os   
 from django.utils import timezone
+from .models import Organizations,Contact,ServiceRequest,Service
+from .forms import ServiceRequestForm,ServiceForm
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,96 @@ def about(request):
 
 def organizations_home(request):
     return render(request, 'Organizations/organizations_home.html')
+
+def service_list(request):
+    # Check if the organization is logged in via session
+    if 'org_id' not in request.session:
+        messages.error(request, "Please log in to access this page.")
+        return redirect('org_login')  # Redirect to your organization login page
+
+    org_id = request.session['org_id']
+    
+    try:
+        organization = Organizations.objects.get(id=org_id)
+    except Organizations.DoesNotExist:
+        messages.error(request, "Organization not found. Please log in again.")
+        return redirect('org_login')
+
+    services = Service.objects.filter(organization=organization)
+    return render(request, 'Organizations/service_list.html', {'services': services, 'org_name': organization.org_name})
+
+def service_create(request):
+    # Check if the organization is logged in via session
+    if 'org_id' not in request.session:
+        messages.error(request, "Please log in to access this page.")
+        return redirect('org_login')  # Redirect to your organization login page
+
+    org_id = request.session['org_id']
+    
+    try:
+        organization = Organizations.objects.get(id=org_id)
+    except Organizations.DoesNotExist:
+        messages.error(request, "Organization not found. Please log in again.")
+        return redirect('org_login')
+
+    if request.method == 'POST':
+        form = ServiceForm(request.POST)
+        if form.is_valid():
+            service = form.save(commit=False)
+            service.organization = organization
+            service.save()
+            messages.success(request, 'Service created successfully.')
+            return redirect('service_list')
+    else:
+        form = ServiceForm()
+
+    return render(request, 'Organizations/service_form.html', {'form': form, 'org_name': organization.org_name})
+
+def service_edit(request, pk):
+    
+    if not request.session.has_key('org_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('org_login')
+    org_id = request.session['org_id']
+    try:
+        organization = Organizations.objects.get(id=org_id)
+    except Organizations.DoesNotExist:
+        messages.error(request, "You are not associated with any organization.")
+        return redirect('org_login')
+
+    service = get_object_or_404(Service, pk=pk, organization=organization)
+
+    if request.method == 'POST':
+        form = ServiceForm(request.POST, instance=service)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Service updated successfully.')
+            return redirect('service_list')
+    else:
+        form = ServiceForm(instance=service)
+    
+    return render(request, 'Organizations/service_form.html', {'form': form, 'service': service})
+
+def service_delete(request, pk):
+    if not request.session.has_key('org_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('org_login')
+
+    org_id = request.session['org_id']
+    try:
+        organization = Organizations.objects.get(id=org_id)
+    except Organizations.DoesNotExist:
+        messages.error(request, "You are not associated with any organization.")
+        return redirect('org_login')
+
+    service = get_object_or_404(Service, pk=pk, organization=organization)
+
+    if request.method == 'POST':
+        service.delete()
+        messages.success(request, 'Service deleted successfully.')
+        return redirect('service_list')
+    
+    return render(request, 'Organizations/service_confirm_delete.html', {'service': service})
 
 def patient_details(request, request_id):
     service_request = get_object_or_404(ServiceRequest, id=request_id)
@@ -180,40 +270,44 @@ def admin_dashboard(request):
 
 def handlelogin(request):
     if request.method == "POST":
-        uname = request.POST.get("email")
-        pass1 = request.POST.get("pass1")
+        email = request.POST.get("email")
+        password = request.POST.get("pass1")
+
+        # Try to authenticate as User (admin or patient)
         try:
-            # Fetch user by email
-            myuser = User.objects.get(email=uname)
-            
-            # Check if the user is an admin (based on email or any other identifier)
-            if myuser.email == "anjosyaj2025@mca.ajce.in":
-                # Check if the provided password matches the hashed password
-                if check_password(pass1, myuser.password):
-                    # Set session for admin user
-                    request.session['user_id'] = myuser.id
+            user = User.objects.get(email=email)
+            if check_password(password, user.password):
+                if user.email == "anjosyaj2025@mca.ajce.in":  # Admin email
+                    request.session['user_id'] = user.id
                     request.session['role'] = 'admin'
                     return redirect('admin_dashboard')
                 else:
-                    messages.error(request, "Invalid Admin Credentials")
-                    return redirect('login')
-            else:
-                # Check if it's a normal user and verify their password
-                if check_password(pass1, myuser.password):
-                    # Set session for normal user
-                    request.session['user_id'] = myuser.id
+                    request.session['user_id'] = user.id
                     request.session['role'] = 'user'
-                    request.session['username']=myuser.username
-                    request.session['email']=myuser.email
-                    # "Redirecting to patients_dashboard"
-
+                    request.session['username'] = user.username
+                    request.session['email'] = user.email
                     return redirect('patients_dashboard')
-                else:
-                    messages.error(request, "Invalid Credentials")
-                    return redirect('login')
+            else:
+                messages.error(request, "Invalid credentials")
         except User.DoesNotExist:
-            messages.error(request, "Invalid Email")
-            return redirect('login')
+            # If not a User, try to authenticate as an Organization
+            try:
+                org_user = Organizations.objects.get(org_email=email)
+                if check_password(password, org_user.org_password):  # Note: Implement proper password hashing for organizations
+                    if org_user.approve == 1:
+                        request.session['org_id'] = org_user.id
+                        request.session['org_regid'] = org_user.org_regid
+                        request.session['org_name'] = org_user.org_name
+                        request.session['role'] = 'organization'
+                        return redirect('palliatives_dashboard')
+                    else:
+                        messages.error(request, "Organization is not approved yet!")
+                else:
+                    messages.error(request, "Invalid credentials")
+            except Organizations.DoesNotExist:
+                messages.error(request, "Invalid email or password")
+
+        return redirect('login')
 
     return render(request, 'Users/login.html')
 
@@ -241,47 +335,49 @@ def patients_dashboard(request):
         return redirect('login')
 
 
-def handle_org_login(request):
-    if request.method == "POST":
-        username = request.POST.get("org_username")
-        password = request.POST.get("org_password")
-        try:
-            # Fetch user by org_regid
-            org_user = Organizations.objects.get(org_regid=username)
-            if org_user and org_user.org_password == password:
-                if org_user.approve == 1:
-                    # Store session data for organization login
-                    request.session['org_id'] = org_user.id  # Store the database ID
-                    request.session['org_regid'] = org_user.org_regid  # Store the org_regid
-                    request.session['org_name'] = org_user.org_name
-                    print(f"Logged in: org_id={org_user.id}, org_regid={org_user.org_regid}")  # Debug print
-                    return redirect('palliatives_dashboard')
-                else:
-                    messages.error(request, "Organization is not approved yet!")
-            else:
-                messages.error(request, "Invalid password")
-        except Organizations.DoesNotExist:
-            messages.error(request, "Invalid username or password")
+# def handle_org_login(request):
+#     if request.method == "POST":
+#         username = request.POST.get("org_username")
+#         password = request.POST.get("org_password")
+#         try:
+#             # Fetch user by org_regid
+#             org_user = Organizations.objects.get(org_regid=username)
+#             if org_user and org_user.org_password == password:
+#                 if org_user.approve == 1:
+#                     # Store session data for organization login
+#                     request.session['org_id'] = org_user.id  # Store the database ID
+#                     request.session['org_regid'] = org_user.org_regid  # Store the org_regid
+#                     request.session['org_name'] = org_user.org_name
+#                     print(f"Logged in: org_id={org_user.id}, org_regid={org_user.org_regid}")  # Debug print
+#                     return redirect('palliatives_dashboard')
+#                 else:
+#                     messages.error(request, "Organization is not approved yet!")
+#             else:
+#                 messages.error(request, "Invalid password")
+#         except Organizations.DoesNotExist:
+#             messages.error(request, "Invalid username or password")
         
-        return redirect('org_login')
+#         return redirect('org_login')
 
-    return render(request, 'Organizations/org_login.html')
+#     return render(request, 'Organizations/org_login.html')
 
 
 
 @never_cache
 def palliatives_dashboard(request):
     org_id = request.session.get('org_id')
+    org_name = request.session.get('org_name')
     # org_regid = request.session.get('org_regid')
     if org_id:
         organization = Organizations.objects.get(id=org_id)
         pending_requests = ServiceRequest.objects.filter(organization=organization, status='pending').order_by('-created_at')
         context = {
             'pending_requests': pending_requests,
+            'org_name': org_name,
         }
         return render(request, 'Organizations/palliatives_dashboard.html', context)
     else:
-        return redirect('org_login')
+        return redirect('login')
 
 
 def handlesignup(request):
@@ -334,20 +430,19 @@ def handlelogout(request):
 
 def register_organization(request):
     if request.method == 'POST':
-        # org_username = request.POST['org_username']
         org_email = request.POST['org_email']
         org_name = request.POST['org_name']
-        org_regid = request.POST['org_regid']  # New Organization Registration Number
+        org_regid = request.POST['org_regid']
         org_address = request.POST['org_address']
         org_phone = request.POST['org_phone']
-        org_pincode = request.POST['org_pincode']  # Pincode field
+        org_pincode = request.POST['org_pincode']
         org_pass1 = request.POST['org_pass1']
         org_pass2 = request.POST['org_pass2']
         
         # Check if passwords match
         if org_pass1 != org_pass2:
             messages.error(request, "Passwords do not match!")
-            return redirect('org_signup')  # Replace with the correct URL name
+            return redirect('org_signup')
 
         # Check if the organization registration ID or email already exists
         if Organizations.objects.filter(org_regid=org_regid).exists():
@@ -365,20 +460,22 @@ def register_organization(request):
             org_name=org_name,
             org_address=org_address,
             org_phone=org_phone,
-            pincode=org_pincode,  # Pincode
-            org_password=org_pass1,  # Store hashed password
-            approve=False  # By default, approval status is False
+            pincode=org_pincode,
+            org_password=make_password(org_pass1),  # Hash the password
+            approve=False
         )
-        organization.save()  # Save to the database
+        organization.save()
 
         messages.success(request, "Organization registered successfully. Awaiting admin approval.")
-        return redirect('org_login')  # Redirect to login or another page after signup
+        return redirect('login')
     
-    return render(request, 'Organizations/org_signup.html')  # Render the registration form
+    return render(request, 'Organizations/org_signup.html')
 
 def org_logout(request):
-    request.session.delete()
-    logout(request)
+    if 'org_id' in request.session:
+        del request.session['org_id']
+    if 'org_name' in request.session:
+        del request.session['org_name']
     return redirect('org_login')  # Redirect to the login page after logout
 
 
@@ -505,11 +602,10 @@ def submit_service_request(request, org_id):
         return JsonResponse({'success': False, 'message': 'Organization not found.'}, status=404)
 
     if request.method == 'POST':
-        form = ServiceRequestForm(request.POST, request.FILES)
+        form = ServiceRequestForm(request.POST, request.FILES, organization=organization)
         if form.is_valid():
             service_request = form.save(commit=False)
             
-            # Get the User instance using the user_id from the session
             user_id = request.session.get('user_id')
             if user_id:
                 try:
@@ -523,15 +619,11 @@ def submit_service_request(request, org_id):
             service_request.organization = organization
             service_request.save()
 
-            # Send confirmation email
             send_confirmation_email(user, organization, service_request)
             messages.success(request, 'Service request submitted successfully.')
             return redirect('patients_dashboard')
-            # return JsonResponse({'success': True, 'message': 'Service request submitted successfully.'})
-        # else:
-            # return JsonResponse({'success': False, 'errors': form.errors}, status=400)
     else:
-        form = ServiceRequestForm()
+        form = ServiceRequestForm(organization=organization)
     
     return render(request, 'Users/submit_service_request.html', {'form': form, 'organization': organization})
 
