@@ -13,13 +13,17 @@ import os
 from pathlib import Path
 import pymysql
 pymysql.install_as_MySQLdb()
+from dotenv import load_dotenv 
 
+load_dotenv()
 from django.contrib.messages import constants as messages
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
@@ -60,13 +64,9 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
-<<<<<<< HEAD
-
 # Session settings in settings.py
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-=======
 # Session settings in settings.py
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # One week
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Option to expire session on browser close
 SESSION_SAVE_EVERY_REQUEST = True  # Extend session on every request
@@ -97,25 +97,29 @@ WSGI_APPLICATION = 'care_fusion.wsgi.application'
 
 APPEND_SLASH = False
 
-<<<<<<< HEAD
-=======
 
-# Database
-# https://docs.djangoproject.com/en/5.0/ref/settings/#databases
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'accounts': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'djongo',
-#         'NAME': 'care_fusion',
-#         'CLIENT': {
-#             'host': 'localhost',
-#             'port': 27017,  # Default MongoDB port
-#         }
-#     }
-# }
 
-
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -181,13 +185,10 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 SITE_ID = 2
-<<<<<<< HEAD
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'patients_dashboard'
 LOGOUT_REDIRECT_URL = 'index'
-=======
 LOGIN_REDIRECT_URL = 'patients_dashboard'
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
 
 
 SOCIALACCOUNT_PROVIDERS = { 'google': {
@@ -205,11 +206,10 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'anjosyaj2025@mca.ajce.in'
-EMAIL_HOST_PASSWORD = '66IYPetof2@'
+EMAIL_HOST_USER = os.getenv('email')
+EMAIL_HOST_PASSWORD = os.getenv('password')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
-# Remove CRISPY_TEMPLATE_PACK setting
+ACCOUNT_UNIQUE_EMAIL = True
 
 # Add this line to specify custom allauth template directory
 ACCOUNT_TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates', 'account')

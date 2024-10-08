@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Your Service Requests - CareFusion{% endblock %}
+
+
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'patients_dashboard' %}">Home</a>
+</li>
+{% endblock %}
+
+{% block content %}
+<style>
+  .service-request-card {
+    margin-bottom: 1rem;
+  }
+  .status-badge {
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+  }
+  .status-pending, .status-PENDING { background-color: #ffc107; color: #212529; }
+  .status-approved, .status-APPROVED { background-color: #28a745; color: #fff; }
+  .status-rejected, .status-REJECTED { background-color: #dc3545; color: #fff; }
+  .filter-buttons {
+    margin-bottom: 1rem;
+  }
+  .filter-buttons .btn {
+    margin-right: 0.5rem;
+  }
+</style>
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h6 style="font-weight: bold; font-size: 1.5rem; color: #333;">Your Service Requests</h6>
+    <div class="filter-buttons">
+      <a href="?status=ALL" class="btn btn-outline-secondary btn-sm">All</a>
+      <a href="?status=PENDING" class="btn btn-outline-warning btn-sm">Pending</a>
+      <a href="?status=APPROVED" class="btn btn-outline-success btn-sm">Approved</a>
+      <a href="?status=REJECTED" class="btn btn-outline-danger btn-sm">Rejected</a>
+    </div>
+  </div>
+
+
+{% if service_requests %}
+    {% for request in service_requests %}
+      <div class="card service-request-card">
+        <div class="card-body">
+          <h5 class="card-title">Request for {{ request.organization.org_name }}</h5>
+          <p class="card-text">
+            <strong>Status:</strong> 
+            <span class="status-badge status-{{ request.status|upper }}">
+              {{ request.get_status_display }}
+            </span><br>
+            <strong>Submitted on:</strong> {{ request.created_at|date:"Y-m-d H:i" }}
+          </p>
+          <div class="btn-group" role="group">
+            <a href="{% url 'service_request_detail' request.id %}" class="btn btn-primary btn-sm">View Details</a>
+            {% if request.status|upper == 'PENDING' %}
+              <a href="{% url 'edit_service_request' request.id %}" class="btn btn-warning btn-sm">Edit</a>
+              <a href="{% url 'delete_service_request' request.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this request?')">Delete</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p>No service requests found matching the selected filter.</p>
+  {% endif %}
+
+  <!-- Pagination -->
+  {% if service_requests.has_other_pages %}
+    <nav aria-label="Service request pagination">
+      <ul class="pagination justify-content-center">
+        {% if service_requests.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ service_requests.previous_page_number }}&status={{ current_status }}">&laquo; Previous</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">&laquo; Previous</span>
+          </li>
+        {% endif %}
+
+        {% for i in service_requests.paginator.page_range %}
+          {% if service_requests.number == i %}
+            <li class="page-item active">
+              <span class="page-link">{{ i }} <span class="sr-only">(current)</span></span>
+            </li>
+          {% else %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ i }}&status={{ current_status }}">{{ i }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
+
+        {% if service_requests.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ service_requests.next_page_number }}&status={{ current_status }}">Next &raquo;</a>
+          </li>
+        {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">Next &raquo;</span>
+        </li>
+      {% endif %}
+    </ul>
+  </nav>
+{% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const currentStatus = "{{ current_status }}";
+      const filterButtons = document.querySelectorAll('.filter-buttons .btn');
+      filterButtons.forEach(button => {
+          if (button.getAttribute('href').includes(currentStatus)) {
+              button.classList.remove('btn-outline-secondary', 'btn-outline-warning', 'btn-outline-success', 'btn-outline-danger');
+              if (currentStatus === 'PENDING') button.classList.add('btn-warning');
+              else if (currentStatus === 'APPROVED') button.classList.add('btn-success');
+              else if (currentStatus === 'REJECTED') button.classList.add('btn-danger');
+              else button.classList.add('btn-secondary');
+          }
+      });
+  });
+  </script>
+  {% endblock %}

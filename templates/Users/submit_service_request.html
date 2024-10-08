@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Submit Service Request - CareFusion{% endblock %}
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'patients_dashboard' %}">Home</a>
+</li>
+{% endblock nav_items %}
+
+{% block topbar %}
+<li><a href="{% url 'about' %}">about</a></li>
+<li><a href="{% url 'contact' %}">contact</a></li>
+{% endblock topbar %}
+
+{% block content %}
+<section class="breadcrumbs">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h2>Submit Service Request</h2>
+                <ul>
+                    <li>CareFusion</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="service-request section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 offset-lg-2">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="m-0 text-white">Organization: {{ organization.org_name }}</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="serviceRequestForm" method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {{ form.as_p }}
+                            <div class="form-group text-center mt-4">
+                                <button type="submit" class="btn btn-primary">Submit Request</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block custom_footer %}
+<!-- You can add any custom footer content specific to this page here -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('serviceRequestForm');
+    var submitButton = form.querySelector('button[type="submit"]');
+    var originalButtonText = submitButton.innerHTML;
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        var formData = new FormData(form);
+
+        // Show loading indicator
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...';
+
+        fetch('{% url "submit_service_request" organization.org_regid %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Service request submitted successfully.');
+                form.reset();  // Clear the form
+            } else {
+                showMessage(data.message || 'An error occurred. Please try again.', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('An error occurred. Please try again.', 'danger');
+        })
+        .finally(() => {
+            // Reset button state
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check for Django messages
+      {% if messages %}
+          {% for message in messages %}
+              showToast("{{ message }}");
+          {% endfor %}
+      {% endif %}
+  
+      function showToast(message) {
+          var toastEl = document.getElementById('liveToast');
+          var toastBody = toastEl.querySelector('.toast-body');
+          toastBody.textContent = message;
+          
+          var toast = new bootstrap.Toast(toastEl, {
+              autohide: true,
+              delay: 5000 // Hide after 5 seconds
+          });
+          toast.show();
+      }
+  });
+
+</script>
+{% endblock %}

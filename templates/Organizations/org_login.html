@@ -22,19 +22,18 @@
     </style>
   </head>
   <body>
-    <div class="container mt-1">
-      <div class="row">
-        <div class="col-md-6">
+    <div class="container mt-5">
+      <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
           <a href="{% url 'index' %}">
             <img
               src="{% static 'img/home-icon.png' %}"
               alt="Home"
-              style="width: 30px; height: 30px; margin-top: 10px"
+              style="width: 40px; height: 40px"
             />
           </a>
         </div>
       </div>
-    </div>
     <div class="container mt-5">
       <div class="row justify-content-center">
         <div class="col-md-6">
@@ -57,7 +56,7 @@
             {% csrf_token %}
             <div class="mb-3">
               <label for="org_regid" class="form-label"
-                >Organization Registration Number</label
+                >User name</label
               >
               <input
                 type="text"

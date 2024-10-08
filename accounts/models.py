@@ -1,17 +1,17 @@
-from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
+from django.db import models
+from django.contrib.auth.models import BaseUserManager, User
 from django.contrib.auth.hashers import make_password, check_password
 
 # Create your models here.
-class Patient(models.Model):
-    name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-    password = models.CharField(max_length=100)
-    role = models.CharField(max_length=10, choices=[('patient','Patient'),('caretaker', 'Caretaker')])
+# class Patient(models.Model):
+#     name = models.CharField(max_length=100)
+#     email = models.EmailField(unique=True)
+#     password = models.CharField(max_length=100)
+#     role = models.CharField(max_length=10, choices=[('patient','Patient'),('caretaker', 'Caretaker')])
     
-    def __str__(self):
-        return self.name
+#     def __str__(self):
+#         return self.name
     
 class OrganizationManager(BaseUserManager):
     def create_user(self, org_username, org_email, org_name, org_address, org_phone, org_password=None):
@@ -45,15 +45,12 @@ class OrganizationManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-<<<<<<< HEAD
-=======
 class Contact(models.Model):
     name = models.CharField(max_length=30)
     email = models.EmailField()
     phoneNumber = models.CharField(max_length=12)
     description = models.TextField()
 
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
 class Organizations(models.Model):
     org_regid = models.CharField(max_length=100, unique=True)
     org_email = models.EmailField(unique=True)
@@ -64,10 +61,7 @@ class Organizations(models.Model):
     approve=models.BooleanField(default=False) 
     pincode = models.CharField(max_length=10)
     
-<<<<<<< HEAD
     
-=======
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
     groups = models.ManyToManyField(
         'auth.Group',
         related_name='organization_set',  # Add related_name to avoid conflict
@@ -97,3 +91,25 @@ class Organizations(models.Model):
 
     def check_password(self, raw_password):
         return check_password(raw_password, self.org_password)
+    
+class ServiceRequest(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='service_requests')
+    organization = models.ForeignKey('Organizations', on_delete=models.CASCADE, related_name='service_requests')
+    created_at = models.DateTimeField(default=timezone.now)
+    doctor_referral = models.FileField(upload_to='referrals/', null=True, blank=True)
+    additional_notes = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Service Request for {self.patient.username} to {self.organization.org_name}"
+    
+    def save(self, *args, **kwargs):
+        self.status = self.status.upper()  # Ensure status is always uppercase
+        super().save(*args, **kwargs)
+    

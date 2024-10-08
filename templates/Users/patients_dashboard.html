@@ -1,540 +1,248 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Patient Dashboard</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-      crossorigin="anonymous"
-    />
-    <style>
-      body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background-color: #f4f6f9;
-        margin: 0;
-        padding: 0;
-      }
+{% extends 'base.html' %}
+{% load static %}
 
-      .sidebar {
-        height: 100vh;
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 250px;
-        background-color: #343a40;
-        color: white;
-        padding-top: 50px;
-      }
+{% block title %}Patient Dashboard - CareFusion{% endblock %}
 
-      .sidebar h4 {
-        color: #ffffff;
-      }
+{% block extra_css %}
+<style>
+  .nav-item {
+    list-style-type: none;
+  }
+  .card {
+    height: 100%;
+    transition: transform 0.2s;
+    display: flex;
+    flex-direction: column;
+  }
+  .card:hover {
+    transform: translateY(-5px);
+  }
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+  .card-text {
+    flex-grow: 1;
+  }
+  .btn-group {
+    margin-top: auto;
+  }
+  #searchTab .row {
+    margin-right: -10px;
+    margin-left: -10px;
+  }
+  #searchTab .col {
+    padding-right: 10px;
+    padding-left: 10px;
+    margin-bottom: 20px;
+  }
+  .organization-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  .organization-card {
+    height: 100%;
+  }
+  .service-requests-section {
+    margin-top: 2rem;
+  }
+  
+  .service-request-card {
+    margin-bottom: 1rem;
+  }
+</style>
+{% endblock %}
 
-      .sidebar .nav-link {
-        color: #c2c7d0;
-        margin: 15px 0;
-        padding: 10px 15px;
-        border-radius: 4px;
-      }
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'patients_dashboard' %}">Home</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'service_requests' %}">Requests</a>
+</li>
+{% endblock %}
 
-      .sidebar .nav-link:hover {
-        background-color: #495057;
-        color: white;
-      }
+{% block content %}
+{% comment %} <div class="container-fluid">
+  <!-- Add this button near the top of your content -->
+  <div class="mt-4 mb-4">
+    <a href="{% url 'service_requests' %}" class="btn btn-danger">View All Service Requests</a>
+  </div> {% endcomment %}
 
-      .content {
-        margin-left: 250px;
-        padding: 20px;
-        background-color: #ffffff;
-        min-height: 100vh;
-      }
-
-      .header {
-        background-color: #007bff;
-        padding: 10px 0;
-        color: white;
-        text-align: center;
-        margin-bottom: 30px;
-      }
-
-      .card {
-        margin-bottom: 20px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        border: none;
-      }
-
-      .card-header {
-        background-color: #007bff;
-        color: white;
-        font-weight: bold;
-        padding: 15px;
-        font-size: 1.1rem;
-      }
-
-      .form-control,
-      .btn {
-        border-radius: 0.25rem;
-      }
-
-      .footer {
-        background-color: #343a40;
-        color: white;
-        text-align: center;
-        padding: 10px 0;
-        position: relative;
-        bottom: 0;
-        width: 100%;
-        left: 0;
-      }
-
-      .invalid-feedback {
-        display: none;
-      }
-
-      .form-control.is-invalid ~ .invalid-feedback {
-        display: block;
-      }
-
-      .hidden {
-        display: none;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <h4 class="text-center">Patient Dashboard</h4>
-      <ul class="nav flex-column">
-        <li class="nav-item">
-          <a class="nav-link active" href="#" onclick="showSection('welcome');"
-            >Dashboard</a
-          >
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" onclick="showSection('profileSettings');"
-            >Profile Management</a
-          >
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" onclick="showSection('searchTab');"
-            >Palliative Care Organizations</a
-          >
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" onclick="showSection('bookAppointment');"
-            >Book an Appointment</a
-          >
-        </li>
-        <li class="nav-item">
-          <a
-            class="nav-link"
-            href="#"
-            onclick="showSection('emergencyServices');"
-            >Emergency Services</a
-          >
-        </li>
-        <li class="nav-item">
-          <a
-            class="nav-link"
-            href="#"
-            onclick="showSection('emergencyServices');"
-            >Emergency Services</a
-          >
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'index' %}">Logout</a>
-        </li>
-      </ul>
+  <!-- Palliative Care Organizations Section -->
+  <div id="searchTab" class="mt-4">
+    <h4 class="mb-3">Palliative Care Organizations</h4>
+    <div class="card mb-4">
+      <div class="card-body">
+        <!-- Search Form -->
+        <form class="d-flex" action="{% url 'patients_dashboard' %}" method="GET" role="search">
+          <input class="form-control me-2" type="search" name="q" placeholder="Search by organization name, address, or pincode" value="{{ query }}" aria-label="Search">
+          <button class="btn btn-outline-primary" type="submit">Search</button>
+        </form>
+      </div>
     </div>
 
-    <!-- Content -->
-    <div class="content">
-      <!-- Header -->
-      <div class="header">
-<<<<<<< HEAD
-        <h3>Welcome, {{request.session.username}}</h3>
-=======
-        <h3>Welcome, Patient!</h3>
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
-      </div>
-
-      <!-- Welcome Message Section -->
-      <div id="welcome" class="mt-4">
-        <h4 class="text-center">Welcome to the Patient Dashboard</h4>
-        <p class="text-center">
-          Here you can manage your profile, book appointments, and more.
-        </p>
-      </div>
-
-      <!-- Profile Management Section -->
-      <div id="profileSettings" class="mt-4 hidden">
-        <div class="card">
-          <div class="card-header">Profile Management</div>
-          <div class="card-body">
-            <form onsubmit="return validateProfileForm();">
-              <div class="mb-3">
-                <label for="patientName" class="form-label">Full Name</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="patientName"
-                  placeholder="Enter your name"
-                  required
-                  oninput="validateFullName();"
-<<<<<<< HEAD
-                  value="{{request.session.username}}"
-=======
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
-                />
-                <div class="invalid-feedback">
-                  Please enter a valid name (no special characters or numbers).
-                </div>
-              </div>
-              <div class="mb-3">
-                <label for="patientEmail" class="form-label">Email</label>
-                <input
-                  type="email"
-                  class="form-control"
-                  id="patientEmail"
-                  placeholder="Enter your email"
-                  required
-                  oninput="validateEmail();"
-<<<<<<< HEAD
-                  value="{{request.session.email}}"
-=======
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
-                />
-                <div class="invalid-feedback">
-                  Please enter a valid email address.
-                </div>
-              </div>
-              <div class="mb-3">
-                <label for="patientPhone" class="form-label"
-                  >Phone Number</label
-                >
-                <input
-                  type="tel"
-                  class="form-control"
-                  id="patientPhone"
-                  placeholder="e.g., +91xxxxxxxxxx"
-                  required
-                  oninput="validatePhone();"
-<<<<<<< HEAD
-                  value="{{request.session.phone}}"
-                />
-                <div class="invalid-feedback">
-                  Phone number must be 12 digits, starting with + followed by
-=======
-                />
-                <div class="invalid-feedback">
-                  Phone number must be 13 digits, starting with + followed by
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
-                  the country code.
-                </div>
-              </div>
-              <div class="mb-3">
-                <label for="patientPassword" class="form-label">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="patientPassword"
-                  placeholder="Update your password"
-                  required
-                  oninput="validatePassword();"
-                />
-                <div class="invalid-feedback">
-                  Password must be at least 8 characters, with at least 1
-                  uppercase, 1 number, and 1 special character.
-                </div>
-              </div>
-              <div class="mb-3">
-                <label for="confirmPassword" class="form-label"
-                  >Confirm Password</label
-                >
-                <input
-                  type="password"
-                  class="form-control"
-                  id="confirmPassword"
-                  placeholder="Confirm your password"
-                  required
-                  oninput="validateConfirmPassword();"
-                />
-                <div class="invalid-feedback">Passwords must match.</div>
-              </div>
-              <button type="submit" class="btn btn-primary">
-                Update Profile
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <!-- Search Tab -->
-      <div id="searchTab" class="mt-4">
-        <div class="card">
-          <div class="card-header">Search for Palliative Organizations</div>
-          <div class="card-body">
-            <!-- Search Form -->
-<<<<<<< HEAD
-            <form
-              class="d-flex"
-              action="{% url 'patients_dashboard' %}"
-              method="GET"
-              role="search"
-            >
-              <input
-                class="form-control me-2"
-                type="search"
-                name="q"
-                placeholder="Search by organization name, address, or pincode"
-                value="{{ query }}"
-                aria-label="Search"
-              />
-              <button class="btn btn-outline-success" type="submit">
-                Search
-              </button>
-            </form>
-=======
-            <form class="d-flex" action="{% url 'patients_dashboard' %}" method="GET" role="search">
-              <input
-                class="form-control me-2"
-                type="search"
-                name="q" 
-                placeholder="Search by organization name, address, or pincode"
-                value="{{ query }}"  
-                aria-label="Search"
-              />
-              <button class="btn btn-outline-success" type="submit">Search</button>
-            </form>
-            
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
-          </div>
-        </div>
-      </div>
-
-      <!-- Display Search Results -->
-      <div class="mt-4">
-<<<<<<< HEAD
-        {% comment %} <h4>Search Results</h4> {% endcomment %}
-=======
-        <h4>Search Results</h4>
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
-        <ul class="list-group">
-          {% if organizations %}
-            {% for organization in organizations %}
-              <li class="list-group-item">
-<<<<<<< HEAD
-                <strong>{{ organization.org_name }}</strong><br />
-                Address: {{ organization.org_address }}<br />
-                Pincode: {{ organization.pincode }}<br />
-                Contact: {{ organization.org_phone }}<br />
-                <a href="{% url 'organization_detail' organization.id %}" class="btn btn-primary mt-2">
-                  View More
-                </a>
-              </li>
-            {% endfor %}
-          {% else %}
-            <li class="list-group-item">
-              No organizations found matching your search criteria.
-            </li>
-=======
-                <strong>{{ organization.org_name }}</strong><br>
-                Address: {{ organization.org_address }}<br>
-                Pincode: {{ organization.pincode }}<br>
-                Contact: {{ organization.org_phone }}
-              </li>
-            {% endfor %}
-          {% else %}
-            <li class="list-group-item">No organizations found matching your search criteria.</li>
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
-          {% endif %}
-        </ul>
-      </div>
-
-<<<<<<< HEAD
-=======
-
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
-      <!-- Book an Appointment Section -->
-      <div id="bookAppointment" class="mt-4 hidden">
-        <div class="card">
-          <div class="card-header">Book an Appointment</div>
-          <div class="card-body">
-            <form>
-              <div class="mb-3">
-                <label for="doctorName" class="form-label">Doctor's Name</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="doctorName"
-                  placeholder="Doctor you want to book an appointment with"
-                  required
-                />
-              </div>
-              <div class="mb-3">
-                <label for="appointmentDate" class="form-label"
-                  >Preferred Date</label
-                >
-                <input
-                  type="date"
-                  class="form-control"
-                  id="appointmentDate"
-                  required
-                />
-              </div>
-              <div class="mb-3">
-                <label for="appointmentTime" class="form-label"
-                  >Preferred Time</label
-                >
-                <input
-                  type="time"
-                  class="form-control"
-                  id="appointmentTime"
-                  required
-                />
-              </div>
-              <button type="submit" class="btn btn-success">
-                Book Appointment
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <!-- Emergency Services Section -->
-      <div id="emergencyServices" class="mt-4 hidden">
-        <div class="card">
-          <div class="card-header">Emergency Services</div>
-          <div class="card-body">
-            <p>
-              If you are facing a medical emergency, please contact the nearest
-              hospital or call emergency services immediately.
+    <!-- Display Search Results -->
+    {% if organizations %}
+    <div class="organization-grid">
+      {% for organization in organizations %}
+      <div class="organization-card">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">{{ organization.org_name }}</h5>
+            <p class="card-text flex-grow-1">
+              <strong>Address:</strong> {{ organization.org_address }}<br>
+              <strong>Pincode:</strong> {{ organization.pincode }}<br>
+              <strong>Contact:</strong> {{ organization.org_phone }}
             </p>
-            <button
-              class="btn btn-danger"
-              onclick="alert('Emergency services have been contacted.')"
-            >
-              Contact Emergency Services
-            </button>
+            <div class="btn-group mt-auto">
+              <li style="list-style-type: none">
+                <a href="{% url 'organization_detail' organization.org_regid %}" class="btn btn-primary btn-sm me-2">View More</a>
+              </li>
+              <li style="list-style-type: none;">
+                <a href="{% url 'submit_service_request' organization.org_regid %}" class="btn btn-outline-danger btn-sm">Submit Request</a>
+              </li>
+            </div>
           </div>
         </div>
       </div>
+      {% endfor %}
     </div>
-
-<<<<<<< HEAD
-    {% comment %}
-    <div class="footer">
-      <p>&copy; 2024 Patient Dashboard. All Rights Reserved.</p>
+    {% else %}
+    <div class="alert alert-info" role="alert">
+      No organizations found matching your search criteria.
     </div>
-    {% endcomment %}
-=======
-    {% comment %} <div class="footer">
-      <p>&copy; 2024 Patient Dashboard. All Rights Reserved.</p>
-    </div> {% endcomment %}
->>>>>>> c836822a135e3af93d885c499392c758f76484f1
+    {% endif %}
+  </div>
+</div>
 
-    <script>
-      // Function to show the relevant section and hide others
-      function showSection(sectionId) {
-        const sections = [
-          "welcome",
-          "profileSettings",
-          "searchTab",
-          "bookAppointment",
-          "emergencyServices",
-        ];
-        sections.forEach((section) => {
-          document.getElementById(section).classList.add("hidden");
-        });
-        document.getElementById(sectionId).classList.remove("hidden");
-      }
+<!-- Service Request Modal -->
+<div id="serviceRequestModal" class="modal fade" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle">Service Request</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="serviceRequestForm" method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" id="organizationId" name="organization_id" value="">
+          <div class="mb-3">
+            <label for="doctorReferral" class="form-label">Doctor's Referral Letter</label>
+            <input type="file" class="form-control" id="doctorReferral" name="doctor_referral" required>
+          </div>
+          <div class="mb-3">
+            <label for="additionalNotes" class="form-label">Additional Notes</label>
+            <textarea class="form-control" id="additionalNotes" name="additional_notes" rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Submit Request</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+  <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+          <strong class="me-auto">Notification</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body">
+         Request Submitted Successfully
+      </div>
+  </div>
+</div>
 
-      // Show the welcome section by default
-      showSection("welcome");
+{% endblock %}
 
-      function validateFullName() {
-        const nameInput = document.getElementById("patientName");
-        const namePattern = /^[a-zA-Z\s]+$/; // Only letters and spaces
-        if (namePattern.test(nameInput.value)) {
-          nameInput.classList.remove("is-invalid");
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for message in sessionStorage
+    var message = sessionStorage.getItem('serviceRequestMessage');
+    if (message) {
+        showMessage(message, 'success');
+        sessionStorage.removeItem('serviceRequestMessage');
+    }
+
+    // Function to show messages
+    function showMessage(message, type) {
+        const messageElement = document.getElementById("serviceRequestMessage");
+        const messageTextElement = document.getElementById("serviceRequestMessageText");
+        
+        if (messageElement && messageTextElement) {
+            messageElement.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+            messageTextElement.textContent = message;
+            messageElement.style.display = "block";
+
+            setTimeout(() => {
+                messageElement.style.display = "none";
+            }, 6000);
         } else {
-          nameInput.classList.add("is-invalid");
+            // If the message elements don't exist, create a new alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            const container = document.querySelector('.container');
+            if (container) {
+                container.insertBefore(alertDiv, container.firstChild);
+
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 6000);
+            }
         }
-      }
+    }
 
-      function validateEmail() {
-        const emailInput = document.getElementById("patientEmail");
-        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (emailPattern.test(emailInput.value)) {
-          emailInput.classList.remove("is-invalid");
-        } else {
-          emailInput.classList.add("is-invalid");
-        }
-      }
+    // Handle service request form submission
+    const serviceRequestForm = document.getElementById("serviceRequestForm");
+    if (serviceRequestForm) {
+      serviceRequestForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const submitButton = this.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.innerHTML;
 
-      function validatePhone() {
-        const phoneInput = document.getElementById("patientPhone");
-        const phonePattern = /^\+\d{2}[1-9]\d{10}$/; // Example: +91xxxxxxxxxx
-        if (
-          phonePattern.test(phoneInput.value) &&
-          phoneInput.value !== "+00000000000"
-        ) {
-          phoneInput.classList.remove("is-invalid");
-        } else {
-          phoneInput.classList.add("is-invalid");
-        }
-      }
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...';
 
-      function validatePassword() {
-        const passwordInput = document.getElementById("patientPassword");
-        const passwordPattern = /^(?=.*[0-9])(?=.*[!@#$%^&*])(?=.*[A-Z]).{8,}$/; // At least 8 characters, 1 uppercase, 1 number, 1 special character
-        if (passwordPattern.test(passwordInput.value)) {
-          passwordInput.classList.remove("is-invalid");
-        } else {
-          passwordInput.classList.add("is-invalid");
-        }
-      }
-
-      function validateConfirmPassword() {
-        const passwordInput = document.getElementById("patientPassword");
-        const confirmPasswordInput = document.getElementById("confirmPassword");
-        if (confirmPasswordInput.value === passwordInput.value) {
-          confirmPasswordInput.classList.remove("is-invalid");
-        } else {
-          confirmPasswordInput.classList.add("is-invalid");
-        }
-      }
-
-      function validateProfileForm() {
-        validateFullName();
-        validateEmail();
-        validatePhone();
-        validatePassword();
-        validateConfirmPassword();
-
-        const inputs = document.querySelectorAll(
-          "#profileSettings .form-control"
-        );
-        let isValid = true;
-        inputs.forEach((input) => {
-          if (!input.checkValidity()) {
-            input.classList.add("is-invalid");
-            isValid = false;
-          } else {
-            input.classList.remove("is-invalid");
-          }
-        });
-        return isValid;
-      }
-    </script>
-
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-k6RqeWeci5ZR/Lv4MR0sA0FfDOM52gV8lwJ95e24mlVY24JOhkKzWRIB8C6jc6p0"
-      crossorigin="anonymous"
-    ></script>
-  </body>
-</html>
+        fetch(this.action, {
+          method: "POST",
+          body: formData,
+          headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              showMessage(data.message, "success");
+              serviceRequestForm.reset();
+              // Close the modal if you're using one
+              // bootstrap.Modal.getInstance(document.getElementById('serviceRequestModal')).hide();
+            } else {
+              showMessage(data.message || "Error submitting service request. Please try again.", "danger");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showMessage("An error occurred. Please try again.", "danger");
+          })
+          .finally(() => {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+          });
+      });
+    }
+  });
+</script>
+{% endblock %}
