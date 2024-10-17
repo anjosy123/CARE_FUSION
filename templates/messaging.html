@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Messages</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Received Messages</h3>
+            {% for message in received_messages %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">From: {{ message.sender.get_full_name }}</h5>
+                        <p class="card-text">{{ message.content }}</p>
+                        <p class="card-text"><small class="text-muted">{{ message.timestamp|date:"F d, Y H:i" }}</small></p>
+                    </div>
+                </div>
+            {% empty %}
+                <p>No received messages.</p>
+            {% endfor %}
+        </div>
+        <div class="col-md-6">
+            <h3>Send a Message</h3>
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="recipient">Recipient:</label>
+                    <select name="recipient" id="recipient" class="form-control" required>
+                        {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.get_full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="content">Message:</label>
+                    <textarea name="content" id="content" class="form-control" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Send Message</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

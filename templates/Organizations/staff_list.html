@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Staff List{% endblock %}
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a>
+</li>
+{% endblock nav_items %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ organization.org_name }} - Staff List</h2>
+    <a href="{% url 'add_staff' %}" class="btn btn-primary mb-3">Add New Staff</a>
+    
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone Number</th>
+                <th>Designation</th>
+                <th>Experience</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for staff in staff_members %}
+            <tr>
+                <td>{{ staff.name }}</td>
+                <td>{{ staff.email }}</td>
+                <td>{{ staff.phone_number }}</td>
+                <td>{{ staff.designation }}</td>
+                <td>{{ staff.experience }} years</td>
+                <td>{% if staff.is_active %}Active{% else %}Inactive{% endif %}</td>
+                <td>
+                    <a href="{% url 'edit_staff' staff.id %}" class="btn btn-sm btn-info">Edit</a>
+                    <a href="{% url 'toggle_staff_status' staff.id %}" class="btn btn-sm {% if staff.is_active %}btn-warning{% else %}btn-success{% endif %}">
+                        {% if staff.is_active %}Disable{% else %}Enable{% endif %}
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7">No staff members found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        
+    </table>
+</div>
+{% endblock %}

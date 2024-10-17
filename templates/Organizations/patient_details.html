@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a>
+</li>
+{% endblock %}
+
+{% block content %}
+<style>
+    .patient-details-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .patient-details-title {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    .info-card {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .info-card h2, .info-card h3 {
+        color: #2c3e50;
+        margin-top: 0;
+    }
+    .info-item {
+        margin-bottom: 10px;
+    }
+    .info-item strong {
+        color: #34495e;
+    }
+    .action-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+    .back-button {
+        display: block;
+        text-align: center;
+    }
+</style>
+
+<div class="patient-details-container">
+    <h1 class="patient-details-title">Patient Details</h1>
+
+    <div class="info-card">
+        <h2>{{ patient.get_full_name }}</h2>
+        <div class="info-item"><strong>Email:</strong> {{ patient.email }}</div>
+        <div class="info-item"><strong>Phone:</strong> {{ patient.phone_number|default:"Not provided" }}</div>
+        <!-- Add more patient details as needed -->
+    </div>
+
+    <div class="info-card">
+        <h3>Service Request Details</h3>
+        <div class="info-item"><strong>Date Submitted:</strong> {{ service_request.created_at|date:"Y-m-d H:i" }}</div>
+        <div class="info-item"><strong>Status:</strong> {{ service_request.get_status_display }}</div>
+        <div class="info-item"><strong>Additional Notes:</strong> {{ service_request.additional_notes|default:"None" }}</div>
+        
+        <div class="info-item">
+            <strong>Doctor's Referral Letter:</strong> 
+            {% if doctor_referral_url %}
+                <a href="{{ doctor_referral_url }}" target="_blank" class="btn btn-sm btn-primary">View Referral Letter</a>
+            {% else %}
+                Not provided
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <form method="post" action="{% url 'handle_service_request' %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="request_id" value="{{ service_request.id }}">
+            <button type="submit" name="action" value="approve" class="btn btn-success">Approve Request</button>
+            <button type="submit" name="action" value="reject" class="btn btn-danger">Reject Request</button>
+        </form>
+    </div>
+
+    <div class="back-button">
+        <a href="{% url 'palliatives_dashboard' %}" class="btn btn-primary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

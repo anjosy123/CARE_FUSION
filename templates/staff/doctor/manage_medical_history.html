@@ -1,0 +1,66 @@
+{% extends 'staff/base_dashboard.html' %}
+
+{% block content %}
+<style>
+    .medical-history-container {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .medical-history-container h2 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+    }
+    .medical-history-container h3 {
+        color: #34495e;
+        margin-top: 30px;
+    }
+    .current-history {
+        background-color: #ecf0f1;
+        border-radius: 5px;
+        padding: 15px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-family: 'Courier New', Courier, monospace;
+    }
+    .entry-form {
+        margin-top: 20px;
+    }
+    .entry-form textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #bdc3c7;
+        border-radius: 5px;
+        resize: vertical;
+    }
+    .entry-form button {
+        background-color: #3498db;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+    .entry-form button:hover {
+        background-color: #2980b9;
+    }
+</style>
+
+<div class="medical-history-container">
+    <h2>Medical History for {{ assignment.patient.get_full_name }}</h2>
+
+    <h3>Current Medical History</h3>
+    <div class="current-history">{{ assignment.medical_history }}</div>
+
+    <h3>Add New Entry</h3>
+    <form method="post" class="entry-form">
+        {% csrf_token %}
+        <textarea name="entry" rows="4" placeholder="Enter new medical history entry here..."></textarea>
+        <br>
+        <button type="submit">Add Entry</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .delete-confirm-container {
+        background-color: #f8f9fa;
+        padding: 50px 0;
+        min-height: 100vh;
+    }
+    .delete-confirm-content {
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        max-width: 500px;
+        margin: 0 auto;
+        text-align: center;
+    }
+    .delete-confirm-title {
+        color: #007bff;
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+    .delete-confirm-message {
+        color: #495057;
+        font-size: 1.1rem;
+        margin-bottom: 30px;
+    }
+    .btn-danger {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: #ffffff;
+        padding: 10px 20px;
+        font-size: 1rem;
+        margin-right: 10px;
+    }
+    .btn-danger:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+    }
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #ffffff;
+        padding: 10px 20px;
+        font-size: 1rem;
+    }
+    .btn-secondary:hover {
+        background-color: #5a6268;
+        border-color: #545b62;
+    }
+</style>
+{% endblock head %}
+
+{% block nav_items %}
+<li class="nav-item">
+  <li><a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a></li>
+</li>
+{% endblock %}
+
+{% block title %}
+Services
+{% endblock title %}
+
+{% block content %}
+<div class="delete-confirm-container">
+    <div class="container">
+        <div class="delete-confirm-content">
+            <h4 class="delete-confirm-title mt=5">Delete Service</h4>
+            <p class="delete-confirm-message">Are you sure you want to delete the service "{{ service.name }}"?</p>
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Confirm Delete</button>
+                <a href="{% url 'service_list' %}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

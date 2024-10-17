@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Service Request - CareFusion{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1 class="mb-4">Edit Service Request</h1>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Update Request</button>
+    <a href="{% url 'service_request_detail' service_request.id %}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

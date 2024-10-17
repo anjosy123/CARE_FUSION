@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Contact Us - CareFusion{% endblock %}
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'index' %}">Home</a>
+</li>
+{% endblock %}
+
+{% block content %}
+<style>
+    .contact-section {
+        padding: 80px 0;
+        background-color: #f8f9fa;
+    }
+    .contact-form-wrapper {
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+    }
+    .contact-form-wrapper h2 {
+        color: #333;
+        font-size: 32px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    .contact-form .form-group {
+        margin-bottom: 25px;
+    }
+    .contact-form .form-control {
+        border: 1px solid #e1e1e1;
+        border-radius: 5px;
+        padding: 15px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+    .contact-form .form-control:focus {
+        border-color: #1A76D1;
+        box-shadow: 0 0 0 0.2rem rgba(26, 118, 209, 0.25);
+    }
+    .contact-form label {
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #555;
+    }
+    .contact-form textarea.form-control {
+        height: 150px;
+    }
+    .contact-form .btn-submit {
+        background-color: #1A76D1;
+        color: #fff;
+        padding: 12px 30px;
+        font-size: 18px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    .contact-form .btn-submit:hover {
+        background-color: #1565C0;
+    }
+    .error-message {
+        color: #dc3545;
+        font-size: 14px;
+        margin-top: 5px;
+        display: none;
+    }
+</style>
+<section class="breadcrumbs">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h2>Contact Us</h2>
+                <ul>
+                    <li><a href="{% url 'index' %}">Home</a></li>
+                    <li>Contact</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="contact-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="contact-form-wrapper">
+                    <h2>Get in Touch</h2>
+                    <form action="/contact" method="POST" id="contactForm" class="contact-form">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="name">Full Name</label>
+                            <input type="text" class="form-control" id="name" name="fname" placeholder="Your name" required pattern="^[A-Za-z ]+$" oninput="validateName()">
+                            <span id="nameError" class="error-message">Only alphabets and spaces are allowed.</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email" placeholder="Your email" required oninput="validateEmail()">
+                            <span id="emailError" class="error-message">Please enter a valid email address.</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" placeholder="Your phone number" required pattern="^\+?[1-9][0-9]{11}$" oninput="validatePhone()">
+                            <span id="phoneError" class="error-message">Please enter a valid 12-digit phone number with country code.</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="description">How can we help you?</label>
+                            <textarea class="form-control" id="description" name="description" placeholder="Your message" required></textarea>
+                        </div>
+                        
+                        <div class="form-group text-center">
+                            <button type="submit" class="btn-submit">Send Message</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    function validateName() {
+        const nameField = document.getElementById('name');
+        const nameError = document.getElementById('nameError');
+        const nameRegex = /^[A-Za-z ]+$/;
+
+        if (nameRegex.test(nameField.value)) {
+            nameError.style.display = 'none';
+        } else {
+            nameError.style.display = 'block';
+        }
+    }
+
+    function validateEmail() {
+        const emailField = document.getElementById('email');
+        const emailError = document.getElementById('emailError');
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+        if (emailRegex.test(emailField.value)) {
+            emailError.style.display = 'none';
+        } else {
+            emailError.style.display = 'block';
+        }
+    }
+
+    function validatePhone() {
+        const phoneField = document.getElementById('phone');
+        const phoneError = document.getElementById('phoneError');
+        const phoneRegex = /^\+?[1-9][0-9]{11}$/;
+
+        if (phoneRegex.test(phoneField.value) && !/^0+$/.test(phoneField.value)) {
+            phoneError.style.display = 'none';
+        } else {
+            phoneError.style.display = 'block';
+        }
+    }
+</script>
+{% endblock extra_js %}

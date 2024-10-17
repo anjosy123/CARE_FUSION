@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Patient: {{ assignment.patient.get_full_name }}</h1>
+    <p>Assigned since: {{ assignment.assigned_date }}</p>
+    
+    <h2>Notes</h2>
+    <pre>{{ assignment.notes }}</pre>
+    
+    <h2>Add Note</h2>
+    <form method="post" action="{% url 'add_patient_note' assignment.id %}">
+        {% csrf_token %}
+        <textarea name="note" rows="4" cols="50"></textarea>
+        <br>
+        <button type="submit" class="btn btn-primary">Add Note</button>
+    </form>
+    
+    {% if staff.role == 'DOCTOR' %}
+    <h2>Doctor-specific Actions</h2>
+    <!-- Add doctor-specific actions here -->
+    {% elif staff.role == 'NURSE' %}
+    <h2>Nurse-specific Actions</h2>
+    <!-- Add nurse-specific actions here -->
+    {% elif staff.role == 'VOLUNTEER' %}
+    <h2>Volunteer-specific Actions</h2>
+    <!-- Add volunteer-specific actions here -->
+    {% endif %}
+</div>
+{% endblock %}

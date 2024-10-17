@@ -1,0 +1,107 @@
+{% extends 'staff/base_dashboard.html' %}
+
+{% block role_specific_content %}
+<style>
+    .doctor-dashboard {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .doctor-dashboard h1 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+    }
+    .doctor-dashboard h2 {
+        color: #34495e;
+        margin-top: 30px;
+    }
+    .doctor-dashboard p {
+        color: #7f8c8d;
+    }
+    .patient-list {
+        list-style-type: none;
+        padding: 0;
+    }
+    .patient-item {
+        background-color: #ecf0f1;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    .patient-name {
+        font-weight: bold;
+        color: #2980b9;
+    }
+    .patient-interaction {
+        font-style: italic;
+        color: #95a5a6;
+        font-size: 0.9em;
+    }
+    .action-buttons {
+        margin-top: 10px;
+    }
+    .action-button {
+        display: inline-block;
+        padding: 5px 10px;
+        margin-right: 5px;
+        background-color: #3498db;
+        color: white;
+        text-decoration: none;
+        border-radius: 3px;
+        font-size: 0.9em;
+    }
+    .action-button:hover {
+        background-color: #2980b9;
+    }
+    .additional-features {
+        list-style-type: none;
+        padding: 0;
+    }
+    .feature-item {
+        background-color: #f39c12;
+        color: white;
+        padding: 10px;
+        margin-bottom: 5px;
+        border-radius: 3px;
+    }
+    .feature-item a {
+        color: white;
+        text-decoration: none;
+    }
+    .feature-item:hover {
+        background-color: #e67e22;
+    }
+</style>
+
+<div class="doctor-dashboard">
+    <h4>Welcome, {{ staff.get_full_name }}</h4>
+    <p>Role: Doctor</p>
+
+    <h2>Your Assigned Patients</h2>
+    {% if assignments %}
+        <ul class="patient-list">
+        {% for assignment in assignments %}
+            <li class="patient-item">
+                <span class="patient-name">{{ assignment.patient.get_full_name }}</span>
+                <span class="patient-interaction">- Last interaction: {{ assignment.last_interaction|default:"No interaction yet" }}</span>
+                <div class="action-buttons">
+                    <a href="{% url 'manage_prescriptions' assignment.id %}" class="action-button">Manage Prescriptions</a>
+                    <a href="{% url 'manage_appointments' assignment.id %}" class="action-button">Schedule Appointments</a>
+                    <a href="{% url 'manage_medical_history' assignment.id %}" class="action-button">View Medical History</a>
+                </div>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No patients assigned yet.</p>
+    {% endif %}
+
+    <h2>Additional Features</h2>
+    <ul class="additional-features">
+        <li class="feature-item"><a href="#">View My Schedule</a></li>
+        <li class="feature-item"><a href="#">Update Profile</a></li>
+    </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,327 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Patient Dashboard - CareFusion{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .nav-item {
+    list-style-type: none;
+  }
+  .card {
+    height: 100%;
+    transition: transform 0.2s;
+    display: flex;
+    flex-direction: column;
+  }
+  .card:hover {
+    transform: translateY(-5px);
+  }
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+  .card-text {
+    flex-grow: 1;
+  }
+  .btn-group {
+    margin-top: auto;
+    gap: 10px;
+  }
+  #searchTab .row {
+    margin-right: -10px;
+    margin-left: -10px;
+  }
+  #searchTab .col {
+    padding-right: 10px;
+    padding-left: 10px;
+    margin-bottom: 20px;
+  }
+  .organization-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  .organization-card {
+    height: 100%;
+  }
+  .service-requests-section {
+    margin-top: 2rem;
+  }
+  
+  .service-request-card {
+    margin-bottom: 1rem;
+  }
+  
+  /* New styles for prescriptions, appointments, and medical history */
+  .dashboard-section {
+    margin-bottom: 2rem;
+  }
+  .dashboard-section h3 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+    margin-bottom: 1rem;
+  }
+  .dashboard-list {
+    list-style-type: none;
+    padding: 0;
+  }
+  .dashboard-item {
+    background-color: #ecf0f1;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 10px;
+  }
+  .dropdown-menu.show {
+    display: block;
+  }
+
+  /* Dropdown styles */
+  .nav-item {
+    position: relative;
+  }
+  .nav-item > a {
+    display: block;
+    padding: 10px 15px;
+    color: #333;
+    text-decoration: none;
+  }
+  .nav-item:hover > a {
+    color: #007bff;
+  }
+  .nav-item .dropdown {
+    display: none;
+    position: absolute;
+    background-color: #fff;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    list-style-type: none;
+    padding: 0;
+  }
+  .nav-item:hover .dropdown {
+    display: block;
+  }
+  .nav-item .dropdown li a {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+  }
+  .nav-item .dropdown li a:hover {
+    background-color: #f1f1f1;
+  }
+</style>
+{% endblock %}
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'patients_dashboard' %}">Home</a>
+</li>
+<li class="nav-item {% if active_page == 'health' %}active{% endif %}">
+  <a href="#">My Health <i class="icofont-rounded-down"></i></a>
+  <ul class="dropdown">
+    <li><a href="{% url 'patients_dashboard' %}?view=prescriptions">Prescriptions</a></li>
+    <li><a href="{% url 'patients_dashboard' %}?view=appointments">Appointments</a></li>
+    <li><a href="{% url 'patients_dashboard' %}?view=medical_history">Medical History</a></li>
+  </ul>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'service_requests' %}">Requests</a>
+</li>
+<li class="nav-item">
+  {% if not request.session.username and not request.session.org_name %}
+  <li class="{% if active_page == 'user' %}active{% endif %}">
+    <a href="#">New Organization ? <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+      <li><a href="{% url 'login' %}">Sign In</a></li>
+      <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
+    </ul>
+  </li>
+  {% elif request.session.username %}
+  <li class="{% if active_page == 'user' %}active{% endif %}">
+    <a href="#">Welcome {{request.session.username}} <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+      <li><a href="{% url 'logout' %}">Logout</a></li>
+    </ul>
+  </li>
+  {% elif request.session.org_name %}
+  <li class="{% if active_page == 'user' %}active{% endif %}">
+    <a href="#">Welcome {{request.session.org_name}} <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+      <li><a href="{% url 'logout' %}">Logout</a></li>
+    </ul>
+  </li>
+  {% endif %}
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  {% if not request.GET.view %}
+  <!-- Palliative Care Organizations Section -->
+  <div id="searchTab" class="mt-4">
+    <h4 class="mb-3">Palliative Care Organizations</h4>
+    <div class="card mb-4">
+      <div class="card-body">
+        <!-- Search Form -->
+        <form class="d-flex" action="{% url 'patients_dashboard' %}" method="GET" role="search">
+          <input class="form-control me-2" type="search" name="q" placeholder="Search by organization name, address, or pincode" value="{{ query }}" aria-label="Search">
+          <button class="btn btn-outline-primary" type="submit">Search</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Display Search Results -->
+    {% if organizations %}
+    <div class="organization-grid">
+      {% for organization in organizations %}
+      <div class="organization-card">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">{{ organization.org_name }}</h5>
+            <p class="card-text flex-grow-1">
+              <strong>Address:</strong> {{ organization.org_address }}<br>
+              <strong>Pincode:</strong> {{ organization.pincode }}<br>
+              <strong>Contact:</strong> {{ organization.org_phone }}
+            </p>
+            <div class="btn-group mt-auto">
+              <li style="list-style-type: none">
+                <a href="{% url 'organization_detail' organization.org_regid %}" class="btn btn-primary btn-sm me-2">View More</a>
+              </li>
+              <li style="list-style-type: none;">
+                <a href="{% url 'submit_service_request' organization.org_regid %}" class="btn btn-outline-danger btn-sm">Submit Request</a>
+              </li>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info" role="alert">
+      No organizations found matching your search criteria.
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if request.GET.view == 'prescriptions' %}
+  <div class="dashboard-section" id="prescriptions-section">
+    <h3>Your Prescriptions</h3>
+    <ul class="dashboard-list">
+      {% for prescription in prescriptions %}
+        <li class="dashboard-item">
+          <strong>{{ prescription.medication }}</strong> - {{ prescription.dosage }} {{ prescription.frequency }}
+          <br>
+          From {{ prescription.start_date }} to {{ prescription.end_date }}
+          <br>
+          Prescribed by: {{ prescription.patient_assignment.staff.get_full_name }}
+        </li>
+      {% empty %}
+        <li>No active prescriptions.</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if request.GET.view == 'appointments' %}
+  <div class="dashboard-section" id="appointments-section">
+    <h3>Your Appointments</h3>
+    <ul class="dashboard-list">
+      {% for appointment in appointments %}
+        <li class="dashboard-item">
+          {{ appointment.date_time|date:"F d, Y, h:i a" }} - {{ appointment.purpose }}
+          <br>
+          With: {{ appointment.patient_assignment.staff.get_full_name }}
+        </li>
+      {% empty %}
+        <li>No upcoming appointments.</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if request.GET.view == 'medical_history' %}
+  <div class="dashboard-section" id="medical-history-section">
+    <h3>Your Medical History</h3>
+    {% for entry in medical_history %}
+      <div class="dashboard-item">
+        <h4>{{ entry.organization.org_name }}</h4>
+        <pre>{{ entry.history }}</pre>
+      </div>
+    {% empty %}
+      <p>No medical history available.</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Service Request Modal -->
+<div id="serviceRequestModal" class="modal fade" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle">Service Request</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="serviceRequestForm" method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" id="organizationId" name="organization_id" value="">
+          <div class="mb-3">
+            <label for="doctorReferral" class="form-label">Doctor's Referral Letter</label>
+            <input type="file" class="form-control" id="doctorReferral" name="doctor_referral" required>
+          </div>
+          <div class="mb-3">
+            <label for="additionalNotes" class="form-label">Additional Notes</label>
+            <textarea class="form-control" id="additionalNotes" name="additional_notes" rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Submit Request</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% comment %} <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+  <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+          <strong class="me-auto">Notification</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body">
+         Request Submitted Successfully
+      </div>
+  </div>
+</div> {% endcomment %}
+
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+function toggleDropdown(event) {
+    event.preventDefault();
+    var dropdown = document.getElementById('healthDropdown');
+    dropdown.classList.toggle('show');
+}
+
+// Close the dropdown if the user clicks outside of it
+window.onclick = function(event) {
+    if (!event.target.matches('.dropdown-toggle')) {
+        var dropdowns = document.getElementsByClassName("dropdown-menu");
+        for (var i = 0; i < dropdowns.length; i++) {
+            var openDropdown = dropdowns[i];
+            if (openDropdown.classList.contains('show')) {
+                openDropdown.classList.remove('show');
+            }
+        }
+    }
+}
+
+// Your existing JavaScript...
+</script>
+{% endblock %}

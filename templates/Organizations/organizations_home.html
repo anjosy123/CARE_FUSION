@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Organizations{% endblock title %}
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'index' %}">Home</a>
+  {% if not request.session.username and not request.session.org_name %}
+  <li class="{% if active_page == 'user' %}active{% endif %}">
+    <a href="#">New Organization ? <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+      <li><a href="{% url 'login' %}">Sign In</a></li>
+      <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
+        </ul>
+      </li>
+      {% elif request.session.username %}
+      <li class="{% if active_page == 'user' %}active{% endif %}">
+        <a href="#">Welcome {{request.session.username}} <i class="icofont-rounded-down"></i></a>
+        <ul class="dropdown">
+          <li><a href="{% url 'logout' %}">Logout</a></li>
+        </ul>
+      </li>
+      {% elif request.session.org_name %}
+      <li class="{% if active_page == 'user' %}active{% endif %}">
+        <a href="#">Welcome {{request.session.org_name}} <i class="icofont-rounded-down"></i></a>
+        <ul class="dropdown">
+          <li><a href="{% url 'logout' %}">Logout</a></li>
+        </ul>
+      </li>
+    {% endif %}
+</li>
+{% endblock nav_items %}
+
+{% block head %}
+<style>
+    .services-container {
+        background-color: #f8f9fa;
+        padding: 50px 0;
+    }
+    .service-card {
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease-in-out;
+        height: 100%;
+    }
+    .service-card:hover {
+        transform: translateY(-5px);
+    }
+    .service-icon {
+        background-color: #007bff;
+        color: #ffffff;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+        margin: 0 auto 20px;
+    }
+    .service-title {
+        color: #007bff;
+        font-weight: bold;
+        margin-bottom: 15px;
+    }
+    .service-description {
+        color: #6c757d;
+    }
+    .section-title {
+        color: #007bff;
+        font-weight: bold;
+        margin-bottom: 40px;
+    }
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+    }
+</style>
+{% endblock head %}
+
+{% block body %}
+<div class="services-container">
+    <div class="container">
+        <h1 class="text-center section-title mb-5">Our Services</h1>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="service-card p-4">
+                    <div class="service-icon">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <h3 class="service-title text-center">Palliative Care</h3>
+                    <p class="service-description text-center">Comprehensive care focused on providing relief from the symptoms and stress of a serious illness.</p>
+                    <div class="text-center mt-3">
+                        <a href="#" class="btn btn-primary">Learn More</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="service-card p-4">
+                    <div class="service-icon">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <h3 class="service-title text-center">Home Care</h3>
+                    <p class="service-description text-center">Professional medical care and support services provided in the comfort of your own home.</p>
+                    <div class="text-center mt-3">
+                        <a href="#" class="btn btn-primary">Learn More</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="service-card p-4">
+                    <div class="service-icon">
+                        <i class="fas fa-pills"></i>
+                    </div>
+                    <h3 class="service-title text-center">Medication Management</h3>
+                    <p class="service-description text-center">Expert assistance in managing and administering medications for optimal health outcomes.</p>
+                    <div class="text-center mt-3">
+                        <a href="#" class="btn btn-primary">Learn More</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock body %}
+
+{% block scripts %}
+<script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+{% endblock scripts %}

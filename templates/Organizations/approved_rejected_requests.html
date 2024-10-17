@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Approved and Rejected Service Requests{% endblock title %}
+
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3>Approved Requests</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Patient Name</th>
+                <th>Date Submitted</th>
+                <th>Date Approved</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for request in approved_requests %}
+            <tr>
+                <td>{{ request.patient.get_full_name }}</td>
+                <td>{{ request.created_at|date:"Y-m-d H:i" }}</td>
+                <td>{{ request.updated_at|date:"Y-m-d H:i" }}</td>
+                <td>
+                    <a href="{% url 'patient_details' request.id %}" class="btn btn-primary btn-sm">View Details</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No approved service requests.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>Rejected Requests</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Patient Name</th>
+                <th>Date Submitted</th>
+                <th>Date Rejected</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for request in rejected_requests %}
+            <tr>
+                <td>{{ request.patient.get_full_name }}</td>
+                <td>{{ request.created_at|date:"Y-m-d H:i" }}</td>
+                <td>{{ request.updated_at|date:"Y-m-d H:i" }}</td>
+                <td>
+                    <a href="{% url 'patient_details' request.id %}" class="btn btn-primary btn-sm">View Details</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No rejected service requests.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

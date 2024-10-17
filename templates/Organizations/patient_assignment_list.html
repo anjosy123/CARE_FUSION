@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a>
+</li>
+{% endblock %}
+
+{% block title %}Patient Assignments{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Patient Assignments</h2>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'assign_patient' %}" class="btn btn-primary">
+                <i class="fas fa-user-plus me-2"></i>Assign New Patient
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow mb-5">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Assigned Patients</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Patient</th>
+                            <th>Assigned To</th>
+                            <th>Assigned Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in page_obj %}
+                        <tr>
+                            <td>{{ assignment.patient.get_full_name|default:assignment.patient.username }}</td>
+                            <td>{{ assignment.staff.name }}</td>
+                            <td>{{ assignment.assigned_date|date:"F d, Y" }}</td>
+                            <td>
+                                <a href="{% url 'unassign_patient' assignment.id %}" class="btn btn-sm btn-outline-warning">
+                                    <i class="fas fa-user-minus me-1"></i>Unassign
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">No assigned patients.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo; Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for i in page_obj.paginator.page_range %}
+                    {% if page_obj.number == i %}
+                    <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                    {% else %}
+                    <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next &raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header bg-secondary text-white">
+            <h4 class="mb-0">Unassigned Patients</h4>
+        </div>
+        <div class="card-body">
+            <ul class="list-group list-group-flush">
+                {% for patient in unassigned_patients %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ patient.get_full_name|default:patient.username }}
+                    <span class="badge bg-primary rounded-pill">Unassigned</span>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-center text-muted">No unassigned patients.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% comment %} <div class="container mt-4"> {% endcomment %}
+    {% comment %} <h1>Welcome, {{ staff.get_full_name }}</h1>
+    <p>Role: {{ staff.get_role_display }}</p> {% endcomment %}
+    
+    {% comment %} <h2>Your Assigned Patients</h2>
+    <ul>
+    {% for assignment in assignments %}
+        <li>
+            <a href="{% url 'patient_detail' assignment.id %}">
+                {{ assignment.patient.get_full_name }}
+            </a>
+            - Last interaction: {{ assignment.last_interaction|default:"No interaction yet" }}
+        </li>
+    {% empty %}
+        <li>No patients assigned yet.</li>
+    {% endfor %}
+    </ul> {% endcomment %}
+    
+    {% block role_specific_content %}{% endblock %}
+</div>
+{% endblock %}

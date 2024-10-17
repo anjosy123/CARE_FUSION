@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Staff{% endblock %}
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a>
+</li>
+{% endblock nav_items %}
+
+{% block content %}
+<div class="breadcrumbs overlay">
+    <div class="container">
+        <div class="bread-inner">
+            <div class="row">
+                <div class="col-12">
+                    <h2>Add New Staff Member</h2>
+                    <ul class="bread-list">
+                        <li><a href="{% url 'palliatives_dashboard' %}">Home</a></li>
+                        <li><i class="icofont-simple-right"></i></li>
+                        <li class="active">Add Staff</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="contact-us section">
+    <div class="container">
+        <div class="inner">
+            <div class="row">
+                <div class="col-lg-6 offset-lg-3 col-md-8 offset-md-2 col-12">
+                    <div class="form-main">
+                        <div class="title">
+                            <h4>Add New Staff Member</h4>
+                            <h6>Fill out the form below</h6>
+                        </div>
+                        <form class="form" method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {% for field in form %}
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="form-group">
+                                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                            {{ field }}
+                                            {% if field.errors %}
+                                                <div class="text-danger">
+                                                    {{ field.errors }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group button">
+                                        <button type="submit" class="btn">Add Staff</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

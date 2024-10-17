@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}{% if service %}Edit{% else %}Add{% endif %} Service{% endblock %}
+
+{% block content %}
+<div class="breadcrumbs overlay">
+    <div class="container">
+        <div class="bread-inner">
+            <div class="row">
+                <div class="col-12">
+                    <h2>{% if service %}Edit{% else %}Add{% endif %} Service</h2>
+                    <ul class="bread-list">
+                        <li><a href="{% url 'palliatives_dashboard' %}">Home</a></li>
+                        <li><i class="icofont-simple-right"></i></li>
+                        <li><a href="{% url 'service_list' %}">Services</a></li>
+                        <li><i class="icofont-simple-right"></i></li>
+                        <li class="active">{% if service %}Edit{% else %}Add{% endif %} Service</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="contact-us section">
+    <div class="container">
+        <div class="inner">
+            <div class="row">
+                <div class="col-lg-6 offset-lg-3 col-md-8 offset-md-2 col-12">
+                    <div class="form-main">
+                        <div class="title">
+                            <h4>{% if service %}Edit{% else %}Add{% endif %} Service</h4>
+                            <h6>Please fill out the form below</h6>
+                        </div>
+                        <form class="form" method="post">
+                            {% csrf_token %}
+                            {% for field in form %}
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="form-group">
+                                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                            {{ field }}
+                                            {% if field.errors %}
+                                                <div class="text-danger">
+                                                    {{ field.errors }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group button">
+                                        <button type="submit" class="btn">Save</button><br><br>
+                                        <a href="{% url 'service_list' %}" class="btn btn-alt">Cancel</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<style>
+    .form-group label {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #e6e6e6;
+        border-radius: 5px;
+    }
+    .btn-alt {
+        background-color: #6c757d;
+        color: #fff;
+    }
+    .btn-alt:hover {
+        background-color: #5a6268;
+        color: #fff;
+    }
+</style>
+{% endblock %}

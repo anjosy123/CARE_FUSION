@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load static %}
+{% comment %} {% load socialaccount %} {% endcomment %}
+
+{% block title %}Sign Up - CareFusion{% endblock %}
+
+{% block extra_css %}
+<style>
+  .error {
+    color: red;
+    font-size: 0.875em;
+  }
+  
+  .google-signup-btn {
+    background-color: white !important;
+    color: #757575 !important;
+    border-color: #dadce0 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s, box-shadow 0.3s;
+  }
+
+  .google-signup-btn:hover {
+    background-color: #f7f8f8 !important;
+    box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+  }
+
+  .google-signup-btn img {
+    margin-left: 8px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="breadcrumbs">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h2>Sign Up</h2>
+                <ul>
+                    <li><a href="{% url 'index' %}">Home</a></li>
+                    <li>Sign Up</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="signup-section section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <h4 class="card-title text-center mb-4">Create an Account</h4>
+
+                        {% if messages %}
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            {% for message in messages %}
+                                {{ message }}
+                            {% endfor %}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endif %}
+
+                        {% comment %} <a class="btn btn-outline-dark w-100 mb-3 google-signup-btn" href="{% provider_login_url 'google' %}">
+                            Sign Up with <img src="https://img.icons8.com/color/30/000000/google-logo.png" alt="Google"/>
+                        </a>
+
+                        <div class="text-center my-3">OR</div> {% endcomment %}
+
+                        <form id="signup-form" action="{% url 'signup' %}" method="post">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                                <div class="error" id="usernameError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="fname" class="form-label">First name</label>
+                                <input type="text" class="form-control" id="fname" name="fname" required>
+                                <div class="error" id="fnameError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="lname" class="form-label">Last name</label>
+                                <input type="text" class="form-control" id="lname" name="lname" required>
+                                <div class="error" id="lnameError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                                <div class="error" id="emailError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="passw1" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="passw1" name="pass1" required>
+                                <div class="error" id="passwordError"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="passw2" class="form-label">Confirm Password</label>
+                                <input type="password" class="form-control" id="passw2" name="pass2" required>
+                                <div class="error" id="confirmPasswordError"></div>
+                            </div>
+                            <div class="d-grid">
+                                <button class="btn btn-primary" type="submit">Sign Up</button>
+                            </div>
+                        </form>
+
+                        <div class="text-center mt-3">
+                            Already a User? <a href="{% url 'login' %}">Login</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Username validation 
+    const usernameInput = document.getElementById('username');
+    const usernameError = document.getElementById('usernameError');
+
+    usernameInput.addEventListener('input', function() {
+        const usernameValue = usernameInput.value;
+        const usernameRegex = /^[A-Za-z\s]+$/; // Allows alphabets and spaces
+        if (!usernameRegex.test(usernameValue)) {
+            usernameError.textContent = "Username must contain only alphabets and spaces.";
+        } else {
+            usernameError.textContent = '';
+        }
+    });
+
+    // Email validation
+    const emailInput = document.getElementById('email');
+    const emailError = document.getElementById('emailError');
+    emailInput.addEventListener('input', function() {
+        const emailValue = emailInput.value;
+        const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/; // Simple email regex
+        if (!emailRegex.test(emailValue)) {
+            emailError.textContent = "Please enter a valid email address.";
+        } else {
+            emailError.textContent = '';
+        }
+    });
+
+    // Password validation
+    const passwordInput = document.getElementById('passw1');
+    const confirmPasswordInput = document.getElementById('passw2');
+    const passwordError = document.getElementById('passwordError');
+    const confirmPasswordError = document.getElementById('confirmPasswordError');
+
+    passwordInput.addEventListener('input', validatePassword);
+    confirmPasswordInput.addEventListener('input', validatePassword);
+
+    function validatePassword() {
+        const passwordValue = passwordInput.value;
+        const confirmPasswordValue = confirmPasswordInput.value;
+        const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
+
+        // Password format validation
+        if (!passwordRegex.test(passwordValue)) {
+            passwordError.textContent = "Password must be at least 8 characters long, include an uppercase letter, a number, and a special character.";
+        } else {
+            passwordError.textContent = '';
+        }
+
+        // Confirm password validation
+        if (passwordValue !== confirmPasswordValue) {
+            confirmPasswordError.textContent = "Passwords do not match.";
+        } else {
+            confirmPasswordError.textContent = '';
+        }
+    }
+
+    // Prevent form submission if there are errors
+    const form = document.getElementById('signup-form');
+    form.addEventListener('submit', function(event) {
+        if (usernameError.textContent || emailError.textContent || passwordError.textContent || confirmPasswordError.textContent) {
+            event.preventDefault(); // Stop form submission if there are errors
+        }
+    });
+</script>
+{% endblock %}

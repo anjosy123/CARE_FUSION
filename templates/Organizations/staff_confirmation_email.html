@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your Staff Account</title>
+</head>
+<body>
+    <h2>Welcome to {{ organization_name }}!</h2>
+    
+    <p>Dear {{ staff_name }},</p>
+    
+    <p>We hope this email finds you well. You have been added as a staff member to {{ organization_name }}. To complete your registration and activate your account, please confirm your email address by clicking the link below:</p>
+    
+    <p><a href="{{ confirmation_link }}">Confirm Your Email</a></p>
+    
+    <p>If you're unable to click the link, please copy and paste the following URL into your web browser:</p>
+    
+    <p>{{ confirmation_link }}</p>
+    
+    <p>If you did not request this account, please ignore this email. The account will remain inactive until confirmed.</p>
+    
+    <p>Thank you for joining our team. We look forward to working with you!</p>
+    
+    <p>Best regards,<br>
+    The {{ organization_name }} Team</p>
+</body>
+</html>

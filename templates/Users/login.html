@@ -1,0 +1,154 @@
+{% extends 'base.html' %} {% load static %} 
+{% block title %}Login - CareFusion{% endblock %} {% block extra_css %}
+<style>
+  .is-valid {
+    border-color: #28a745;
+  }
+  .is-invalid {
+    border-color: #dc3545;
+  }
+  .login-container {
+    max-width: 400px;
+    margin: 0 auto;
+  }
+</style>
+{% endblock %} {% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'index' %}">Home</a>
+</li>
+{% endblock %} {% block topbar %} {% endblock %} {% block content %}
+<section class="breadcrumbs">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <h2>Login</h2>
+        <ul>
+          <li>CareFusion</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="login-section section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6 login-container">
+        {% if messages %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+          {% for message in messages %} {{ message }} {% endfor %}
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
+          ></button>
+        </div>
+        {% endif %}
+
+        <a class="btn btn-outline-dark w-100 mb-3 text-white" href="{% url 'social:begin' 'google-oauth2' %}">
+          Login with
+          <img
+            src="https://img.icons8.com/color/30/000000/google-logo.png"
+            alt="Google"
+          />
+        </a>
+
+        <div class="text-center mb-3">OR</div>
+
+        <form action="{% url 'login' %}" method="post" id="loginForm">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input
+              type="text"
+              class="form-control"
+              id="email"
+              name="email"
+              placeholder="Enter your email"
+              required
+            />
+            <div class="invalid-feedback">Please enter a valid email.</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="passw1" class="form-label">Password</label>
+            <input
+              type="password"
+              class="form-control"
+              id="passw1"
+              name="pass1"
+              placeholder="Enter your password"
+              required
+            />
+            <div class="invalid-feedback">
+              Password must be at least 8 characters long, include 1 uppercase
+              letter, 1 number, and 1 special character.
+            </div>
+          </div>
+
+          <div class="d-grid">
+            <button class="btn btn-primary" type="submit">Login</button>
+          </div>
+        </form>
+
+        <div class="text-center mt-3">
+          <a href="{% url 'forgot_password' %}">Forgot Password?</a>
+        </div>
+
+        <div class="text-center mt-3">
+          Not a User? <a href="{% url 'signup' %}">Sign Up</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %} {% block extra_js %}
+<script>
+  // Email Validation
+  const emailInput = document.getElementById("email");
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  emailInput.addEventListener("input", function () {
+    if (emailPattern.test(emailInput.value)) {
+      emailInput.classList.remove("is-invalid");
+      emailInput.classList.add("is-valid");
+    } else {
+      emailInput.classList.remove("is-valid");
+      emailInput.classList.add("is-invalid");
+    }
+  });
+
+  // Password Validation
+  const passwordInput = document.getElementById("passw1");
+  const passwordPattern = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+
+  passwordInput.addEventListener("input", function () {
+    if (passwordPattern.test(passwordInput.value)) {
+      passwordInput.classList.remove("is-invalid");
+      passwordInput.classList.add("is-valid");
+    } else {
+      passwordInput.classList.remove("is-valid");
+      passwordInput.classList.add("is-invalid");
+    }
+  });
+
+  // Form validation on submit
+  const loginForm = document.getElementById("loginForm");
+
+  loginForm.addEventListener("submit", function (event) {
+    if (
+      !emailPattern.test(emailInput.value) ||
+      !passwordPattern.test(passwordInput.value)
+    ) {
+      event.preventDefault(); // Prevent form submission if invalid
+      if (!emailPattern.test(emailInput.value)) {
+        emailInput.classList.add("is-invalid");
+      }
+      if (!passwordPattern.test(passwordInput.value)) {
+        passwordInput.classList.add("is-invalid");
+      }
+    }
+  });
+</script>
+{% endblock %}

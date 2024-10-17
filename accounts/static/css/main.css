@@ -1,0 +1,25 @@
+body
+{
+    background-image: url('../img/new_signup_bg.jpg');
+    background-repeat: no-repeat;
+    background-size: 100%;
+}
+.img-thumbnail
+{
+    padding:2.25rem;
+    background-color: black;
+    border: 1px solid green;
+    border-radius: 21.25rem;
+    max-width: 100%;
+    height: auto;
+}
+p
+{
+    color: white;
+    font-size: large;
+}
+#gp
+{
+    width: 100%;
+    box-sizing: border-box;
+}

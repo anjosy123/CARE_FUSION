@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Service Request Details - CareFusion{% endblock %}
+
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'patients_dashboard' %}">Home</a>
+</li>
+{% endblock %}
+
+{% block content %}
+<style>
+  .service-request-card {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+  }
+  .status-badge {
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+  }
+  .status-pending { background-color: #ffc107; color: #212529; }
+  .status-approved { background-color: #28a745; color: #fff; }
+  .status-rejected { background-color: #dc3545; color: #fff; }
+</style>
+<div class="container mt-4">
+  <h4 class="mb-4">Service Request Details</h4>
+  <div class="card service-request-card">
+    <div class="card-header">
+      <h5 class="card-title mb-0">Request for {{ service_request.organization.org_name }}</h5>
+    </div>
+    <div class="card-body">
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <p><strong>Status:</strong> 
+            <span class="status-badge status-{{ service_request.status|upper }}">
+              {{ service_request.get_status_display }}
+            </span>
+          </p>
+          <p><strong>Submitted on:</strong> {{ service_request.created_at|date:"Y-m-d H:i" }}</p>
+        </div>
+        <div class="col-md-6">
+          {% if service_request.doctor_referral %}
+            <p><strong>Doctor's Referral:</strong> 
+              <a href="{{ service_request.doctor_referral.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                View Document
+              </a>
+            </p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="mb-3">
+        <h6>Additional Notes:</h6>
+        <p>{{ service_request.additional_notes|default:"None provided" }}</p>
+      </div>
+      {% if service_request.status == 'rejected' or service_request.status == 'REJECTED' %}
+        <div class="alert alert-danger">
+          <h6 class="alert-heading">Rejection Reason:</h6>
+          <p class="mb-0">{{ service_request.rejection_reason|default:"No reason provided" }}</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="mt-4">
+    {% if service_request.status|upper == 'PENDING' %}
+      <a href="{% url 'edit_service_request' service_request.id %}" class="btn btn-warning">Edit Request</a>
+      <a href="{% url 'delete_service_request' service_request.id %}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this request?')">Delete Request</a>
+    {% endif %}
+    <a href="{% url 'service_requests' %}" class="btn btn-primary">Back to All Requests</a>
+    <a href="{% url 'patients_dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+  </div>
+</div>
+{% endblock %}

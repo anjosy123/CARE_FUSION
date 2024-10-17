@@ -1,0 +1,100 @@
+{% extends 'base.html' %}  <!-- Adjust this if you have a different base template -->
+
+{% block content %}
+<style>
+    .appointment-management {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .appointment-management h4 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        font-size: 24px;
+    }
+    .appointment-management h6 {
+        color: #34495e;
+        font-size: 18px;
+        margin-bottom: 20px;
+    }
+    .appointment-management h3 {
+        color: #2980b9;
+        margin-top: 30px;
+        font-size: 20px;
+    }
+    .appointment-list {
+        list-style-type: none;
+        padding: 0;
+    }
+    .appointment-item {
+        background-color: #ecf0f1;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .appointment-form {
+        background-color: #ffffff;
+        border-radius: 5px;
+        padding: 20px;
+        margin-top: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .appointment-form input[type="datetime-local"],
+    .appointment-form input[type="text"],
+    .appointment-form textarea {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #bdc3c7;
+        border-radius: 3px;
+        font-size: 16px;
+    }
+    .appointment-form button {
+        background-color: #3498db;
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+    }
+    .appointment-form button:hover {
+        background-color: #2980b9;
+    }
+    .no-appointments {
+        color: #7f8c8d;
+        font-style: italic;
+    }
+</style>
+
+<div class="appointment-management">
+    <h4>Manage Appointments</h4>
+    <h6>Patient: {{ assignment.patient.get_full_name }}</h6>
+
+    <h3>Upcoming Appointments</h3>
+    <ul class="appointment-list">
+    {% for appointment in appointments %}
+        <li class="appointment-item">
+            {{ appointment.date_time|date:"F d, Y, h:i a" }} - {{ appointment.purpose }}
+        </li>
+    {% empty %}
+        <li class="no-appointments">No upcoming appointments.</li>
+    {% endfor %}
+    </ul>
+
+    <h3>Schedule New Appointment</h3>
+    <form method="post" class="appointment-form">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Schedule Appointment</button>
+    </form>
+</div>
+{% endblock %}

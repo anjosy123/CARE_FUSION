@@ -1,0 +1,102 @@
+<!-- accounts/templates/accounts/manage_users.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Users</title>
+    <style>
+      /* Inline CSS can be added here */
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 20px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+
+      th {
+        background-color: #4caf50;
+        color: white;
+      }
+
+      .btn {
+        padding: 5px 10px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+
+      .btn-edit {
+        background-color: #2980b9;
+        color: white;
+      }
+
+      .btn-delete {
+        background-color: #c0392b;
+        color: white;
+      }
+
+      #back {
+        display: inline-block;
+        margin-top: 20px;
+        text-decoration: none;
+        color: #2980b9;
+        font-weight: 500;
+      }
+
+      #back:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Manage Users</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>User ID</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>{{ user.id }}</td>
+          <td>{{ user.username }}</td>
+          <td>{{ user.email }}</td>
+          <td>
+            <a href="{% url 'edit_user' user.id %}" class="btn btn-edit"
+              >Edit</a
+            >
+            <a href="{% url 'delete_user' user.id %}" class="btn btn-delete"
+              >Delete</a
+            >
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <center>
+      <a id="back" href="{% url 'admin_dashboard' %}"
+        >Back to Admin Dashboard</a
+      >
+    </center>
+  </body>
+</html>

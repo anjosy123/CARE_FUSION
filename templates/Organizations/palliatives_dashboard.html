@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Palliative Organization Dashboard{% endblock title %}
+
+{% block nav_items %}
+<li><a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a></li>
+<li><a class="nav-link" href="{% url 'service_list' %}">Services</a></li>
+<li class="{% if active_page == 'service_requests' %}active{% endif %}">
+    <a href="#">Service Requests <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+        <li><a href="{% url 'pending_requests' %}">Pending Requests</a></li>
+        <li><a href="{% url 'approved_rejected_requests' %}">Approved/Rejected Requests</a></li>
+    </ul>
+</li>
+<li class="{% if active_page == 'staff_corner' %}active{% endif %}">
+    <a href="#">Staff Corner <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+        <li><a href="{% url 'staff_list' %}">Manage Staff</a></li>
+        <li><a href="{% url 'patient_assignment_list' %}">Patient Assignments</a></li>
+    </ul>
+</li>
+<li class="nav-item">
+    {% comment %} <a class="nav-link" href="{% url 'index' %}">Home</a> {% endcomment %}
+    {% if not request.session.username and not request.session.org_name %}
+    <li class="{% if active_page == 'user' %}active{% endif %}">
+      <a href="#">New Organization ? <i class="icofont-rounded-down"></i></a>
+      <ul class="dropdown">
+        <li><a href="{% url 'login' %}">Sign In</a></li>
+        <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
+          </ul>
+        </li>
+        {% elif request.session.username %}
+        <li class="{% if active_page == 'user' %}active{% endif %}">
+          <a href="#">Welcome {{request.session.username}} <i class="icofont-rounded-down"></i></a>
+          <ul class="dropdown">
+            <li><a href="{% url 'logout' %}">Logout</a></li>
+          </ul>
+        </li>
+        {% elif request.session.org_name %}
+        <li class="{% if active_page == 'user' %}active{% endif %}">
+          <a href="#">Welcome {{request.session.org_name}} <i class="icofont-rounded-down"></i></a>
+          <ul class="dropdown">
+            <li><a href="{% url 'logout' %}">Logout</a></li>
+          </ul>
+        </li>
+      {% endif %}
+  </li>
+{% endblock %}
+
+{% block content %}
+<style>
+    .dashboard-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .dashboard-title {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    .dashboard-section {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .dashboard-section h4 {
+        color: #2c3e50;
+        margin-top: 0;
+        margin-bottom: 20px;
+    }
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .table th, .table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .table th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+        color: #34495e;
+    }
+    .table tr:hover {
+        background-color: #f5f5f5;
+    }
+    .btn-group {
+        display: flex;
+        gap: 5px;
+    }
+    .no-requests {
+        color: #7f8c8d;
+        font-style: italic;
+    }
+    .stats-container {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+    .stat-box {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 15px;
+        width: 30%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    .stat-box h5 {
+        margin: 0;
+        color: #34495e;
+    }
+    .stat-box p {
+        font-size: 24px;
+        font-weight: bold;
+        margin: 10px 0 0;
+        color: #3498db;
+    }
+</style>
+<div class="dashboard-container">
+    <h4 class="dashboard-title">Palliative Organization Dashboard</h4>
+
+    <div class="stats-container">
+        <div class="stat-box">
+            <h5>Total Staff</h5>
+            <p id="staff-count">{{ staff_count }}</p>
+        </div>
+        <div class="stat-box">
+            <h5>Assigned Patients</h5>
+            <p id="assigned-patients-count">{{ assigned_patients_count }}</p>
+        </div>
+        <div class="stat-box">
+            <h5>Pending Requests</h5>
+            <p id="pending-requests-count">{{ pending_requests.count }}</p>
+        </div>
+    </div>
+
+    <section id="recent-assignments" class="dashboard-section">
+        <h4>Recent Patient Assignments</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Assigned To</th>
+                    <th>Date Assigned</th>
+                </tr>
+            </thead>
+            <tbody id="recent-assignments-body">
+                {% include "Organizations/recent_assignments_partial.html" %}
+            </tbody>
+        </table>
+    </section>
+    <section id="pending-requests" class="dashboard-section">
+        <h4>Pending Service Requests</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Patient Name</th>
+                    <th>Date Submitted</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="pending-requests-body">
+                {% include "Organizations/pending_requests_partial.html" %}
+            </tbody>
+        </table>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    function updateDashboard() {
+        $.ajax({
+            url: '{% url "palliatives_dashboard" %}',
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                $('#staff-count').text(data.staff_count);
+                $('#assigned-patients-count').text(data.assigned_patients_count);
+                $('#pending-requests-count').text(data.pending_requests_count);
+                $('#recent-assignments-body').html(data.recent_assignments_html);
+                $('#pending-requests-body').html(data.pending_requests_html);
+            },
+            error: function(xhr, status, error) {
+                console.error("Error updating dashboard:", error);
+            }
+        });
+    }
+    $(document).on('click', '.approve-request', function() {
+        var requestId = $(this).data('request-id');
+        $.ajax({
+            url: '/approve-request/' + requestId + '/',
+            type: 'POST',
+            dataType: 'json',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            success: function(data) {
+                if (data.success) {
+                    updateDashboard();
+                } else {
+                    alert(data.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Error approving request:", error);
+                alert("An error occurred while approving the request.");
+            }
+        });
+    });
+
+    // Update dashboard every 30 seconds
+    setInterval(updateDashboard, 30000);
+});
+</script>
+{% endblock %}

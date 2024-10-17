@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Submit Service Request - CareFusion{% endblock %}
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'patients_dashboard' %}">Home</a>
+</li>
+{% endblock nav_items %}
+
+{% block topbar %}
+<li><a href="{% url 'about' %}">about</a></li>
+<li><a href="{% url 'contact' %}">contact</a></li>
+{% endblock topbar %}
+
+{% block content %}
+<section class="breadcrumbs">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h2>Submit Service Request</h2>
+                <ul>
+                    <li>CareFusion</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="service-request section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 offset-lg-2">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="m-0 text-white">Organization: {{ organization.org_name }}</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                        <form id="serviceRequestForm" method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {% if form.non_field_errors %}
+                                <div class="alert alert-danger">
+                                    {{ form.non_field_errors }}
+                                </div>
+                            {% endif %}
+                            <div class="form-group">
+                                <label for="{{ form.service.id_for_label }}">Select Service:</label><br>
+                                {{ form.service }}<br>
+                                {% if form.service.errors %}
+                                    <div class="text-danger">{{ form.service.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ form.doctor_referral.id_for_label }}">Doctor's Referral (PDF only):</label>
+                                {{ form.doctor_referral }}
+                                {% if form.doctor_referral.errors %}
+                                    <div class="text-danger">{{ form.doctor_referral.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ form.additional_notes.id_for_label }}">Additional Notes:</label><br>
+                                {{ form.additional_notes }}
+                                {% if form.additional_notes.errors %}
+                                    <div class="text-danger">{{ form.additional_notes.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group text-center mt-4">
+                                <button type="submit" class="btn btn-primary">Submit Request</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if messages %}
+        {% for message in messages %}
+            showToast("{{ message }}");
+        {% endfor %}
+    {% endif %}
+
+    function showToast(message) {
+        var toastEl = document.getElementById('liveToast');
+        var toastBody = toastEl.querySelector('.toast-body');
+        toastBody.textContent = message;
+        
+        var toast = new bootstrap.Toast(toastEl, {
+            autohide: true,
+            delay: 5000 // Hide after 5 seconds
+        });
+        toast.show();
+    }
+});
+</script>
+{% endblock %}

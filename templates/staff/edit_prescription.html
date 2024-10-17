@@ -1,0 +1,11 @@
+{% extends 'staff/base_dashboard.html' %}
+
+{% block content %}
+<h2>Edit Prescription</h2>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Update Prescription</button>
+</form>
+{% endblock %}
