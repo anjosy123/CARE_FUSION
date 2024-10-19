@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Updated</title>
+</head>
+<body>
+    <h1>Your Appointment Has Been Updated</h1>
+    <p>Dear {{ appointment.patient_assignment.patient.get_full_name }},</p>
+    <p>Your appointment has been updated. Here are the new details:</p>
+    <ul>
+        <li>Date: {{ appointment.date_time|date:"F d, Y" }}</li>
+        <li>Time: {{ appointment.date_time|time:"H:i" }}</li>
+        <li>Doctor: {{ appointment.patient_assignment.staff.get_full_name }}</li>
+        <li>Purpose: {{ appointment.purpose }}</li>
+    </ul>
+    <p>If you have any questions or need to make changes, please contact us.</p>
+    <p>Thank you for choosing our healthcare services.</p>
+    <p>Best regards,<br>Care Fusion Team</p>
+</body>
+</html>
+

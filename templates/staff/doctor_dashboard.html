@@ -1,107 +1,344 @@
 {% extends 'staff/base_dashboard.html' %}
+{% load static %}
 
-{% block role_specific_content %}
+{% block title %}Doctor Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
     .doctor-dashboard {
-        font-family: Arial, sans-serif;
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f7f6;
     }
-    .doctor-dashboard h1 {
+    #dashboardCarousel {
+        width: 100%;
+        margin: 0 auto;
+    }
+    .carousel-inner {
+        max-height: 60vh; /* Use viewport height for responsiveness */
+    }
+    .carousel-item {
+        height: 100%;
+    }
+    .carousel-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+    }
+    .carousel-caption {
+        background-color: rgba(0, 0, 0, 0.5);
+        padding: 20px;
+        border-radius: 10px;
+    }
+    .dashboard-section {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+        height: 100%; /* Make all sections the same height */
+    }
+    .dashboard-section h2 {
         color: #2c3e50;
         border-bottom: 2px solid #3498db;
         padding-bottom: 10px;
     }
-    .doctor-dashboard h2 {
-        color: #34495e;
-        margin-top: 30px;
-    }
-    .doctor-dashboard p {
-        color: #7f8c8d;
-    }
-    .patient-list {
-        list-style-type: none;
-        padding: 0;
-    }
-    .patient-item {
-        background-color: #ecf0f1;
-        border-radius: 5px;
-        padding: 15px;
-        margin-bottom: 10px;
-    }
-    .patient-name {
-        font-weight: bold;
-        color: #2980b9;
-    }
-    .patient-interaction {
-        font-style: italic;
-        color: #95a5a6;
-        font-size: 0.9em;
-    }
-    .action-buttons {
-        margin-top: 10px;
-    }
     .action-button {
-        display: inline-block;
-        padding: 5px 10px;
-        margin-right: 5px;
         background-color: #3498db;
         color: white;
-        text-decoration: none;
-        border-radius: 3px;
-        font-size: 0.9em;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        transition: background-color 0.3s;
     }
     .action-button:hover {
         background-color: #2980b9;
     }
-    .additional-features {
-        list-style-type: none;
-        padding: 0;
+    @media (max-width: 768px) {
+        .carousel-inner {
+            max-height: 40vh; /* Reduce height on smaller screens */
+        }
+        .carousel-caption {
+            padding: 10px;
+        }
+        .carousel-caption h5 {
+            font-size: 1rem;
+        }
+        .carousel-caption p {
+            font-size: 0.8rem;
+        }
     }
-    .feature-item {
-        background-color: #f39c12;
-        color: white;
-        padding: 10px;
-        margin-bottom: 5px;
-        border-radius: 3px;
+    .flatpickr-input {
+        background-color: white !important;
+        cursor: pointer;
     }
-    .feature-item a {
-        color: white;
-        text-decoration: none;
-    }
-    .feature-item:hover {
-        background-color: #e67e22;
+    .input-group-text {
+        cursor: pointer;
     }
 </style>
+{% endblock %}
 
-<div class="doctor-dashboard">
-    <h4>Welcome, {{ staff.get_full_name }}</h4>
-    <p>Role: Doctor</p>
-
-    <h2>Your Assigned Patients</h2>
-    {% if assignments %}
-        <ul class="patient-list">
-        {% for assignment in assignments %}
-            <li class="patient-item">
-                <span class="patient-name">{{ assignment.patient.get_full_name }}</span>
-                <span class="patient-interaction">- Last interaction: {{ assignment.last_interaction|default:"No interaction yet" }}</span>
-                <div class="action-buttons">
-                    <a href="{% url 'manage_prescriptions' assignment.id %}" class="action-button">Manage Prescriptions</a>
-                    <a href="{% url 'manage_appointments' assignment.id %}" class="action-button">Schedule Appointments</a>
-                    <a href="{% url 'manage_medical_history' assignment.id %}" class="action-button">View Medical History</a>
-                </div>
-            </li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>No patients assigned yet.</p>
-    {% endif %}
-
-    <h2>Additional Features</h2>
-    <ul class="additional-features">
-        <li class="feature-item"><a href="#">View My Schedule</a></li>
-        <li class="feature-item"><a href="#">Update Profile</a></li>
+{% block nav_items %}
+<li class="nav-item"><a class="nav-link" href="#" data-section="home">Home</a></li>
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="appointmentsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        Appointments
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="appointmentsDropdown">
+        {% comment %} <li><a class="dropdown-item" href="{% url 'manage_appointments' %}" data-section="manage-appointments">Manage Appointments</a></li> {% endcomment %}
+        {% comment %} <li><a class="dropdown-item" href="#" data-section="manage-appointments">Manage Appointments</a></li> {% endcomment %}
+        {% comment %} <li><a class="dropdown-item" href="{% url 'manage_appointments' assignment.id %}" data-section="schedule-appointment">Schedule Appointment</a></li> {% endcomment %}
+        <li><a class="dropdown-item" href="{% url 'batch_cancel_appointments' %}">Batch Cancel Appointments</a></li>
     </ul>
+</li>
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="patientsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        Patients
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="patientsDropdown">
+        <li><a class="dropdown-item" href="#" data-section="assigned-patients">Assigned Patients</a></li>
+    </ul>
+</li>
+{% if request.session.staff_id %}
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        Welcome, Dr. {{ request.session.staff_name }}
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="userDropdown">
+        <li><a class="dropdown-item" href="#">Profile</a></li>
+        <li><a class="dropdown-item" href="#">Settings</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+    </ul>
+</li>
+{% else %}
+<li class="nav-item">
+    <a class="nav-link" href="{% url 'login' %}">Login</a>
+</li>
+{% endif %}
+{% endblock nav_items %}
+
+{% block content %}
+<div class="doctor-dashboard">
+    <div id="home-section">
+        <div id="dashboardCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <img src="{% static 'img/doctor_dash1.jpg' %}" class="d-block w-100" alt="Doctor Dashboard">
+                    <div class="carousel-caption d-none d-md-block">
+                        <h5>Welcome to Your Dashboard</h5>
+                        <p>Manage your appointments and patients efficiently.</p>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <img src="{% static 'img/doctor_dash2.jpg' %}" class="d-block w-100" alt="Patient Care">
+                    <div class="carousel-caption d-none d-md-block">
+                        <h5>Patient-Centered Care</h5>
+                        <p>Provide the best care for your patients.</p>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <img src="{% static 'img/doctor_dash3.jpg' %}" class="d-block w-100" alt="Patient Care">
+                    <div class="carousel-caption d-none d-md-block">
+                        <h5>Patient-Centered Care</h5>
+                        <p>We value your service to our patients.</p>
+                    </div>
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#dashboardCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#dashboardCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
+
+        <div class="container mt-4">
+            <div class="row g-4">
+                <div class="col-12 col-md-4">
+                    <div class="dashboard-section">
+                        <h2><i class="fas fa-calendar-alt"></i> Upcoming Appointments</h2>
+                        <p>You have {{ upcoming_appointments.count }} upcoming appointments.</p>
+                        <button class="action-button" data-section="manage-appointments">View Appointments</button>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="dashboard-section">
+                        <h2><i class="fas fa-user-injured"></i> Assigned Patients</h2>
+                        <p>You have {{ assignments.count }} assigned patients.</p>
+                        <button class="action-button" data-section="assigned-patients">View Patients</button>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="dashboard-section">
+                        <h2><i class="fas fa-notes-medical"></i> Recent Activities</h2>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check-circle text-success me-2"></i>Updated patient records</li>
+                            <li><i class="fas fa-check-circle text-success me-2"></i>Scheduled new appointment</li>
+                            <li><i class="fas fa-check-circle text-success me-2"></i>Reviewed lab results</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="manage-appointments-section" style="display: none;">
+        <div class="container mt-4">
+            <div class="dashboard-section">
+                <h2>Manage Appointments</h2>
+                {% if upcoming_appointments %}
+                    <ul class="list-group">
+                        {% for appointment in upcoming_appointments %}
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ appointment.patient_assignment.patient.get_full_name }}</strong>
+                                        <br>
+                                        {{ appointment.date_time|date:"F d, Y, h:i a" }} - {{ appointment.purpose }}
+                                    </div>
+                                    <div>
+                                        <a href="{% url 'reschedule_appointment' appointment.id %}" class="btn btn-sm btn-warning">Reschedule</a>
+                                        <form method="post" action="{% url 'cancel_appointment' appointment.id %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to cancel this appointment?')">Cancel</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No upcoming appointments.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div id="schedule-appointment-section" style="display: none;">
+        <div class="container mt-4">
+            <div class="dashboard-section">
+                <h2>Schedule New Appointment</h2>
+                <form method="post" action="{% url 'schedule_appointment' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="id_date_time">Date and Time:</label>
+                        <div class="input-group">
+                            {{ appointment_form.date_time }}
+                            <div class="input-group-append">
+                                <span class="input-group-text" id="date-time-addon">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {{ appointment_form.purpose.label_tag }}
+                    {{ appointment_form.purpose }}
+                    <button type="submit" class="btn btn-primary mt-3">Schedule Appointment</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="assigned-patients-section" style="display: none;">
+        <div class="container mt-4">
+            <div class="dashboard-section">
+                <h2>Your Assigned Patients</h2>
+                {% if assignments %}
+                    <ul class="list-group">
+                    {% for assignment in assignments %}
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ assignment.patient.get_full_name }}</strong>
+                                    <br>
+                                    Last interaction: {{ assignment.last_interaction|default:"No interaction yet" }}
+                                </div>
+                                <div>
+                                    <a href="{% url 'manage_appointments' assignment.id %}" class="btn btn-sm btn-success">Schedule Appointments</a>
+                                    <a href="{% url 'manage_prescriptions' assignment.id %}" class="btn btn-sm btn-info">Manage Prescriptions</a>
+                                    <a href="{% url 'manage_medical_history' assignment.id %}" class="btn btn-sm btn-warning">View Medical History</a>
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No patients assigned yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show home section by default
+        document.getElementById('home-section').style.display = 'block';
+
+        // Handle navigation clicks
+        document.querySelectorAll('[data-section]').forEach(function(element) {
+            element.addEventListener('click', function(e) {
+                e.preventDefault();
+                var sectionId = this.getAttribute('data-section');
+                showSection(sectionId);
+            });
+        });
+
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('[id$="-section"]').forEach(function(section) {
+                section.style.display = 'none';
+            });
+
+            // Show the selected section
+            var selectedSection = document.getElementById(sectionId + '-section');
+            if (selectedSection) {
+                selectedSection.style.display = 'block';
+            }
+        }
+
+        // Initialize Flatpickr
+        flatpickr("#id_date_time", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            minDate: "today",
+            maxDate: new Date().fp_incr(60), // Allow booking up to 60 days in advance
+            time_24hr: false,
+            minuteIncrement: 15,
+            defaultHour: 9, // Start at 9 AM
+            disable: [
+                function(date) {
+                    // Disable weekends
+                    return (date.getDay() === 0 || date.getDay() === 6);
+                }
+            ],
+            // Define available time slots
+            enable: [
+                {
+                    from: "09:00",
+                    to: "17:00"
+                }
+            ],
+            locale: {
+                firstDayOfWeek: 1 // Start week on Monday
+            },
+            onChange: function(selectedDates, dateStr, instance) {
+                // You can add custom logic here when a date is selected
+                console.log(dateStr);
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% block footer %}
+{% endblock footer %}
+

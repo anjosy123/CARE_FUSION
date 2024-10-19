@@ -1,0 +1,16 @@
+{% extends 'staff/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Reschedule Appointment{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Reschedule Appointment</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Reschedule</button>
+    </form>
+</div>
+{% endblock %}
+

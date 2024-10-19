@@ -1,8 +1,11 @@
 from django import forms
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from .models import ServiceRequest,Service,Staff,PatientAssignment,Prescription,Appointment
 from django.core.exceptions import ValidationError
+from datetime import datetime
+
+User = get_user_model()
 
 class UserRegisterForm(UserCreationForm):
     email = forms.EmailField()
@@ -76,9 +79,30 @@ class PrescriptionForm(forms.ModelForm):
         }
 
 class AppointmentForm(forms.ModelForm):
+    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    time = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}))
+    patient = forms.ModelChoiceField(queryset=User.objects.filter(is_staff=False), required=False)
+
     class Meta:
         model = Appointment
-        fields = ['date_time', 'purpose', 'notes']
-        widgets = {
-            'date_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-        }
+        fields = ['purpose', 'notes']
+
+    def __init__(self, *args, **kwargs):
+        is_staff = kwargs.pop('is_staff', False)
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['date'].initial = self.instance.date_time.date()
+            self.fields['time'].initial = self.instance.date_time.time()
+        if not is_staff:
+            del self.fields['patient']
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        date = self.cleaned_data.get('date')
+        time = self.cleaned_data.get('time')
+        if date and time:
+            instance.date_time = datetime.combine(date, time)
+        if commit:
+            instance.save()
+        return instance
+

@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Request Emergency Appointment - CareFusion{% endblock %}
+
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .emergency-request-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .emergency-request-container h2 {
+        color: #dc3545;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    .emergency-request-container p {
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    .emergency-request-container form {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+    .emergency-request-container button {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    .emergency-request-container button:hover {
+        background-color: #c82333;
+    }
+    .emergency-request-container .cancel-link {
+        display: block;
+        text-align: center;
+        color: #6c757d;
+        text-decoration: none;
+        margin-top: 1rem;
+    }
+    .emergency-request-container .cancel-link:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'patients_dashboard' %}">Home</a>
+</li>
+<li class="nav-item {% if active_page == 'health' %}active{% endif %}">
+  <a href="#">My Health <i class="icofont-rounded-down"></i></a>
+  <ul class="dropdown">
+    <li><a href="{% url 'patients_dashboard' %}?view=prescriptions">Prescriptions</a></li>
+    <li><a href="{% url 'patients_dashboard' %}?view=appointments">Appointments</a></li>
+    <li><a href="{% url 'patients_dashboard' %}?view=medical_history">Medical History</a></li>
+    <li><a href="{% url 'available_appointments' %}">Book Appointment</a></li>
+  </ul>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'service_requests' %}">Requests</a>
+</li>
+<!-- Add this new list item for notifications -->
+<li class="nav-item ms-auto">
+  <div class="dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+      <i class="fas fa-bell"></i>
+      <span class="badge bg-danger">{{ notifications|length }}</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
+      {% for notification in notifications %}
+        <li><a class="dropdown-item" href="#">{{ notification.message }}</a></li>
+      {% empty %}
+        <li><a class="dropdown-item" href="#">No new notifications</a></li>
+      {% endfor %}
+      <li><hr class="dropdown-divider"></li>
+      <li><a class="dropdown-item" href="{% url 'notification_center' %}">View all notifications</a></li>
+    </ul>
+  </div>
+</li>
+<li class="nav-item">
+  {% if not request.session.username and not request.session.org_name %}
+  <li class="{% if active_page == 'user' %}active{% endif %}">
+    <a href="#">New Organization ? <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+      <li><a href="{% url 'login' %}">Sign In</a></li>
+      <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
+    </ul>
+  </li>
+  {% elif request.session.username %}
+  <li class="{% if active_page == 'user' %}active{% endif %}">
+    <a href="#">Welcome {{request.session.username}} <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+      <li><a href="{% url 'logout' %}">Logout</a></li>
+    </ul>
+  </li>
+  {% elif request.session.org_name %}
+  <li class="{% if active_page == 'user' %}active{% endif %}">
+    <a href="#">Welcome {{request.session.org_name}} <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+      <li><a href="{% url 'logout' %}">Logout</a></li>
+    </ul>
+  </li>
+  {% endif %}
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="emergency-request-container">
+    <h2>Request Emergency Appointment</h2>
+    <p>Are you sure you want to request an emergency appointment?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Yes, request emergency appointment</button>
+    </form>
+    <a href="{% url 'available_appointments' %}" class="cancel-link">Cancel</a>
+</div>
+{% endblock %}
+{% block custom_footer %}
+{% endblock custom_footer %}
+{% block copyright %}
+{% endblock copyright %}

@@ -1,6 +1,7 @@
 from django.core.mail import send_mail
 from django.urls import reverse
 from django.conf import settings
+from django.template.loader import render_to_string
 from .models import Staff, PatientAssignment, ServiceRequest
 
 def send_verification_email(email, token, is_organization=False):
@@ -35,3 +36,32 @@ def get_dashboard_context(organization):
         'rejected_requests': rejected_requests,
         'recent_assignments': recent_assignments,
     }
+    
+    
+    
+
+def send_appointment_email(appointment, action, recipient='patient'):
+    if recipient == 'patient':
+        to_email = appointment.patient_assignment.patient.email
+        name = appointment.patient_assignment.patient.get_full_name()
+    else:
+        to_email = appointment.patient_assignment.staff.email
+        name = appointment.patient_assignment.staff.get_full_name()
+
+    subject = f'Appointment {action.capitalize()}'
+    template = f'emails/appointment_{action}.html'
+    context = {
+        'name': name,
+        'date_time': appointment.date_time,
+        'purpose': appointment.purpose,
+        'reason': appointment.cancellation_reason if action == 'cancelled' else None,
+    }
+    html_message = render_to_string(template, context)
+    send_mail(
+        subject,
+        '',
+        'from@example.com',
+        [to_email],
+        html_message=html_message,
+        fail_silently=False,
+    )

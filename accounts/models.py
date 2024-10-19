@@ -5,6 +5,8 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.utils.crypto import get_random_string
 from django.db.models import Max
 import uuid
+from django.conf import settings
+from datetime import timedelta
 
 class User(AbstractUser):
     is_email_verified = models.BooleanField(default=False)
@@ -191,7 +193,7 @@ class PatientAssignment(models.Model):
         unique_together = ['patient', 'staff']
 
     def __str__(self):
-        return f"{self.patient.get_full_name() or self.patient.username} assigned to {self.staff.get_full_name()}"
+        return f"{self.patient.get_full_name()} assigned to {self.staff.get_full_name()}"
 
     def update_last_interaction(self):
         self.last_interaction = timezone.now()
@@ -217,10 +219,19 @@ class Prescription(models.Model):
         return f"{self.medication} for {self.patient_assignment.patient.get_full_name()}"
     
 class Appointment(models.Model):
-    patient_assignment = models.ForeignKey(PatientAssignment, on_delete=models.CASCADE, related_name='appointments')
+    STATUS_CHOICES = [
+        ('AVAILABLE', 'Available'),
+        ('BOOKED', 'Booked'),
+        ('CANCELLED', 'Cancelled'),
+        ('COMPLETED', 'Completed'),
+    ]
+    
+    patient_assignment = models.ForeignKey('PatientAssignment', on_delete=models.CASCADE, related_name='appointments')
     date_time = models.DateTimeField()
     purpose = models.CharField(max_length=200)
     notes = models.TextField(blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='AVAILABLE')
+    cancellation_reason = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -229,12 +240,12 @@ class Appointment(models.Model):
     
 class Notification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    message = models.CharField(max_length=255)
-    is_read = models.BooleanField(default=False)
+    message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.user.username} - {self.message[:30]}"
+        return f"Notification for {self.user.username}: {self.message[:50]}..."
         
 class Message(models.Model):
     sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
@@ -245,3 +256,5 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender} to {self.recipient}"
+    
+
