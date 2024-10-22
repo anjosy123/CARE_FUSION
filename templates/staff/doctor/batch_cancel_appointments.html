@@ -1,0 +1,48 @@
+{% extends 'staff/base_dashboard.html' %}
+
+{% block title %}Manage All Appointments{% endblock %}
+
+{% block nav_items %}
+<li class="{% if active_page == 'home' %}active{% endif %}"><a href="{% url 'doctor_dashboard' %}">Home</a></li>
+{% if request.session.staff_id %}
+<li class="{% if active_page == 'user' %}active{% endif %}">
+    <a href="#">Welcome, Dr. {{ request.session.staff_name }} <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+        <li><a href="#">Profile</a></li>
+        <li><a href="#">Settings</a></li>
+        <li><a href="{% url 'logout' %}">Logout</a></li>
+        </ul>
+    </li>
+    {% else %}
+    <li class="{% if active_page == 'user' %}active{% endif %}">
+        <a href="{% url 'login' %}">Login</a>
+    </li>
+    {% endif %}
+{% endblock nav_items %}
+
+{% block content %}
+<h2>Batch Cancel Appointments</h2>
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="reason">Cancellation Reason:</label>
+        <textarea name="reason" id="reason" class="form-control" required></textarea>
+    </div>
+    <ul class="appointment-list">
+        {% for appointment in appointments %}
+            <li>
+                <input type="checkbox" name="appointment_ids" value="{{ appointment.id }}" id="appointment_{{ appointment.id }}">
+                <label for="appointment_{{ appointment.id }}">
+                    {{ appointment.patient_assignment.patient.get_full_name }} - {{ appointment.date_time|date:"F d, Y at g:i A" }}
+                </label>
+            </li>
+        {% empty %}
+            <li>No appointments available for cancellation.</li>
+        {% endfor %}
+    </ul>
+    <button type="submit" class="btn btn-danger">Cancel Selected Appointments</button>
+</form>
+{% endblock %}
+{% block footer %}
+{% endblock footer %}
+

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Cancelled</title>
+</head>
+<body>
+    <h1>Your Appointment Has Been Cancelled</h1>
+    <p>Dear {{ appointment.patient_assignment.patient.get_full_name }},</p>
+    <p>We regret to inform you that your appointment has been cancelled. Here are the details of the cancelled appointment:</p>
+    <ul>
+        <li>Date: {{ appointment.date_time|date:"F d, Y" }}</li>
+        <li>Time: {{ appointment.date_time|time:"H:i" }}</li>
+        <li>Doctor: {{ appointment.patient_assignment.staff.get_full_name }}</li>
+        <li>Purpose: {{ appointment.purpose }}</li>
+    </ul>
+    <p>If you need to reschedule or have any questions, please contact our office.</p>
+    <p>We apologize for any inconvenience this may cause.</p>
+    <p>Thank you for your understanding.</p>
+    <p>Best regards,<br>Care Fusion Team</p>
+</body>
+</html>
+

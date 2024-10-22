@@ -1,0 +1,615 @@
+<html class="no-js" lang="zxx"><head>
+    <!-- Meta Tags -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="keywords" content="Site keywords here">
+    <meta name="description" content="">
+    <meta name="copyright" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Title -->
+    <title>Palliative Organization Dashboard</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="/static/img/favicon.png">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Poppins:200i,300,300i,400,400i,500,500i,600,600i,700,700i,800,800i,900,900i&amp;display=swap" rel="stylesheet">
+    
+    <style>
+      .nav.menu li.active > a {
+        color: #1A76D1;
+        font-weight: bold;
+      }
+      .main-menu {
+        width: 100%;
+      }
+      .main-menu .navigation {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+      }
+      .main-menu .navigation > li {
+        flex: 1 1 auto;
+        text-align: center;
+      }
+      .main-menu .navigation > li > a {
+        padding: 20px 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 14px;
+      }
+      @media (max-width: 1200px) {
+        .main-menu .navigation > li > a {
+          font-size: 12px;
+        }
+      }
+      @media (max-width: 991px) {
+        .main-menu .navigation {
+          flex-wrap: wrap;
+        }
+        .main-menu .navigation > li {
+          flex: 1 1 50%;
+        }
+      }
+      @media (max-width: 767px) {
+        .main-menu .navigation > li {
+          flex: 1 1 100%;
+        }
+      }
+    </style>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <!-- Nice Select CSS -->
+    <link rel="stylesheet" href="/static/css/nice-select.css">
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+    <!-- icofont CSS -->
+    <link rel="stylesheet" href="/static/css/icofont.css">
+    <!-- Slicknav -->
+    <link rel="stylesheet" href="/static/css/slicknav.min.css">
+    <!-- Owl Carousel CSS -->
+    <link rel="stylesheet" href="/static/css/owl-carousel.css">
+    <!-- Datepicker CSS -->
+    <link rel="stylesheet" href="/static/css/datepicker.css">
+    <!-- Animate CSS -->
+    <link rel="stylesheet" href="/static/css/animate.min.css">
+    <!-- Magnific Popup CSS -->
+    <link rel="stylesheet" href="/static/css/magnific-popup.css">
+
+    <!-- Medipro CSS -->
+    <link rel="stylesheet" href="/static/css/normalize.css">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  </head>
+
+  <body>
+    <!-- Preloader --> 
+    <div class="preloader preloader-deactivate">
+      <div class="loader">
+        <div class="loader-outter"></div>
+        <div class="loader-inner"></div>
+        <div class="indicator">
+          <svg width="16px" height="12px">
+            <polyline id="back" points="1 6 4 6 6 11 10 1 12 6 15 6"></polyline>
+            <polyline id="front" points="1 6 4 6 6 11 10 1 12 6 15 6"></polyline>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <!-- End Preloader -->
+    <!-- Header Area -->
+    <header class="header">
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-6 col-md-5 col-12">
+              <!-- Contact -->
+              <ul class="top-link">
+                
+                <li><a href="/about">About</a></li>
+                <li><a href="/organizations_home">Organizations</a></li>
+                <li><a href="/contact">Contact</a></li>
+                
+              </ul>
+              <!-- End Contact -->
+            </div>
+            <div class="col-lg-6 col-md-7 col-12">
+              <!-- Top Contact -->
+              <ul class="top-contact">
+                <li><i class="fa fa-phone"></i>+91 9876543210</li>
+                <li>
+                  <i class="fa fa-envelope"></i><a href="mailto:support@carefusion.com">support@carefusion.com</a>
+                </li>
+              </ul>
+              <!-- End Top Contact -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- End Topbar -->
+      <!-- Header Inner -->
+      <div class="header-inner">
+        <div class="container">
+          <div class="inner">
+            <div class="row">
+              <div class="col-lg-3 col-md-3 col-12">
+                <!-- Start Logo -->
+                <div class="logo">
+                  <a href="/"><img src="/static/img/logo.png" alt="#" width="178px" height="37px" object-fit="contain;"></a>
+                </div>
+                <!-- End Logo -->
+                <!-- Mobile Nav -->
+                <div class="mobile-nav"><div class="slicknav_menu"><a href="#" aria-haspopup="true" role="button" tabindex="0" class="slicknav_btn slicknav_collapsed"><span class="slicknav_menutxt"></span><span class="slicknav_icon slicknav_no-text"><span class="slicknav_icon-bar"></span><span class="slicknav_icon-bar"></span><span class="slicknav_icon-bar"></span></span></a><ul class="slicknav_nav slicknav_hidden" aria-hidden="true" role="menu" style="display: none;">
+                      
+<li><a class="nav-link" href="/palliatives_dashboard" role="menuitem" tabindex="-1">Home</a></li>
+<li><a class="nav-link" href="/services/" role="menuitem" tabindex="-1">Services</a></li>
+<li class="slicknav_collapsed slicknav_parent"><a href="#" role="menuitem" aria-haspopup="true" tabindex="-1" class="slicknav_item slicknav_row">
+    <a href="#" tabindex="-1">Service Requests <i class="icofont-rounded-down"></i></a>
+    <span class="slicknav_arrow">►</span></a><ul class="dropdown slicknav_hidden" role="menu" aria-hidden="true" style="display: none;">
+        <li><a href="/pending-requests/" role="menuitem" tabindex="-1">Pending Requests</a></li>
+        <li><a href="/approved-rejected-requests/" role="menuitem" tabindex="-1">Approved/Rejected Requests</a></li>
+    </ul>
+</li>
+<li class="slicknav_collapsed slicknav_parent"><a href="#" role="menuitem" aria-haspopup="true" tabindex="-1" class="slicknav_item slicknav_row">
+    <a href="#" tabindex="-1">Staff Corner <i class="icofont-rounded-down"></i></a>
+    <span class="slicknav_arrow">►</span></a><ul class="dropdown slicknav_hidden" role="menu" aria-hidden="true" style="display: none;">
+        <li><a href="/staff/" role="menuitem" tabindex="-1">Manage Staff</a></li>
+        <li><a href="/patient-assignments/" role="menuitem" tabindex="-1">Patient Assignments</a></li>
+    </ul>
+</li>
+<!-- New Team Management dropdown -->
+<li class="slicknav_collapsed slicknav_parent"><a href="#" role="menuitem" aria-haspopup="true" tabindex="-1" class="slicknav_item slicknav_row">
+    <a href="#" tabindex="-1">Team Management <i class="icofont-rounded-down"></i></a>
+    <span class="slicknav_arrow">►</span></a><ul class="dropdown slicknav_hidden" role="menu" aria-hidden="true" style="display: none;">
+        <li><a href="/teams/" role="menuitem" tabindex="-1">Manage Teams</a></li>
+        <li><a href="/teams/visits/" role="menuitem" tabindex="-1">Team Visits</a></li>
+        <li><a href="/team-visit-calendar/" role="menuitem" tabindex="-1">Team Visit Calendar</a></li>
+        
+    </ul>
+</li>
+<li class="nav-item slicknav_txtnode">
+    
+        </li><li class="slicknav_collapsed slicknav_parent"><a href="#" role="menuitem" aria-haspopup="true" tabindex="-1" class="slicknav_item slicknav_row">
+          <a href="#" tabindex="-1">Welcome Test Organization <i class="icofont-rounded-down"></i></a>
+          <span class="slicknav_arrow">►</span></a><ul class="dropdown slicknav_hidden" role="menu" aria-hidden="true" style="display: none;">
+            <li><a href="/logout" role="menuitem" tabindex="-1">Logout</a></li>
+          </ul>
+        </li>
+      
+  
+
+                    </ul></div></div>
+                <!-- End Mobile Nav -->
+              </div>
+              <div class="col-lg-7 col-md-9 col-12">
+                <!-- Main Menu -->
+                <div class="main-menu">
+                  <nav class="navigation">
+                    <ul class="nav menu">
+                      
+<li><a class="nav-link" href="/palliatives_dashboard">Home</a></li>
+<li><a class="nav-link" href="/services/">Services</a></li>
+<li class="">
+    <a href="#">Service Requests <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+        <li><a href="/pending-requests/">Pending Requests</a></li>
+        <li><a href="/approved-rejected-requests/">Approved/Rejected Requests</a></li>
+    </ul>
+</li>
+<li class="">
+    <a href="#">Staff Corner <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+        <li><a href="/staff/">Manage Staff</a></li>
+        <li><a href="/patient-assignments/">Patient Assignments</a></li>
+    </ul>
+</li>
+<!-- New Team Management dropdown -->
+<li class="">
+    <a href="#">Team Management <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+        <li><a href="/teams/">Manage Teams</a></li>
+        <li><a href="/teams/visits/">Team Visits</a></li>
+        <li><a href="/team-visit-calendar/">Team Visit Calendar</a></li>
+        
+    </ul>
+</li>
+<li class="nav-item">
+    
+        </li><li class="">
+          <a href="#">Welcome Test Organization <i class="icofont-rounded-down"></i></a>
+          <ul class="dropdown">
+            <li><a href="/logout">Logout</a></li>
+          </ul>
+        </li>
+      
+  
+
+                    </ul>
+                  </nav>
+                </div>
+                <!--/ End Main Menu -->
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+      <!--/ End Header Inner -->
+      
+    </header>
+
+    
+    
+
+    
+<style>
+    .dashboard-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .dashboard-title {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    .dashboard-section {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .dashboard-section h4 {
+        color: #2c3e50;
+        margin-top: 0;
+        margin-bottom: 20px;
+    }
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .table th, .table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .table th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+        color: #34495e;
+    }
+    .table tr:hover {
+        background-color: #f5f5f5;
+    }
+    .btn-group {
+        display: flex;
+        gap: 5px;
+    }
+    .no-requests {
+        color: #7f8c8d;
+        font-style: italic;
+    }
+    .stats-container {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+    .stat-box {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 15px;
+        width: 23%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    .stat-box h5 {
+        margin: 0;
+        color: #34495e;
+    }
+    .stat-box p {
+        font-size: 24px;
+        font-weight: bold;
+        margin: 10px 0 0;
+        color: #3498db;
+    }
+</style>
+<div class="dashboard-container">
+    <h4 class="dashboard-title">Palliative Organization Dashboard</h4>
+
+    <div class="stats-container">
+        <div class="stat-box">
+            <h5>Total Staff</h5>
+            <p id="staff-count">0</p>
+        </div>
+        <div class="stat-box">
+            <h5>Assigned Patients</h5>
+            <p id="assigned-patients-count">0</p>
+        </div>
+        <div class="stat-box">
+            <h5>Pending Requests</h5>
+            <p id="pending-requests-count">0</p>
+        </div>
+        <div class="stat-box">
+            <h5>Active Teams</h5>
+            <p id="active-teams-count">0</p>
+        </div>
+    </div>
+
+    <section id="recent-assignments" class="dashboard-section">
+        <h4>Recent Patient Assignments</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Assigned To</th>
+                    <th>Date Assigned</th>
+                </tr>
+            </thead>
+            <tbody id="recent-assignments-body">
+                
+<tr>
+    <td colspan="3">No recent assignments</td>
+</tr>
+
+            </tbody>
+        </table>
+    </section>
+    <section id="pending-requests" class="dashboard-section">
+        <h4>Pending Service Requests</h4>
+        
+                Pending Requests
+
+
+
+
+<table class="table">
+            <thead>
+                <tr>
+                    <th>Patient Name</th>
+                    <th>Date Submitted</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="pending-requests-body"><tr>
+    <td colspan="3">No pending service requests.</td>
+</tr>
+
+            </tbody>
+        </table>
+    </section>
+    <section id="upcoming-team-visits" class="dashboard-section">
+        <h4>Upcoming Team Visits</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Team</th>
+                    <th>Patient</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="upcoming-team-visits-body">
+                
+<tr>
+    <td colspan="5">No upcoming team visits scheduled.</td>
+</tr>
+
+
+
+            </tbody>
+        </table>
+    </section>
+</div>
+
+    
+    
+    <!-- Footer Area -->
+    <footer id="footer" class="footer">
+      <!-- Footer Top -->
+      <div class="footer-top">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-3 col-md-6 col-12">
+              <div class="single-footer">
+                <h2>About Us</h2>
+                <p>
+                  Lorem ipsum dolor sit am consectetur adipisicing elit do
+                  eiusmod tempor incididunt ut labore dolore magna.
+                </p>
+                <!-- Social -->
+                <ul class="social">
+                  <li><a href="#"><i class="icofont-facebook"></i></a></li>
+                  <li><a href="#"><i class="icofont-google-plus"></i></a></li>
+                  <li><a href="#"><i class="icofont-twitter"></i></a></li>
+                  <li><a href="#"><i class="icofont-vimeo"></i></a></li>
+                  <li><a href="#"><i class="icofont-pinterest"></i></a></li>
+                </ul>
+                <!-- End Social -->
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-12">
+              <div class="single-footer f-link">
+                <h2>Quick Links</h2>
+                <div class="row">
+                  <div class="col-lg-6 col-md-6 col-12">
+                    <ul>
+                      <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Home</a></li>
+                      <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>About Us</a></li>
+                      <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Services</a></li>
+                      <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Our Cases</a></li>
+                      <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Other Links</a></li>
+                    </ul>
+                  </div>
+                  <div class="col-lg-6 col-md-6 col-12">
+                    <ul>
+                      <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Consuling</a></li>
+                      <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Finance</a></li>
+                      <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Testimonials</a></li>
+                      <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>FAQ</a></li>
+                      <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Contact Us</a></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-12">
+              <div class="single-footer">
+                <h2>Open Hours</h2>
+                <p>
+                  Lorem ipsum dolor sit ame consectetur adipisicing elit do
+                  eiusmod tempor incididunt.
+                </p>
+                <ul class="time-sidual">
+                  <li class="day">Monday - Fridayp <span>8.00-20.00</span></li>
+                  <li class="day">Saturday <span>9.00-18.30</span></li>
+                  <li class="day">Monday - Thusday <span>9.00-15.00</span></li>
+                </ul>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-12">
+              <div class="single-footer">
+                <h2>Newsletter</h2>
+                <p>
+                  subscribe to our newsletter to get allour news in your inbox..
+                  Lorem ipsum dolor sit amet, consectetur adipisicing elit,
+                </p>
+                <form action="mail/mail.php" method="get" target="_blank" class="newsletter-inner">
+                  <input name="email" placeholder="Email Address" class="common-input" onfocus="this.placeholder = ''" onblur="this.placeholder = 'Your email address'" required="" type="email">
+                  <button class="button"><i class="icofont icofont-paper-plane"></i></button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!--/ End Footer Top -->
+      
+
+      
+      <!-- Copyright -->
+      <div class="copyright">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-12 col-md-12 col-12">
+              <div class="copyright-content">
+                <p>© Copyright 2024 | All Rights Reserved by Anjosy A J</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!--/ End Copyright -->
+    </footer>
+    <!--/ End Footer Area -->
+
+    <!-- jquery Min JS -->
+    <script src="/static/js/jquery.min.js"></script>
+    <!-- jquery Migrate JS -->
+    <script src="/static/js/jquery-migrate-3.0.0.js"></script>
+    <!-- jquery Ui JS -->
+    <script src="/static/js/jquery-ui.min.js"></script>
+        <!-- Easing JS -->
+        <script src="/static/js/easing.js"></script>
+        <!-- Color JS -->
+        <script src="/static/js/colors.js"></script>
+        <!-- Popper JS -->  
+        <script src="/static/js/popper.min.js"></script>
+        <!-- Bootstrap Datepicker JS -->
+        <script src="/static/js/bootstrap-datepicker.js"></script>
+        <!-- Jquery Nav JS -->
+        <script src="/static/js/jquery.nav.js"></script>
+        <!-- Slicknav JS -->
+        <script src="/static/js/slicknav.min.js"></script>
+        <!-- ScrollUp JS -->
+        <script src="/static/js/jquery.scrollUp.min.js"></script>
+        <!-- Niceselect JS -->
+        <script src="/static/js/niceselect.js"></script>
+        <!-- Tilt Jquery JS -->
+        <script src="/static/js/tilt.jquery.min.js"></script>
+        <!-- Owl Carousel JS -->
+        <script src="/static/js/owl-carousel.js"></script>
+        <!-- counterup JS -->
+        <script src="/static/js/jquery.counterup.min.js"></script>
+        <!-- Steller JS -->
+        <script src="/static/js/steller.js"></script>
+        <!-- Wow JS -->
+        <script src="/static/js/wow.min.js"></script>
+        <!-- Magnific Popup JS -->
+        <script src="/static/js/jquery.magnific-popup.min.js"></script>
+        <!-- Counter Up CDN JS -->
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/waypoints/2.0.3/waypoints.min.js"></script>
+        <!-- Bootstrap JS -->
+        <script src="/static/js/bootstrap.min.js"></script>
+        <!-- Main JS -->
+        <script src="/static/js/main.js"></script>
+    
+        <!-- Add this div for the warning message -->
+        <div id="warning-message" class="alert alert-warning alert-dismissible fade show" role="alert" style="display: none;">
+            You are not a registered user, please sign in.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        
+
+        
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    function updateDashboard() {
+        $.ajax({
+            url: '/palliatives_dashboard',
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                $('#staff-count').text(data.staff_count);
+                $('#assigned-patients-count').text(data.assigned_patients_count);
+                $('#pending-requests-count').text(data.pending_requests_count);
+                $('#active-teams-count').text(data.active_teams_count);
+                $('#recent-assignments-body').html(data.recent_assignments_html);
+                $('#pending-requests-body').html(data.pending_requests_html);
+                $('#upcoming-team-visits-body').html(data.upcoming_team_visits_html);
+            },
+            error: function(xhr, status, error) {
+                console.error("Error updating dashboard:", error);
+            }
+        });
+    }
+    $(document).on('click', '.approve-request', function() {
+        var requestId = $(this).data('request-id');
+        $.ajax({
+            url: '/approve-request/' + requestId + '/',
+            type: 'POST',
+            dataType: 'json',
+            headers: {
+                'X-CSRFToken': 'o9YLUDsczZhLNOSqzj9ELFkwsg2iwMtmlBf6iTeujUNWrt2HsnUkRjOxEj1dxntQ'
+            },
+            success: function(data) {
+                if (data.success) {
+                    updateDashboard();
+                } else {
+                    alert(data.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Error approving request:", error);
+                alert("An error occurred while approving the request.");
+            }
+        });
+    });
+
+    // Update dashboard every 30 seconds
+    setInterval(updateDashboard, 30000);
+});
+</script>
+
+      
+    
+<a id="scrollUp" href="#top" style="display: none; position: fixed; z-index: 2147483647;"><span><i class="fa fa-angle-up"></i></span></a></body></html>

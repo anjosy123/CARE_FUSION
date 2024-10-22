@@ -1,8 +1,11 @@
 from django import forms
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
-from .models import ServiceRequest,Service,Staff,PatientAssignment,Prescription,Appointment
+from .models import ServiceRequest,Service,Staff,PatientAssignment,Prescription,Appointment, Team, TeamVisit, TeamMessage, VisitChecklist, VisitNote
 from django.core.exceptions import ValidationError
+from datetime import datetime
+
+User = get_user_model()
 
 class UserRegisterForm(UserCreationForm):
     email = forms.EmailField()
@@ -76,9 +79,106 @@ class PrescriptionForm(forms.ModelForm):
         }
 
 class AppointmentForm(forms.ModelForm):
+    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    time = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}))
+    patient = forms.ModelChoiceField(queryset=User.objects.filter(is_staff=False), required=False)
+
     class Meta:
         model = Appointment
-        fields = ['date_time', 'purpose', 'notes']
+        fields = ['purpose', 'notes']
+
+    def __init__(self, *args, **kwargs):
+        is_staff = kwargs.pop('is_staff', False)
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['date'].initial = self.instance.date_time.date()
+            self.fields['time'].initial = self.instance.date_time.time()
+        if not is_staff:
+            del self.fields['patient']
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        date = self.cleaned_data.get('date')
+        time = self.cleaned_data.get('time')
+        if date and time:
+            instance.date_time = datetime.combine(date, time)
+        if commit:
+            instance.save()
+        return instance
+    
+# palliative organization team management
+
+class TeamForm(forms.ModelForm):
+    members = forms.ModelMultipleChoiceField(
+        queryset=Staff.objects.none(),  # We'll set this in __init__
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'scrollable-checklist'}),
+        required=False
+    )
+
+    class Meta:
+        model = Team
+        fields = ['name', 'members']
+
+    def __init__(self, *args, **kwargs):
+        organization = kwargs.pop('organization', None)
+        super(TeamForm, self).__init__(*args, **kwargs)
+        if organization:
+            self.fields['members'].queryset = Staff.objects.filter(organization=organization)
+
+class TeamVisitForm(forms.ModelForm):
+    patient = forms.ModelChoiceField(queryset=User.objects.none())
+
+    class Meta:
+        model = TeamVisit
+        fields = ['team', 'patient', 'scheduled_date', 'start_time', 'end_time', 'notes']
         widgets = {
-            'date_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'scheduled_date': forms.DateInput(attrs={'type': 'date'}),
+            'start_time': forms.TimeInput(attrs={'type': 'time'}),
+            'end_time': forms.TimeInput(attrs={'type': 'time'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        organization = kwargs.pop('organization', None)
+        super(TeamVisitForm, self).__init__(*args, **kwargs)
+        if organization:
+            self.fields['team'].queryset = Team.objects.filter(organization=organization)
+            # Get patients who have made service requests to this organization
+            patient_ids = ServiceRequest.objects.filter(organization=organization).values_list('patient', flat=True).distinct()
+            self.fields['patient'].queryset = User.objects.filter(id__in=patient_ids)
+
+class RescheduleTeamVisitForm(forms.Form):
+    new_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    new_start_time = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}))
+    new_end_time = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}))
+    reason = forms.CharField(widget=forms.Textarea, required=False)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_start_time = cleaned_data.get('new_start_time')
+        new_end_time = cleaned_data.get('new_end_time')
+
+        if new_start_time and new_end_time and new_start_time >= new_end_time:
+            raise forms.ValidationError("End time must be after start time.")
+        return cleaned_data
+    
+
+class TeamMessageForm(forms.ModelForm):
+    class Meta:
+        model = TeamMessage
+        fields = ['content']
+        widgets = {
+            'content': forms.Textarea(attrs={'rows': 3}),
+        }
+        
+class VisitChecklistForm(forms.ModelForm):
+    class Meta:
+        model = VisitChecklist
+        fields = ['pain_assessment', 'medication_review', 'symptom_management', 'psychological_support', 'family_education']
+
+class VisitNoteForm(forms.ModelForm):
+    class Meta:
+        model = VisitNote
+        fields = ['content']
+        widgets = {
+            'content': forms.Textarea(attrs={'rows': 4}),
         }

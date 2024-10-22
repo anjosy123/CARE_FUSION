@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Team Communication - {{ team.name }}{% endblock title %}
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'team_list' %}">Teams</a>
+</li>
+{% endblock nav_items %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h6 class="text-center">Team Communication - {{ team.name }}</h6>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12 col-md-8 offset-md-2">
+            <div id="chat-log" class="message-list p-3 border rounded" style="height: 400px; overflow-y: scroll; background-color: #f8f9fa;">
+                {% for message in team_messages %}
+                    <div class="message mb-2">
+                        <p>
+                            <strong>
+                                {% if message.sender %}
+                                    {{ message.sender.get_full_name }}
+                                {% elif message.organization %}
+                                    {{ message.organization.org_name }} (Organization)
+                                {% else %}
+                                    Unknown Sender
+                                {% endif %}
+                            </strong>
+                            <span class="text-muted"> - {{ message.created_at|date:"F d, Y H:i" }}</span>
+                        </p>
+                        <p>{{ message.content }}</p>
+                    </div>
+                {% empty %}
+                    <p>No messages yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12 col-md-8 offset-md-2">
+            <div class="input-group">
+                <input id="chat-message-input" type="text" class="form-control" placeholder="Type your message..." aria-label="Type your message">
+                <button id="chat-message-submit" class="btn btn-primary" type="button">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ sender_id|json_script:"sender-id" }}
+{{ sender_type|json_script:"sender-type" }}
+{{ team.id|json_script:"team-id" }}
+
+<script>
+    const teamId = JSON.parse(document.getElementById('team-id').textContent);
+    const senderId = JSON.parse(document.getElementById('sender-id').textContent);
+    const senderType = JSON.parse(document.getElementById('sender-type').textContent);
+
+    const chatSocket = new WebSocket(
+        'ws://' + window.location.host + '/ws/team/' + teamId + '/'
+    );
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        document.querySelector('#chat-log').innerHTML += (
+            '<div class="message mb-2">' +
+            '<p><strong>' + data.sender_id + ' (' + data.sender_type + ')</strong></p>' +
+            '<p>' + data.message + '</p>' +
+            '</div>'
+        );
+    };
+
+    chatSocket.onclose = function(e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    document.querySelector('#chat-message-input').focus();
+    document.querySelector('#chat-message-input').onkeyup = function(e) {
+        if (e.keyCode === 13) {
+            document.querySelector('#chat-message-submit').click();
+        }
+    };
+
+    document.querySelector('#chat-message-submit').onclick = function(e) {
+        const messageInputDom = document.querySelector('#chat-message-input');
+        const message = messageInputDom.value;
+        chatSocket.send(JSON.stringify({
+            'message': message,
+            'sender_id': senderId,
+            'sender_type': senderType
+        }));
+        messageInputDom.value = '';
+    };
+</script>
+{% endblock %}
+{% block custom_footer %}
+{% endblock custom_footer %}
+{% block copyright %}
+{% endblock copyright %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Visit Checklist and Notes - {{ visit.scheduled_date }}{% endblock title %}
+
+{% block content %}
+<div class="container">
+    <h2>Visit Checklist and Notes - {{ visit.scheduled_date }}</h2>
+    
+    <div class="checklist-form">
+        <h3>Checklist</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ checklist_form.as_p }}
+            <button type="submit" class="btn btn-primary">Update Checklist</button>
+        </form>
+    </div>
+
+    <div class="note-form">
+        <h3>Add Note</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ note_form.as_p }}
+            <button type="submit" class="btn btn-primary">Add Note</button>
+        </form>
+    </div>
+
+    <div class="note-list">
+        <h3>Notes</h3>
+        {% for note in notes %}
+            <div class="note">
+                <p><strong>{{ note.staff }}</strong> - {{ note.created_at }}</p>
+                <p>{{ note.content }}</p>
+            </div>
+        {% empty %}
+            <p>No notes yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

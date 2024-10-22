@@ -1,31 +1,54 @@
-{% extends 'base.html' %}  <!-- Adjust this if you have a different base template -->
+{% extends 'staff/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Manage Appointments{% endblock %}
+
+{% block nav_items %}
+<li class="{% if active_page == 'home' %}active{% endif %}"><a href="{% url 'doctor_dashboard' %}">Home</a></li>
+{% if request.session.staff_id %}
+<li class="{% if active_page == 'user' %}active{% endif %}">
+    <a href="#">Welcome, Dr. {{ request.session.staff_name }} <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+        <li><a href="#">Profile</a></li>
+        <li><a href="#">Settings</a></li>
+        <li><a href="{% url 'logout' %}">Logout</a></li>
+    </ul>
+</li>
+{% else %}
+<li class="{% if active_page == 'user' %}active{% endif %}">
+    <a href="{% url 'login' %}">Login</a>
+</li>
+{% endif %}
+{% endblock nav_items %}
 
 {% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 <style>
     .appointment-management {
-        font-family: Arial, sans-serif;
+        font-family: 'Arial', sans-serif;           
         max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
-        background-color: #f9f9f9;
+        margin: 30px auto;
+        padding: 30px;
+        background-color: #ffffff;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
         border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     .appointment-management h4 {
         color: #2c3e50;
         border-bottom: 2px solid #3498db;
-        padding-bottom: 10px;
+        padding-bottom: 15px;
         margin-bottom: 20px;
         font-size: 24px;
     }
     .appointment-management h6 {
-        color: #34495e;
+        color: #7f8c8d;
+        margin-bottom: 25px;
         font-size: 18px;
-        margin-bottom: 20px;
     }
     .appointment-management h3 {
-        color: #2980b9;
+        color: #34495e;
         margin-top: 30px;
+        margin-bottom: 20px;
         font-size: 20px;
     }
     .appointment-list {
@@ -33,57 +56,130 @@
         padding: 0;
     }
     .appointment-item {
-        background-color: #ecf0f1;
+        background-color: #f9f9f9;
+        border: 1px solid #e0e0e0;
         border-radius: 5px;
         padding: 15px;
-        margin-bottom: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s ease;
+    }
+    .appointment-item:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .appointment-item span:first-child {
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    .appointment-item i {
+        color: #3498db;
+        font-size: 20px;
     }
     .appointment-form {
-        background-color: #ffffff;
-        border-radius: 5px;
-        padding: 20px;
-        margin-top: 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        background-color: #f9f9f9;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 25px;
+        margin-top: 30px;
     }
-    .appointment-form input[type="datetime-local"],
-    .appointment-form input[type="text"],
-    .appointment-form textarea {
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #34495e;
+        font-weight: bold;
+    }
+    .form-group input[type="date"],
+    .form-group input[type="time"],
+    .form-group input[type="text"],
+    .form-group select,
+    .form-group textarea {
         width: 100%;
         padding: 10px;
-        margin-bottom: 15px;
         border: 1px solid #bdc3c7;
-        border-radius: 3px;
+        border-radius: 4px;
         font-size: 16px;
+        transition: border-color 0.3s ease;
     }
-    .appointment-form button {
+    .form-group input[type="date"]:focus,
+    .form-group input[type="time"]:focus,
+    .form-group input[type="text"]:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        border-color: #3498db;
+        outline: none;
+    }
+    .form-group button {
         background-color: #3498db;
         color: white;
-        padding: 12px 20px;
         border: none;
-        border-radius: 3px;
+        padding: 12px 20px;
+        border-radius: 4px;
         cursor: pointer;
         font-size: 16px;
         transition: background-color 0.3s ease;
     }
-    .appointment-form button:hover {
+    .form-group button:hover {
         background-color: #2980b9;
     }
     .no-appointments {
-        color: #7f8c8d;
+        color: #95a5a6;
         font-style: italic;
+        text-align: center;
+        padding: 20px;
+        background-color: #f9f9f9;
+        border-radius: 5px;
+        margin-top: 20px;
+    }
+    .appointment-actions {
+        display: flex;
+        gap: 10px;
+    }
+    .btn-reschedule, .btn-cancel {
+        padding: 5px 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.3s ease;
+    }
+    .btn-reschedule {
+        background-color: #f39c12;
+        color: white;
+    }
+    .btn-reschedule:hover {
+        background-color: #d35400;
+    }
+    .btn-cancel {
+        background-color: #e74c3c;
+        color: white;
+    }
+    .btn-cancel:hover {
+        background-color: #c0392b;
     }
 </style>
-
 <div class="appointment-management">
     <h4>Manage Appointments</h4>
-    <h6>Patient: {{ assignment.patient.get_full_name }}</h6>
+    {% if assignment %}
+        <h6>Patient: {{ assignment.patient.get_full_name }}</h6>
+    {% endif %}
 
     <h3>Upcoming Appointments</h3>
     <ul class="appointment-list">
-    {% for appointment in appointments %}
+    {% for appointment in upcoming_appointments %}
         <li class="appointment-item">
-            {{ appointment.date_time|date:"F d, Y, h:i a" }} - {{ appointment.purpose }}
+            <span>{{ appointment.date_time|date:"F d, Y, h:i a" }} - {{ appointment.purpose }}</span>
+            <div class="appointment-actions">
+                <a href="{% url 'reschedule_appointment' appointment.id %}" class="btn-reschedule">Reschedule</a>
+                <form method="post" action="{% url 'cancel_appointment' appointment.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-cancel" onclick="return confirm('Are you sure you want to cancel this appointment?')">Cancel</button>
+                </form>
+            </div>
         </li>
     {% empty %}
         <li class="no-appointments">No upcoming appointments.</li>
@@ -93,8 +189,34 @@
     <h3>Schedule New Appointment</h3>
     <form method="post" class="appointment-form">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Schedule Appointment</button>
+        {% if not assignment %}
+        <div class="form-group">
+            <label for="id_patient">Patient:</label>
+            {{ form.patient }}
+        </div>
+        {% endif %}
+        <div class="form-group">
+            <label for="id_date">Date:</label>
+            {{ form.date }}
+        </div>
+        <div class="form-group">
+            <label for="id_time">Time:</label>
+            {{ form.time }}
+        </div>
+        <div class="form-group">
+            <label for="id_purpose">Purpose:</label>
+            {{ form.purpose }}
+        </div>
+        <div class="form-group">
+            <label for="id_notes">Notes:</label>
+            {{ form.notes }}
+        </div>
+        <div class="form-group">
+            <button type="submit">Schedule Appointment</button>
+        </div>
     </form>
 </div>
-{% endblock %}
+{% endblock content %}
+
+{% block footer %}
+{% endblock footer %}

@@ -20,8 +20,17 @@
         <li><a href="{% url 'patient_assignment_list' %}">Patient Assignments</a></li>
     </ul>
 </li>
-<li class="nav-item">
-    {% comment %} <a class="nav-link" href="{% url 'index' %}">Home</a> {% endcomment %}
+<!-- New Team Management dropdown -->
+<li class="{% if active_page == 'team_management' %}active{% endif %}">
+    <a href="#">Team Management <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+        <li><a href="{% url 'team_list' %}">Manage Teams</a></li>
+        <li><a href="{% url 'team_visit_list' %}">Team Visits</a></li>
+        <li><a href="{% url 'team_visit_calendar' %}">Team Visit Calendar</a></li>
+        {% comment %} <li><a href="{% url 'visit_list' %}">Visits</a></li> {% endcomment %}
+    </ul>
+</li>
+{% comment %} <li class="nav-item">
     {% if not request.session.username and not request.session.org_name %}
     <li class="{% if active_page == 'user' %}active{% endif %}">
       <a href="#">New Organization ? <i class="icofont-rounded-down"></i></a>
@@ -46,6 +55,7 @@
         </li>
       {% endif %}
   </li>
+{% endblock %} {% endcomment %}
 {% endblock %}
 
 {% block content %}
@@ -107,7 +117,7 @@
         background-color: #fff;
         border-radius: 8px;
         padding: 15px;
-        width: 30%;
+        width: 23%;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         text-align: center;
     }
@@ -137,6 +147,10 @@
         <div class="stat-box">
             <h5>Pending Requests</h5>
             <p id="pending-requests-count">{{ pending_requests.count }}</p>
+        </div>
+        <div class="stat-box">
+            <h5>Active Teams</h5>
+            <p id="active-teams-count">{{ active_teams_count }}</p>
         </div>
     </div>
 
@@ -170,6 +184,23 @@
             </tbody>
         </table>
     </section>
+    <section id="upcoming-team-visits" class="dashboard-section">
+        <h4>Upcoming Team Visits</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Team</th>
+                    <th>Patient</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="upcoming-team-visits-body">
+                {% include "Organizations/upcoming_team_visits_partial.html" %}
+            </tbody>
+        </table>
+    </section>
 </div>
 {% endblock %}
 
@@ -186,8 +217,10 @@ $(document).ready(function() {
                 $('#staff-count').text(data.staff_count);
                 $('#assigned-patients-count').text(data.assigned_patients_count);
                 $('#pending-requests-count').text(data.pending_requests_count);
+                $('#active-teams-count').text(data.active_teams_count);
                 $('#recent-assignments-body').html(data.recent_assignments_html);
                 $('#pending-requests-body').html(data.pending_requests_html);
+                $('#upcoming-team-visits-body').html(data.upcoming_team_visits_html);
             },
             error: function(xhr, status, error) {
                 console.error("Error updating dashboard:", error);

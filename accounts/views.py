@@ -17,21 +17,36 @@ from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
 import random, logging, os, string
 from django.utils import timezone
-from .models import Organizations,Contact,ServiceRequest,Service,Staff,PatientAssignment,Prescription,Appointment
-from .forms import ServiceRequestForm,ServiceForm,StaffForm,PatientAssignmentForm,PrescriptionForm,AppointmentForm
+from .models import Organizations,Contact,ServiceRequest,Service,Staff,PatientAssignment,Prescription,Appointment,Team, TeamVisit, TeamSchedule, User, TeamMessage, VisitChecklist, VisitNote, TeamDashboard
+from .forms import ServiceRequestForm,ServiceForm,StaffForm,PatientAssignmentForm,PrescriptionForm,AppointmentForm,TeamForm, TeamVisitForm, RescheduleTeamVisitForm, TeamMessageForm, VisitChecklistForm, VisitNoteForm
 from django.contrib.auth import get_user_model
-from .utils import send_verification_email
+from .utils import send_verification_email, send_appointment_email
 from django.db.models import Q
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-# from django.contrib.auth.decorators import login_required
 from .models import Staff, Notification, Message
 import uuid
+from datetime import datetime, timedelta, time
+from calendar import monthrange
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+from django.views.generic import ListView
+from .decorators import staff_login_required, organization_login_required
+from django.db import IntegrityError
 
-
+def send_appointment_email(appointment, action, recipient='patient'):
+    subject = f'Appointment {action.capitalize()}'
+    to_email = appointment.patient_assignment.patient.email if recipient == 'patient' else appointment.patient_assignment.staff.email
+    template = f'emails/appointment_{action}_{recipient}.html'
+    
+    context = {'appointment': appointment}
+    html_message = render_to_string(template, context)
+    plain_message = strip_tags(html_message)
+    
+    send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL, [to_email], html_message=html_message)
 
 logger = logging.getLogger(__name__)
 
@@ -57,15 +72,25 @@ def doctor_dashboard(request):
     
     staff = Staff.objects.get(id=request.session.get('staff_id'))
     
+    # Add the staff name to the session
+    request.session['staff_name'] = staff.get_full_name()
+    
     # Fetch active patient assignments for this doctor
     assignments = PatientAssignment.objects.filter(
         staff=staff,
         is_active=True
     ).select_related('patient')  # This will prefetch the related patient data
 
+    upcoming_appointments = Appointment.objects.filter(
+        patient_assignment__staff=staff,  # Changed from request.user to staff
+        status='BOOKED'
+    ).order_by('date_time')
+    
     context = {
         'staff': staff,
         'assignments': assignments,
+        'upcoming_appointments': upcoming_appointments,
+        'appointment_form': AppointmentForm(),
     }
     
     return render(request, 'staff/doctor_dashboard.html', context)
@@ -323,10 +348,6 @@ def admin_dashboard(request):
 from django.db.models import Q
 
 
-# User = get_user_model()
-
-# ser = get_user_model()
-
 def handlelogin(request):
     if request.method == "POST":
         email = request.POST.get("email")
@@ -348,6 +369,11 @@ def handlelogin(request):
                 if user.must_change_password:
                     request.session['temp_login'] = True
                     return redirect('change_staff_password')
+                
+                # Check if the staff member is part of any team
+                team_memberships = Team.objects.filter(members=user)
+                if team_memberships.exists():
+                    request.session['team_ids'] = list(team_memberships.values_list('id', flat=True))
                 
                 # Role-based redirection for staff
                 if user.role == 'DOCTOR':
@@ -376,6 +402,17 @@ def handlelogin(request):
                     request.session['username'] = user.username
                     request.session['email'] = user.email
                     return redirect('patients_dashboard')
+
+        # Try to authenticate as TeamDashboard user
+        team_dashboard = TeamDashboard.objects.filter(username=email).first()
+        if team_dashboard and check_password(password, team_dashboard.password):
+            staff = team_dashboard.staff
+            if staff:
+                request.session['staff_id'] = staff.id
+                request.session['role'] = 'team_member'
+                request.session['team_id'] = team_dashboard.team.id
+                request.session['team_member_name'] = staff.get_full_name()
+                return redirect('team_dashboard')
 
         # Try to authenticate as an Organization
         org_user = Organizations.objects.filter(org_email=email).first()
@@ -478,44 +515,56 @@ def pending_requests(request):
         return redirect('login')
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
-# @login_required
 def patients_dashboard(request):
-    if request.session.has_key('user_id'):
-        query = request.GET.get('q', '')
-        if query:
-            organizations = Organizations.objects.filter(org_name__icontains=query, approve=1)
-        else:
-            organizations = Organizations.objects.filter(approve=1)
-            
-        service_requests = ServiceRequest.objects.filter(patient_id=request.session['user_id']).order_by('-created_at')
-        
-        # New code starts here
-        patient = User.objects.get(id=request.session['user_id'])
-        assignments = PatientAssignment.objects.filter(patient=patient, is_active=True)
-        
-        prescriptions = Prescription.objects.filter(patient_assignment__in=assignments).order_by('-start_date')
-        appointments = Appointment.objects.filter(patient_assignment__in=assignments).order_by('date_time')
-        
-        medical_history = []
-        for assignment in assignments:
-            if assignment.medical_history:
-                medical_history.append({
-                    'organization': assignment.organization,
-                    'history': assignment.medical_history
-                })
-        # New code ends here
-        
-        context = {
-            'organizations': organizations,
-            'query': query,
-            'service_requests': service_requests,
-            'prescriptions': prescriptions,
-            'appointments': appointments,
-            'medical_history': medical_history,
-        }
-        return render(request, 'Users/patients_dashboard.html', context)
-    else:
+    if not request.session.get('user_id'):
+        messages.error(request, "Please log in to access this page.")
         return redirect('login')
+
+    # Check if the request is for the home page
+    if request.GET.get('view') == 'home':
+        return render(request, 'Users/patient_home.html')
+
+    query = request.GET.get('q', '')
+    if query:
+        organizations = Organizations.objects.filter(org_name__icontains=query, approve=1)
+    else:
+        organizations = Organizations.objects.filter(approve=1)
+        
+    user_id = request.session['user_id']
+    service_requests = ServiceRequest.objects.filter(patient_id=user_id).order_by('-created_at')
+    
+    patient = get_object_or_404(User, id=user_id)
+    assignments = PatientAssignment.objects.filter(patient=patient, is_active=True)
+    
+    prescriptions = Prescription.objects.filter(patient_assignment__in=assignments).order_by('-start_date')
+    
+    # Split appointments into booked and available
+    all_appointments = Appointment.objects.filter(patient_assignment__in=assignments).order_by('date_time')
+    booked_appointments = all_appointments.filter(status='BOOKED')
+    available_appointments = all_appointments.filter(status='AVAILABLE')
+    
+    medical_history = []
+    for assignment in assignments:
+        if assignment.medical_history:
+            medical_history.append({
+                'organization': assignment.organization,
+                'history': assignment.medical_history
+            })
+    
+    # Fetch notifications for the current user
+    notifications = Notification.objects.filter(patient_id=user_id).order_by('-created_at')[:5]
+
+    context = {
+        'organizations': organizations,
+        'query': query,
+        'service_requests': service_requests,
+        'prescriptions': prescriptions,
+        'booked_appointments': booked_appointments,
+        'available_appointments': available_appointments,
+        'medical_history': medical_history,
+        'notifications': notifications,
+    }
+    return render(request, 'Users/patients_dashboard.html', context)
 
 @never_cache
 def palliatives_dashboard(request):
@@ -542,6 +591,7 @@ def palliatives_dashboard(request):
             'pending_requests_count': context['pending_requests'].count(),
             'approved_requests_count': context['approved_requests'].count(),
             'rejected_requests_count': context['rejected_requests'].count(),
+            'active_teams_count': context['active_teams_count'],
             'recent_assignments_html': render_to_string('Organizations/recent_assignments_partial.html', context),
             'pending_requests_html': render_to_string('Organizations/pending_requests_partial.html', context),
             'approved_requests_html': render_to_string('Organizations/approved_requests_partial.html', context),
@@ -551,22 +601,43 @@ def palliatives_dashboard(request):
     # Render full page for non-AJAX requests
     return render(request, 'Organizations/palliatives_dashboard.html', context)
 
-def staff_dashboard(request):
-    try:
-        staff = Staff.objects.get(user=request.user)
-    except Staff.DoesNotExist:
-        # Handle the case where the logged-in user is not associated with a Staff object
-        return redirect('login')  # or wherever you want to redirect non-staff users
+def get_dashboard_context(organization):
+    return {
+        'organization': organization,
+        'staff_count': Staff.objects.filter(organization=organization).count(),
+        'assigned_patients_count': PatientAssignment.objects.filter(organization=organization, is_active=True).count(),
+        'pending_requests': ServiceRequest.objects.filter(organization=organization, status='PENDING').order_by('-created_at'),
+        'approved_requests': ServiceRequest.objects.filter(organization=organization, status='APPROVED').order_by('-created_at')[:5],
+        'rejected_requests': ServiceRequest.objects.filter(organization=organization, status='REJECTED').order_by('-created_at')[:5],
+        'recent_assignments': PatientAssignment.objects.filter(organization=organization, is_active=True).order_by('-assigned_date')[:5],
+        'active_teams_count': Team.objects.filter(organization=organization).count(), 
+    }
 
+def staff_dashboard(request):
+    staff_id = request.session.get('staff_id')
+    if not staff_id:
+        messages.error(request, "You must be logged in as a staff member to access this page.")
+        return redirect('login')
+
+    staff = get_object_or_404(Staff, id=staff_id)
+    
     # Fetch active patient assignments for this staff member
     assignments = PatientAssignment.objects.filter(
         staff=staff,
         is_active=True
     ).select_related('patient')  # This will prefetch the related patient data
 
+    # Fetch upcoming appointments
+    upcoming_appointments = Appointment.objects.filter(
+        patient_assignment__staff=staff,
+        date_time__gte=timezone.now(),
+        status='BOOKED'
+    ).order_by('date_time')
+
     context = {
         'staff': staff,
         'assignments': assignments,
+        'upcoming_appointments': upcoming_appointments,
     }
     
     if staff.role == 'DOCTOR':
@@ -576,7 +647,89 @@ def staff_dashboard(request):
     elif staff.role == 'VOLUNTEER':
         return render(request, 'staff/volunteer_dashboard.html', context)
     else:
+        messages.error(request, "Invalid staff role.")
         return redirect('login')
+
+
+def reschedule_appointment(request, appointment_id):
+    staff_id = request.session.get('staff_id')
+    if not staff_id:
+        messages.error(request, "You must be logged in as a staff member to access this page.")
+        return redirect('login')
+
+    staff = get_object_or_404(Staff, id=staff_id, role='DOCTOR')
+    appointment = get_object_or_404(Appointment, id=appointment_id, patient_assignment__staff=staff)
+
+    if request.method == 'POST':
+        form = AppointmentForm(request.POST, instance=appointment)
+        if form.is_valid():
+            old_datetime = appointment.date_time
+            updated_appointment = form.save()
+            
+            # Send email to patient
+            send_mail(
+                'Appointment Rescheduled',
+                f'Your appointment has been rescheduled from {old_datetime} to {updated_appointment.date_time}.',
+                settings.DEFAULT_FROM_EMAIL,
+                [updated_appointment.patient_assignment.patient.email],
+                fail_silently=False,
+            )
+            
+            # Create notification for patient dashboard
+            Notification.objects.create(
+                patient=updated_appointment.patient_assignment.patient,
+                message=f'Your appointment has been rescheduled to {updated_appointment.date_time}.'
+            )
+            
+            messages.success(request, 'Appointment rescheduled successfully.')
+            return redirect('manage_appointments', assignment_id=updated_appointment.patient_assignment.id)
+    else:
+        form = AppointmentForm(instance=appointment)
+
+    context = {
+        'staff': staff,
+        'appointment': appointment,
+        'form': form,
+    }
+    return render(request, 'staff/reschedule_appointment.html', context)
+
+    
+def cancel_appointment(request, appointment_id):
+    staff_id = request.session.get('staff_id')
+    if not staff_id:
+        messages.error(request, "You must be logged in as a staff member to access this page.")
+        return redirect('login')
+
+    staff = get_object_or_404(Staff, id=staff_id, role='DOCTOR')
+    appointment = get_object_or_404(Appointment, id=appointment_id, patient_assignment__staff=staff)
+
+    if request.method == 'POST':
+        appointment.status = 'CANCELLED'
+        appointment.save()
+        
+        # Send email to patient
+        send_mail(
+            'Appointment Cancelled',
+            f'Your appointment scheduled for {appointment.date_time} has been cancelled.',
+            settings.DEFAULT_FROM_EMAIL,
+            [appointment.patient_assignment.patient.email],
+            fail_silently=False,
+        )
+        
+        # Create notification for patient dashboard
+        Notification.objects.create(
+            patient=appointment.patient_assignment.patient,
+            message=f'Your appointment scheduled for {appointment.date_time} has been cancelled.'
+        )
+        
+        messages.success(request, 'Appointment cancelled successfully.')
+        return redirect('manage_appointments')
+
+    context = {
+        'staff': staff,
+        'appointment': appointment,
+    }
+    return render(request, 'staff/cancel_appointment.html', context)
     
 def patient_detail(request, assignment_id):
     staff = Staff.objects.get(user=request.user)
@@ -623,17 +776,6 @@ def approved_rejected_requests(request):
     except Organizations.DoesNotExist:
         messages.error(request, "Organization not found. Please log in again.")
         return redirect('login')
-
-def get_dashboard_context(organization):
-    return {
-        'organization': organization,
-        'staff_count': Staff.objects.filter(organization=organization).count(),
-        'assigned_patients_count': PatientAssignment.objects.filter(organization=organization, is_active=True).count(),
-        'pending_requests': ServiceRequest.objects.filter(organization=organization, status='PENDING').order_by('-created_at'),
-        'approved_requests': ServiceRequest.objects.filter(organization=organization, status='APPROVED').order_by('-created_at')[:5],
-        'rejected_requests': ServiceRequest.objects.filter(organization=organization, status='REJECTED').order_by('-created_at')[:5],
-        'recent_assignments': PatientAssignment.objects.filter(organization=organization, is_active=True).order_by('-assigned_date')[:5],
-    }
     
 
 def verify_email(request, token, is_organization):
@@ -647,9 +789,9 @@ def verify_email(request, token, is_organization):
             else:
                 messages.info(request, "Your organization email has already been verified.")
         else:
-            user = get_object_or_404(User, confirmation_token=token)
-            if not user.is_email_confirmed:
-                user.is_email_confirmed = True
+            user = get_object_or_404(User, email_verification_token=token)
+            if not user.is_email_verified:
+                user.is_email_verified = True
                 user.is_active = True
                 user.save()
                 messages.success(request, "Your email has been verified. You can now log in.")
@@ -714,9 +856,9 @@ def handlesignup(request):
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def handlelogout(request):  
-    request.session.delete()
+    request.session.clear()
     logout(request)
-    return redirect('login')
+    return redirect('/')
 
 def register_organization(request):
     if request.method == 'POST':
@@ -1357,28 +1499,40 @@ def assign_patient(request):
     if 'org_id' not in request.session:
         messages.error(request, "Please log in to access this page.")
         return redirect('login')
+    
     org_id = request.session['org_id']
     org_name = request.session['org_name']
+    
     try:
         organization = Organizations.objects.get(id=org_id, org_name=org_name)
+        
         if request.method == 'POST':
             form = PatientAssignmentForm(request.POST)
             if form.is_valid():
                 assignment = form.save(commit=False)
                 assignment.organization = organization
+                
+                # Check if the patient has an approved service request for this organization
+                patient = form.cleaned_data['patient']
+                if not ServiceRequest.objects.filter(patient=patient, organization=organization, status='APPROVED').exists():
+                    messages.error(request, "Invalid patient selection. The patient must have an approved service request.")
+                    return redirect('assign_patient')
+                
                 assignment.save()
                 messages.success(request, 'Patient assigned successfully.')
                 return redirect('patient_assignment_list')
         else:
             form = PatientAssignmentForm()
         
-        # Get unassigned patients, excluding superusers and including only verified users
+        # Get patients with approved service requests for this organization
         assigned_patients = PatientAssignment.objects.filter(organization=organization, is_active=True).values_list('patient', flat=True)
         unassigned_patients = User.objects.filter(
             Q(is_superuser=False) & 
             Q(is_active=True) & 
-            Q(is_email_verified=True)
-        ).exclude(id__in=assigned_patients)
+            Q(is_email_verified=True) &
+            Q(service_requests__organization=organization) &
+            Q(service_requests__status='APPROVED')
+        ).exclude(id__in=assigned_patients).distinct()
         
         # Get staff members associated with this organization
         staff_members = Staff.objects.filter(
@@ -1434,7 +1588,7 @@ def manage_prescriptions(request, assignment_id):
             
             # Create a notification for the patient
             Notification.objects.create(
-                user=assignment.patient,
+                patient=assignment.patient,
                 message=f"New prescription added: {prescription.medication}."
             )
             
@@ -1471,41 +1625,146 @@ def edit_prescription(request, prescription_id):
     }
     return render(request, 'staff/doctor/edit_prescription.html', context)
 
-def manage_appointments(request, assignment_id):
+def manage_all_appointments(request):
+    appointments = Appointment.objects.filter(patient_assignment__staff=request.user)
+    return render(request, 'staff/doctor/manage_all_appointments.html', {'appointments': appointments})
+
+def manage_appointments(request, assignment_id=None):
     staff_id = request.session.get('staff_id')
     if not staff_id:
         messages.error(request, "You must be logged in as a staff member to access this page.")
         return redirect('login')
 
     staff = get_object_or_404(Staff, id=staff_id, role='DOCTOR')
-    assignment = get_object_or_404(PatientAssignment, id=assignment_id, staff=staff)
-    appointments = Appointment.objects.filter(patient_assignment=assignment).order_by('date_time')
+    
+    if assignment_id:
+        assignment = get_object_or_404(PatientAssignment, id=assignment_id, staff=staff)
+        upcoming_appointments = Appointment.objects.filter(
+            patient_assignment_id=assignment_id,
+            date_time__gte=timezone.now(),
+            status='BOOKED'
+        ).order_by('date_time')
+    else:
+        assignment = None
+        upcoming_appointments = Appointment.objects.filter(
+            patient_assignment__staff=staff,
+            date_time__gte=timezone.now(),
+            status='BOOKED'
+        ).order_by('date_time')
+
+    logger.debug(f"Number of upcoming appointments: {upcoming_appointments.count()}")
+    for appointment in upcoming_appointments:
+        logger.debug(f"Appointment: {appointment.date_time} - {appointment.purpose}")
 
     if request.method == 'POST':
-        form = AppointmentForm(request.POST)
+        form = AppointmentForm(request.POST, is_staff=True)
         if form.is_valid():
             appointment = form.save(commit=False)
-            appointment.patient_assignment = assignment
+            if assignment:
+                appointment.patient_assignment = assignment
+            else:
+                patient = form.cleaned_data['patient']
+                assignment = PatientAssignment.objects.get(staff=staff, patient=patient)
+                appointment.patient_assignment = assignment
+            appointment.status = 'BOOKED'
             appointment.save()
             
             # Create a notification for the patient
             Notification.objects.create(
-                user=assignment.patient,
+                patient=appointment.patient_assignment.patient,
                 message=f"New appointment scheduled for {appointment.date_time.strftime('%B %d, %Y at %I:%M %p')}."
             )
+            
+            # Send email to patient
+            send_appointment_email(appointment, 'scheduled', 'patient')
+            
+            # Send email to doctor
+            send_appointment_email(appointment, 'scheduled', 'doctor')
             
             messages.success(request, 'Appointment scheduled successfully.')
             return redirect('manage_appointments', assignment_id=assignment_id)
     else:
-        form = AppointmentForm()
+        initial_datetime = timezone.now().replace(minute=0, second=0, microsecond=0) + timezone.timedelta(hours=1)
+        form = AppointmentForm(is_staff=True, initial={
+            'date': initial_datetime.date(),
+            'time': initial_datetime.time()
+        })
 
     context = {
         'staff': staff,
-        'assignment': assignment,
-        'appointments': appointments,
+        'upcoming_appointments': upcoming_appointments,
         'form': form,
+        'assignment': assignment,
     }
     return render(request, 'staff/doctor/manage_appointments.html', context)
+
+def edit_appointment(request, appointment_id):
+    staff_id = request.session.get('staff_id')
+    if not staff_id:
+        messages.error(request, "You must be logged in as a staff member to access this page.")
+        return redirect('login')
+
+    staff = get_object_or_404(Staff, id=staff_id, role='DOCTOR')
+    appointment = get_object_or_404(Appointment, id=appointment_id, patient_assignment__staff=staff)
+
+    if request.method == 'POST':
+        form = AppointmentForm(request.POST, instance=appointment)
+        if form.is_valid():
+            form.save()
+            
+            # Create a notification for the patient
+            Notification.objects.create(
+                patient=appointment.patient_assignment.patient,
+                message=f"Your appointment on {appointment.date_time.strftime('%B %d, %Y at %I:%M %p')} has been updated."
+            )
+            
+            # Send email to patient
+            send_appointment_email(appointment, 'updated')
+            
+            messages.success(request, 'Appointment updated successfully.')
+            return redirect('manage_appointments', assignment_id=appointment.patient_assignment.id)
+    else:
+        form = AppointmentForm(instance=appointment)
+
+    context = {
+        'staff': staff,
+        'appointment': appointment,
+        'form': form,
+    }
+    return render(request, 'staff/doctor/edit_appointment.html', context)
+
+def cancel_appointment(request, appointment_id):
+    staff_id = request.session.get('staff_id')
+    if not staff_id:
+        messages.error(request, "You must be logged in as a staff member to access this page.")
+        return redirect('login')
+
+    staff = get_object_or_404(Staff, id=staff_id, role='DOCTOR')
+    appointment = get_object_or_404(Appointment, id=appointment_id, patient_assignment__staff=staff)
+
+    if request.method == 'POST':
+        reason = request.POST.get('reason')
+        appointment.status = 'CANCELLED'
+        appointment.cancellation_reason = reason
+        appointment.save()
+
+        # Create a notification for the patient
+        Notification.objects.create(
+            patient=appointment.patient_assignment.patient,
+            message=f"Your appointment on {appointment.date_time.strftime('%B %d, %Y at %I:%M %p')} has been cancelled."
+        )
+
+        # Send email to patient
+        send_appointment_email(appointment, 'cancelled')
+
+        messages.success(request, 'Appointment cancelled successfully.')
+        return redirect('manage_all_appointments')
+
+    context = {
+        'staff': staff,
+        'appointment': appointment,
+    }
+    return render(request, 'staff/doctor/cancel_appointment.html', context)
 
 def manage_medical_history(request, assignment_id):
     staff_id = request.session.get('staff_id')
@@ -1530,7 +1789,7 @@ def manage_medical_history(request, assignment_id):
     return render(request, 'staff/doctor/manage_medical_history.html', context)
 
 def notification_center(request):
-    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    notifications = Notification.objects.filter(patient=request.user).order_by('-created_at')
     return render(request, 'notification_center.html', {'notifications': notifications})
 
 def messaging(request):
@@ -1544,7 +1803,7 @@ def messaging(request):
         
         # Create a notification for the recipient
         Notification.objects.create(
-            user=recipient,
+            patient=recipient,
             message=f"New message from {request.user.get_full_name() or request.user.username}."
         )
         
@@ -1558,3 +1817,589 @@ def messaging(request):
         'sent_messages': sent_messages,
     }
     return render(request, 'messaging.html', context)
+
+def schedule_appointment(request):
+    # Check if user is logged in via session
+    user_id = request.session.get('user_id')
+    if not user_id:
+        messages.error(request, 'You must be logged in to schedule an appointment.')
+        return redirect('login')  # Redirect to your login page
+
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        messages.error(request, 'User not found. Please log in again.')
+        return redirect('login')
+
+    if request.method == 'POST':
+        form = AppointmentForm(request.POST)
+        if form.is_valid():
+            appointment = form.save(commit=False)
+            
+            if user.is_staff:
+                # If a staff member is scheduling
+                patient_id = form.cleaned_data.get('patient')
+                patient_assignment = PatientAssignment.objects.filter(
+                    staff=user,
+                    patient_id=patient_id
+                ).first()
+            else:
+                # If a patient is scheduling
+                patient_assignment = PatientAssignment.objects.filter(
+                    patient_id=user.id
+                ).first()
+            
+            if patient_assignment:
+                appointment.patient_assignment = patient_assignment
+                appointment.save()
+                messages.success(request, 'Appointment scheduled successfully.')
+                return redirect('manage_all_appointments')
+            else:
+                messages.error(request, 'No valid patient assignment found.')
+        else:
+            messages.error(request, 'There was an error in the form. Please check and try again.')
+    else:
+        form = AppointmentForm()
+    
+    context = {
+        'form': form,
+        'is_staff': user.is_staff
+    }
+    return render(request, 'schedule_appointment.html', context)
+
+def available_appointments(request):
+    if not request.session.get('username'):
+        return redirect('login')
+    
+    user = User.objects.get(username=request.session['username'])
+    assignments = PatientAssignment.objects.filter(patient=user, is_active=True)
+    
+    available_appointments = Appointment.objects.filter(
+        patient_assignment__in=assignments,
+        status='AVAILABLE',
+        date_time__gte=timezone.now()
+    ).order_by('date_time')
+    
+    booked_appointments = Appointment.objects.filter(
+        patient_assignment__in=assignments,
+        status='BOOKED',
+        date_time__gte=timezone.now()
+    ).order_by('date_time')
+    
+    return render(request, 'Users/available_appointments.html', {
+        'available_appointments': available_appointments,
+        'booked_appointments': booked_appointments,
+    })
+    
+def book_appointment(request, appointment_id):
+    if not request.session.get('username'):
+        return redirect('login')
+    
+    user = User.objects.get(username=request.session['username'])
+    appointment = get_object_or_404(Appointment, id=appointment_id, status='AVAILABLE')
+    
+    if appointment.patient_assignment.patient == user:
+        appointment.status = 'BOOKED'
+        appointment.save()
+        
+        # Create a notification for the doctor
+        Notification.objects.create(
+            staff=appointment.patient_assignment.staff,
+            message=f"Patient {user.get_full_name()} has booked an appointment on {appointment.date_time.strftime('%B %d, %Y at %I:%M %p')}."
+        )
+        
+        # Send email to doctor
+        send_appointment_email(appointment, 'booked', recipient='doctor')
+        
+        messages.success(request, 'Appointment booked successfully!')
+    else:
+        messages.error(request, 'You are not authorized to book this appointment.')
+    
+    return redirect('available_appointments')
+
+def batch_cancel_appointments(request):
+    staff_id = request.session.get('staff_id')
+    if not staff_id:
+        messages.error(request, "You must be logged in as a staff member to access this page.")
+        return redirect('login')
+
+    staff = get_object_or_404(Staff, id=staff_id, role='DOCTOR')
+
+    if request.method == 'POST':
+        appointment_ids = request.POST.getlist('appointment_ids')
+        reason = request.POST.get('reason')
+        
+        appointments = Appointment.objects.filter(id__in=appointment_ids, patient_assignment__staff=staff)
+        for appointment in appointments:
+            appointment.status = 'CANCELLED'
+            appointment.cancellation_reason = reason
+            appointment.save()
+
+            # Create a notification for the patient
+            Notification.objects.create(
+                patient=appointment.patient_assignment.patient,
+                message=f"Your appointment on {appointment.date_time.strftime('%B %d, %Y at %I:%M %p')} has been cancelled."
+            )
+
+            # Send email to patient
+            send_appointment_email(appointment, 'cancelled')
+
+        messages.success(request, f'{len(appointments)} appointments cancelled successfully.')
+        return redirect('manage_all_appointments')
+
+    appointments = Appointment.objects.filter(patient_assignment__staff=staff, status__in=['AVAILABLE', 'BOOKED'])
+    context = {
+        'staff': staff,
+        'appointments': appointments,
+    }
+    return render(request, 'staff/doctor/batch_cancel_appointments.html', context)
+
+def request_emergency_appointment(request):
+    if not request.session.get('username'):
+        return redirect('login')
+    
+    if request.method == 'POST':
+        user = User.objects.get(username=request.session['username'])
+        assignments = PatientAssignment.objects.filter(patient=user, is_active=True)
+        
+        for assignment in assignments:
+            send_mail(
+                'Emergency Appointment Request',
+                f'Patient {user.get_full_name()} has requested an emergency appointment.',
+                'from@example.com',
+                [assignment.staff.email],
+                fail_silently=False,
+            )
+        
+        messages.success(request, 'Emergency appointment request sent to your assigned doctors.')
+        return redirect('available_appointments')
+    
+    return render(request, 'Users/request_emergency_appointment.html')
+
+# palliative organization team management
+
+def team_list(request):
+    org_id = request.session.get('org_id')
+    if not org_id:
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+
+    organization = get_object_or_404(Organizations, id=org_id)
+    teams = Team.objects.filter(organization=organization)
+    
+    context = {
+        'organization': organization,
+        'teams': teams,
+    }
+    return render(request, 'Organizations/team_list.html', context)
+
+
+@organization_login_required
+def create_team(request):
+    org_id = request.session.get('org_id')
+    organization = get_object_or_404(Organizations, id=org_id)
+
+    if request.method == 'POST':
+        form = TeamForm(request.POST, organization=organization)
+        if form.is_valid():
+            team = form.save(commit=False)
+            team.organization = organization
+            team.save()
+            form.save_m2m()
+
+            # Create TeamDashboard and send credentials
+            for member in team.members.all():
+                password = generate_password()
+                TeamDashboard.objects.create(
+                    team=team,
+                    staff=member,
+                    username=member.email,
+                    password=make_password(password)
+                )
+                # Send email with credentials
+                send_mail(
+                    'Team Dashboard Credentials',
+                    f'Your team dashboard username: {member.email}\nPassword: {password}',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [member.email],
+                    fail_silently=False,
+                )
+
+            messages.success(request, 'Team created successfully and credentials sent to members.')
+            return redirect('team_list')
+    else:
+        form = TeamForm(organization=organization)
+
+    context = {
+        'form': form,
+        'organization': organization,
+    }
+    return render(request, 'Organizations/create_team.html', context)
+
+def generate_password():
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+
+
+def schedule_team_visit(request):
+    org_id = request.session.get('org_id')
+    if not org_id:
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+
+    organization = get_object_or_404(Organizations, id=org_id)
+
+    if request.method == 'POST':
+        form = TeamVisitForm(request.POST, organization=organization)
+        if form.is_valid():
+            visit = form.save(commit=False)
+            # Check if the team is available on the scheduled date
+            schedule, created = TeamSchedule.objects.get_or_create(
+                team=visit.team,
+                date=visit.scheduled_date,
+                defaults={'is_available': True}
+            )
+            if not schedule.is_available:
+                messages.error(request, 'The selected team is not available on this date.')
+                return render(request, 'Organizations/schedule_team_visit.html', {'form': form, 'organization': organization})
+            
+            visit.save()
+            messages.success(request, 'Team visit scheduled successfully.')
+            return redirect('team_visit_list')
+    else:
+        form = TeamVisitForm(organization=organization)
+
+    context = {
+        'organization': organization,
+        'form': form,
+    }
+    return render(request, 'Organizations/schedule_team_visit.html', context)
+
+
+def team_visit_list(request):
+    org_id = request.session.get('org_id')
+    if not org_id:
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+
+    organization = get_object_or_404(Organizations, id=org_id)
+    team_visits = TeamVisit.objects.filter(team__organization=organization).order_by('scheduled_date', 'start_time')
+
+    context = {
+        'organization': organization,
+        'team_visits': team_visits,
+    }
+    return render(request, 'Organizations/team_visit_list.html', context)
+
+def team_visit_calendar(request):
+    org_id = request.session.get('org_id')
+    if not org_id:
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+
+    organization = get_object_or_404(Organizations, id=org_id)
+
+    # Get the month and year from the query parameters, or use the current month
+    month = int(request.GET.get('month', datetime.now().month))
+    year = int(request.GET.get('year', datetime.now().year))
+
+    # Get the first and last day of the month
+    first_day = datetime(year, month, 1)
+    last_day = datetime(year, month, monthrange(year, month)[1])
+
+    # Fetch team visits for the selected month
+    team_visits = TeamVisit.objects.filter(
+        team__organization=organization,
+        scheduled_date__range=[first_day, last_day]
+    ).select_related('team', 'patient')
+
+    # Create a calendar matrix
+    calendar_matrix = []
+    current_date = first_day
+    while current_date.month == month:
+        week = []
+        for _ in range(7):
+            if current_date.month == month:
+                day_visits = [visit for visit in team_visits if visit.scheduled_date == current_date.date()]
+                week.append((current_date.day, day_visits))
+            else:
+                week.append((None, []))
+            current_date += timedelta(days=1)
+        calendar_matrix.append(week)
+
+    context = {
+        'calendar_matrix': calendar_matrix,
+        'month': first_day,
+        'prev_month': (first_day - timedelta(days=1)).replace(day=1),
+        'next_month': (last_day + timedelta(days=1)).replace(day=1),
+    }
+
+    return render(request, 'Organizations/team_visit_calendar.html', context)
+
+def reschedule_team_visit(request, visit_id):
+    org_id = request.session.get('org_id')
+    if not org_id:
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+
+    organization = get_object_or_404(Organizations, id=org_id)
+    visit = get_object_or_404(TeamVisit, id=visit_id, team__organization=organization)
+    
+    if not visit.is_reschedulable():
+        messages.error(request, "This visit cannot be rescheduled.")
+        return redirect('team_visit_calendar')
+
+    if request.method == 'POST':
+        form = RescheduleTeamVisitForm(request.POST)
+        if form.is_valid():
+            try:
+                new_visit = visit.reschedule(
+                    form.cleaned_data['new_date'],
+                    form.cleaned_data['new_start_time'],
+                    form.cleaned_data['new_end_time'],
+                    form.cleaned_data['reason']
+                )
+                
+                # Create notifications for team members and patient
+                notification_message = f"Team visit rescheduled from {visit.scheduled_date} to {new_visit.scheduled_date}"
+                for staff in new_visit.team.members.all():
+                    Notification.objects.create(
+                        staff=staff,
+                        message=notification_message,
+                        organization=organization
+                    )
+                
+                # Create notification for the patient
+                Notification.objects.create(
+                    patient=new_visit.patient,
+                    message=notification_message,
+                    organization=organization
+                )
+                
+                messages.success(request, "Visit rescheduled successfully.")
+                return redirect('team_visit_calendar')
+            except ValueError as e:
+                messages.error(request, str(e))
+    else:
+        form = RescheduleTeamVisitForm(initial={
+            'new_date': visit.scheduled_date,
+            'new_start_time': visit.start_time,
+            'new_end_time': visit.end_time,
+        })
+
+    context = {
+        'form': form,
+        'visit': visit,
+    }
+    return render(request, 'Organizations/reschedule_team_visit.html', context)
+
+@require_GET
+def get_available_slots(request, team_id, date):
+    team = get_object_or_404(Team, id=team_id)
+    date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+    
+    # Define your working hours and slot duration
+    start_hour, start_minute = 9, 0
+    end_hour, end_minute = 17, 0
+    slot_duration = timedelta(minutes=30)
+    
+    available_slots = []
+    current_slot = datetime.combine(date_obj, time(start_hour, start_minute))
+    end_time = datetime.combine(date_obj, time(end_hour, end_minute))
+    
+    while current_slot < end_time:
+        slot_end = current_slot + slot_duration
+        if not TeamVisit.check_conflicts(team, date_obj, current_slot.time(), slot_end.time()):
+            available_slots.append(current_slot.strftime('%H:%M'))
+        current_slot = slot_end
+    
+    return JsonResponse({'available_slots': available_slots})
+
+def team_communication(request, team_id):
+    role = request.session.get('role')
+    org_id = request.session.get('org_id')
+
+    if not role or not org_id:
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+
+    organization = get_object_or_404(Organizations, id=org_id)
+    team = get_object_or_404(Team, id=team_id, organization=organization)
+
+    if role == 'staff':
+        staff_id = request.session.get('staff_id')
+        if not staff_id:
+            messages.error(request, "Staff information not found. Please log in again.")
+            return redirect('login')
+
+        staff = get_object_or_404(Staff, id=staff_id)
+        if staff not in team.members.all():
+            messages.error(request, "You are not a member of this team.")
+            return redirect('team_list')
+
+        sender_id = staff_id
+        sender_type = 'staff'
+    elif role == 'organization':
+        sender_id = org_id
+        sender_type = 'organization'
+    else:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('login')
+
+    team_messages = TeamMessage.objects.filter(team=team)
+
+    context = {
+        'team': team,
+        'team_messages': team_messages,
+        'sender_id': sender_id,
+        'sender_type': sender_type,
+    }
+    return render(request, 'Organizations/team_communication.html', context)
+
+def visit_checklist_notes(request, visit_id):
+    org_id = request.session.get('org_id')
+    if not org_id:
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+
+    organization = get_object_or_404(Organizations, id=org_id)
+    visit = get_object_or_404(TeamVisit, id=visit_id, team__organization=organization)
+    staff = get_object_or_404(Staff, id=request.session.get('staff_id'))
+
+    checklist, created = VisitChecklist.objects.get_or_create(team_visit=visit)
+
+    if request.method == 'POST':
+        checklist_form = VisitChecklistForm(request.POST, instance=checklist)
+        note_form = VisitNoteForm(request.POST)
+        if checklist_form.is_valid() and note_form.is_valid():
+            checklist_form.save()
+            note = note_form.save(commit=False)
+            note.team_visit = visit
+            note.staff = staff
+            note.save()
+            messages.success(request, "Checklist and note updated successfully.")
+            return redirect('visit_checklist_notes', visit_id=visit_id)
+    else:
+        checklist_form = VisitChecklistForm(instance=checklist)
+        note_form = VisitNoteForm()
+
+    notes = VisitNote.objects.filter(team_visit=visit)
+
+    context = {
+        'visit': visit,
+        'checklist_form': checklist_form,
+        'note_form': note_form,
+        'notes': notes,
+    }
+    return render(request, 'Organizations/visit_checklist_notes.html', context)
+
+class TeamListView(ListView):
+    model = Team
+    template_name = 'Organizations/team_list.html'
+    context_object_name = 'teams'
+
+    def get_queryset(self):
+        org_id = self.request.session.get('org_id')
+        return Team.objects.filter(organization_id=org_id)
+
+# realtime team communication
+
+def generate_credentials():
+    username = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+    password = ''.join(random.choices(string.ascii_letters + string.digits + string.punctuation, k=12))
+    return username, password
+
+@staff_login_required
+def team_dashboard(request):
+    staff_id = request.session.get('staff_id')
+    team_id = request.session.get('team_id')
+    
+    if not staff_id or not team_id:
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    staff = get_object_or_404(Staff, id=staff_id)
+    team = get_object_or_404(Team, id=team_id)
+    
+    context = {
+        'staff': staff,
+        'team': team,
+    }
+    return render(request, 'Organizations/team_dashboard.html', context)
+
+def get_team_messages(request, team_id):
+    staff_id = request.session.get('staff_id')
+    if not staff_id:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+    
+    staff = get_object_or_404(Staff, id=staff_id)
+    team = get_object_or_404(Team, id=team_id)
+    
+    if staff not in team.members.all():
+        return JsonResponse({'error': 'Not a member of this team'}, status=403)
+    
+    messages = TeamMessage.objects.filter(team=team).order_by('created_at')
+    message_data = [
+        {
+            'sender_name': msg.sender.get_full_name() if msg.sender else msg.organization.org_name,
+            'content': msg.content,
+            'created_at': msg.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        for msg in messages
+    ]
+    
+    return JsonResponse({'messages': message_data})
+
+@staff_login_required
+def team_dashboard_change_password(request):
+    if request.method == 'POST':
+        current_password = request.POST.get('current_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        try:
+            team_dashboard = TeamDashboard.objects.get(username=request.user.email)
+        except TeamDashboard.DoesNotExist:
+            messages.error(request, "You don't have access to the team dashboard.")
+            return redirect('some_appropriate_page')  # Redirect to an appropriate page
+
+        if not check_password(current_password, team_dashboard.password):
+            messages.error(request, "Current password is incorrect.")
+        elif new_password != confirm_password:
+            messages.error(request, "New passwords do not match.")
+        else:
+            team_dashboard.password = make_password(new_password)
+            team_dashboard.save()
+            messages.success(request, "Team dashboard password changed successfully.")
+            return redirect('team_dashboard')  # Redirect to the team dashboard page
+
+    return render(request, 'Organizations/team_dashboard_change_password.html')
+
+def team_dashboard_change_password(request):
+    staff_id = request.session.get('staff_id')
+    if not staff_id:
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')  # Redirect to your login page
+
+    try:
+        staff = get_object_or_404(Staff, id=staff_id)
+        team_dashboard = TeamDashboard.objects.get(username=staff.email)
+    except TeamDashboard.DoesNotExist:
+        messages.error(request, "You don't have access to the team dashboard.")
+        return redirect('some_appropriate_page')  # Redirect to an appropriate page
+
+    if request.method == 'POST':
+        current_password = request.POST.get('current_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if not check_password(current_password, team_dashboard.password):
+            messages.error(request, "Current password is incorrect.")
+        elif new_password != confirm_password:
+            messages.error(request, "New passwords do not match.")
+        else:
+            team_dashboard.password = make_password(new_password)
+            team_dashboard.save()
+            messages.success(request, "Team dashboard password changed successfully.")
+            return redirect('team_dashboard')  # Redirect to the team dashboard page
+
+    return render(request, 'Organizations/team_dashboard_change_password.html')

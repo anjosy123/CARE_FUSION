@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block topbar %}
+{% endblock topbar %}
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a>
+</li>
+{% endblock nav_items %}
+
+{% block title %}Schedule Team Visit{% endblock title %}
+
+{% block extra_css %}
+<style>
+    .schedule-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .schedule-title {
+        color: #007bff;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    .schedule-form label {
+        font-weight: bold;
+        color: #495057;
+    }
+    .schedule-form input,
+    .schedule-form select {
+        width: 100%;
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+    .schedule-button {
+        display: block;
+        width: 100%;
+        padding: 0.75rem;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .schedule-button:hover {
+        background-color: #0056b3;
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="schedule-container">
+    <h4 class="schedule-title">Schedule Team Visit</h4>
+    <form method="post" class="schedule-form">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+            </div>
+        {% endfor %}
+        <button type="submit" class="schedule-button">Schedule Visit</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,5 +1,20 @@
 {% extends 'staff/base_dashboard.html' %}
 
+{% block title %}Manage Medical History{% endblock %}
+
+{% block nav_items %}
+<li class="{% if active_page == 'home' %}active{% endif %}"><a href="{% url 'doctor_dashboard' %}">Home</a></li>
+{% if request.session.staff_id %}
+<li class="{% if active_page == 'user' %}active{% endif %}">
+    <a href="#">Welcome, Dr. {{ request.session.staff_name }} <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+        {% comment %} <li><a href="#">Profile</a></li>
+        <li><a href="#">Settings</a></li> {% endcomment %}
+        <li><a href="{% url 'logout' %}">Logout</a></li>
+    </ul>
+</li>
+{% endif %}
+{% endblock nav_items %}
 {% block content %}
 <style>
     .medical-history-container {

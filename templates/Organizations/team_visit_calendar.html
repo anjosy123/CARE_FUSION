@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Team Visit Calendar{% endblock title %}
+
+{% block nav_items %}
+<li><a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a></li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Team Visit Calendar</h2>
+    <div class="calendar-navigation">
+        <a href="?month={{ prev_month|date:'m' }}&year={{ prev_month|date:'Y' }}">&lt; Previous Month</a>
+        <span>{{ month|date:"F Y" }}</span>
+        <a href="?month={{ next_month|date:'m' }}&year={{ next_month|date:'Y' }}">Next Month &gt;</a>
+    </div>
+    <table class="calendar">
+        <thead>
+            <tr>
+                <th>Mon</th>
+                <th>Tue</th>
+                <th>Wed</th>
+                <th>Thu</th>
+                <th>Fri</th>
+                <th>Sat</th>
+                <th>Sun</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for week in calendar_matrix %}
+                <tr>
+                    {% for day, visits in week %}
+                        <td>
+                            {% if day %}
+                                <div class="day-number">{{ day }}</div>
+                                {% for visit in visits %}
+                                    <div class="visit">
+                                        <span class="team">{{ visit.team.name }}</span>
+                                        <span class="patient">{{ visit.patient.get_full_name }}</span>
+                                        <span class="time">{{ visit.start_time|time:"H:i" }} - {{ visit.end_time|time:"H:i" }}</span>
+                                    </div>
+                                    <div class="visit">
+                                        <span class="team">{{ visit.team.name }}</span>
+                                        <span class="patient">{{ visit.patient.get_full_name }}</span>
+                                        <span class="time">{{ visit.start_time|time:"H:i" }} - {{ visit.end_time|time:"H:i" }}</span>
+                                        {% if visit.is_reschedulable %}
+                                            <a href="{% url 'reschedule_team_visit' visit.id %}" class="reschedule-link">Reschedule</a>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calendar {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .calendar th, .calendar td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+        vertical-align: top;
+    }
+    .calendar th {
+        background-color: #f2f2f2;
+    }
+    .day-number {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .visit {
+        padding: 5px;
+        margin-bottom: 5px;
+        border-radius: 3px;
+        font-size: 0.9em;
+        /* Remove the background color */
+        border-bottom: 1px solid #eee;
+    }
+    .team {
+        font-weight: bold;
+    }
+    .time {
+        color: #666;
+    }
+    .calendar-navigation {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}

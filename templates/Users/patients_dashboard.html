@@ -127,10 +127,29 @@
     <li><a href="{% url 'patients_dashboard' %}?view=prescriptions">Prescriptions</a></li>
     <li><a href="{% url 'patients_dashboard' %}?view=appointments">Appointments</a></li>
     <li><a href="{% url 'patients_dashboard' %}?view=medical_history">Medical History</a></li>
+    <li><a href="{% url 'available_appointments' %}">Book Appointment</a></li>
   </ul>
 </li>
 <li class="nav-item">
   <a class="nav-link" href="{% url 'service_requests' %}">Requests</a>
+</li>
+<!-- Add this new list item for notifications -->
+<li class="nav-item ms-auto">
+  <div class="dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+      <i class="fas fa-bell"></i>
+      <span class="badge bg-danger">{{ notifications|length }}</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
+      {% for notification in notifications %}
+        <li><a class="dropdown-item" href="#">{{ notification.message }}</a></li>
+      {% empty %}
+        <li><a class="dropdown-item" href="#">No new notifications</a></li>
+      {% endfor %}
+      <li><hr class="dropdown-divider"></li>
+      <li><a class="dropdown-item" href="{% url 'notification_center' %}">View all notifications</a></li>
+    </ul>
+  </div>
 </li>
 <li class="nav-item">
   {% if not request.session.username and not request.session.org_name %}
@@ -219,7 +238,7 @@
           <br>
           From {{ prescription.start_date }} to {{ prescription.end_date }}
           <br>
-          Prescribed by: {{ prescription.patient_assignment.staff.get_full_name }}
+          Prescribed by Dr.{{ prescription.patient_assignment.staff.get_full_name }}
         </li>
       {% empty %}
         <li>No active prescriptions.</li>
@@ -231,17 +250,40 @@
   {% if request.GET.view == 'appointments' %}
   <div class="dashboard-section" id="appointments-section">
     <h3>Your Appointments</h3>
+    <h4>Upcoming Appointments</h4>
     <ul class="dashboard-list">
-      {% for appointment in appointments %}
+      {% for appointment in booked_appointments %}
         <li class="dashboard-item">
-          {{ appointment.date_time|date:"F d, Y, h:i a" }} - {{ appointment.purpose }}
+          <strong>{{ appointment.date_time|date:"F d, Y, h:i a" }}</strong> - {{ appointment.purpose }}
           <br>
-          With: {{ appointment.patient_assignment.staff.get_full_name }}
+          With: Dr. {{ appointment.patient_assignment.staff.get_full_name }}
+          <br>
+          Status: {{ appointment.get_status_display }}
         </li>
       {% empty %}
         <li>No upcoming appointments.</li>
       {% endfor %}
     </ul>
+    
+    <h4>Available Appointments</h4>
+    <ul class="dashboard-list">
+      {% for appointment in available_appointments %}
+        <li class="dashboard-item">
+          <strong>{{ appointment.date_time|date:"F d, Y, h:i a" }}</strong> - {{ appointment.purpose }}
+          <br>
+          With: Dr. {{ appointment.patient_assignment.staff.get_full_name }}
+          <br>
+          <form method="post" action="{% url 'book_appointment' appointment.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-sm">Book Appointment</button>
+          </form>
+        </li>
+      {% empty %}
+        <li>No available appointments.</li>
+      {% endfor %}
+    </ul>
+    
+    <a href="{% url 'request_emergency_appointment' %}" class="btn btn-danger">Request Emergency Appointment</a>
   </div>
   {% endif %}
 
@@ -325,3 +367,7 @@ window.onclick = function(event) {
 // Your existing JavaScript...
 </script>
 {% endblock %}
+{% block custom_footer %}
+{% endblock custom_footer %}
+{% block copyright %}
+{% endblock copyright %}

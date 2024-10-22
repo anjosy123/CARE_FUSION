@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Appointment Scheduled</title>
+</head>
+<body>
+    <h1>New Appointment Scheduled</h1>
+    <p>Dear Dr. {{ appointment.patient_assignment.staff.name }},</p>
+    <p>A new appointment has been scheduled for {{ appointment.date_time }}.</p>
+    <p>Patient Details:</p>
+    <ul>
+        <li>Name: {{ appointment.patient_assignment.patient.name }}</li>
+        <li>Location: {{ appointment.location }}</li>
+        <!-- Add any other relevant details -->
+    </ul>
+    <p>Please review your schedule and prepare accordingly.</p>
+</body>
+</html>
+

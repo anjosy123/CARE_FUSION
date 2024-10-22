@@ -1,7 +1,8 @@
-{% extends 'staff/base_dashboard.html' %}
+{% extends 'base.html' %}
 
-{% block role_specific_content %}
+{% block content %}
 <h2>Volunteer-specific Features</h2>
+<p>Welcome, Volunteer {{ request.session.username }}</p>
 <ul>
     <li><a href="#">View Task Assignments</a></li>
     <li><a href="#">Manage Visit Schedules</a></li>
