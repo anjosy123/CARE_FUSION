@@ -137,33 +137,33 @@ LOGGING = {
 }
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'care_fusion',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
-    }
-}
-
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'railway',
+#         'NAME': 'care_fusion',
 #         'USER': 'root',
-#         'PASSWORD': 'rwZkZVFcrrtSDCePaZyMQwvUXcLrDUGJ',
-#         'HOST': 'junction.proxy.rlwy.net',
+#         'PASSWORD': '',
+#         'HOST': 'localhost',
 #         'PORT': '3306',
 #         'OPTIONS': {
 #             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
 #         },
 #     }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'carefusion_pointlegif',
+        'USER': 'carefusion_pointlegif',
+        'PASSWORD': '6ae869ae5c889ef8471ed3a420544da2e411609e',
+        'HOST': '8t-wx.h.filess.io',
+        'PORT': '3307',
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
+    }
+}
 
 
 
