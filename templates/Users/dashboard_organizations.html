@@ -1,0 +1,27 @@
+<h3>Palliative Care Organizations</h3>
+<form method="get" action="{% url 'patients_dashboard' %}" class="mb-4">
+    <div class="input-group">
+        <input type="text" class="form-control" placeholder="Search organizations" name="q" value="{{ query }}">
+        <button class="btn btn-outline-secondary" type="submit">Search</button>
+    </div>
+</form>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    {% for org in organizations %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ org.org_name }}</h5>
+                    <p class="card-text">{{ org.org_description }}</p>
+                    <button onclick="openServiceRequestModal('{{ org.id }}')" class="btn btn-primary">Request Service</button>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col">
+            <div class="alert alert-info" role="alert">
+                No organizations found matching your search criteria.
+            </div>
+        </div>
+    {% endfor %}
+</div>

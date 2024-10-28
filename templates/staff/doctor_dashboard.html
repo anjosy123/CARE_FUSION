@@ -171,7 +171,7 @@
                     <div class="dashboard-section">
                         <h2><i class="fas fa-user-injured"></i> Assigned Patients</h2>
                         <p>You have {{ assignments.count }} assigned patients.</p>
-                        <button class="action-button" data-section="assigned-patients">View Patients</button>
+                        <button class="action-button" id="view-patients" data-section="assigned-patients">View Patients</button>
                     </div>
                 </div>
                 <div class="col-12 col-md-4">
@@ -261,7 +261,7 @@
                                 </div>
                                 <div>
                                     <a href="{% url 'manage_appointments' assignment.id %}" class="btn btn-sm btn-success">Schedule Appointments</a>
-                                    <a href="{% url 'manage_prescriptions' assignment.id %}" class="btn btn-sm btn-info">Manage Prescriptions</a>
+                                    <a href="{% url 'manage_prescriptions' assignment.id %}" class="btn btn-sm btn-info" id="manage-prescriptions">Manage Prescriptions</a>
                                     <a href="{% url 'manage_medical_history' assignment.id %}" class="btn btn-sm btn-warning">View Medical History</a>
                                 </div>
                             </div>

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Team Management{% endblock title %}
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a>
+</li>
+{% endblock nav_items %}
+
+{% block content %}
+<div class="container">
+    <h2>Team Management</h2>
+    <a href="{% url 'create_team' %}" class="btn btn-primary mb-3">Create New Team</a>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Team Name</th>
+                <th>Members</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for team in teams %}
+            <tr>
+                <td>{{ team.name }}</td>
+                <td>
+                    {% for member in team.members.all %}
+                    {{ member.get_full_name }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </td>
+                <td>
+                    <a href="{% url 'team_communication' team.id %}" class="btn btn-sm btn-primary">Communication</a>
+                    <a href="#" class="btn btn-sm btn-info">Edit</a>
+                    <a href="#" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">No teams created yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

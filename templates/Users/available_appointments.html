@@ -1,183 +1,32 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends 'Users/patient_base.html' %}
 
-{% block title %}Available Appointments - CareFusion{% endblock %}
+{% block patient_title %}My Appointments{% endblock %}
 
-
-{% block extra_css %}
-{{ block.super }}
-<style>
-    .available-appointments-page {
-        font-family: Arial, sans-serif;
-    }
-    .available-appointments-page .appointments-container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
-    }
-    .available-appointments-page h2 {
-        color: #2c3e50;
-        border-bottom: 2px solid #3498db;
-        padding-bottom: 10px;
-        margin-bottom: 20px;
-    }
-    .available-appointments-page ul {
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
-    }
-    .available-appointments-page li {
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 5px;
-        margin-bottom: 10px;
-        padding: 15px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .available-appointments-page .appointment-info {
-        flex-grow: 1;
-    }
-    .available-appointments-page .appointment-date {
-        font-weight: bold;
-        color: #2c3e50;
-        display: block;
-    }
-    .available-appointments-page .appointment-purpose {
-        color: #7f8c8d;
-        font-style: italic;
-    }
-    .available-appointments-page .doctor-name {
-        color: #3498db;
-        display: block;
-        margin-top: 5px;
-    }
-    .available-appointments-page form {
-        margin-left: 15px;
-    }
-    .available-appointments-page button {
-        background-color: #2ecc71;
-        color: white;
-        border: none;
-        padding: 8px 15px;
-        border-radius: 3px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-    .available-appointments-page button:hover {
-        background-color: #27ae60;
-    }
-    .available-appointments-page .no-appointments {
-        color: #7f8c8d;
-        font-style: italic;
-    }
-    .available-appointments-page .emergency-link {
-        display: inline-block;
-        margin-top: 20px;
-        color: #e74c3c;
-        text-decoration: none;
-        font-weight: bold;
-    }
-    .available-appointments-page .emergency-link:hover {
-        text-decoration: underline;
-    }
-</style>
-{% endblock %}
-
-{% block topbar %}
-{% endblock topbar %}
-
-{% block nav_items %}
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'patients_dashboard' %}">Home</a>
-</li>
-<li class="nav-item {% if active_page == 'health' %}active{% endif %}">
-  <a href="#">My Health <i class="icofont-rounded-down"></i></a>
-  <ul class="dropdown">
-    <li><a href="{% url 'patients_dashboard' %}?view=prescriptions">Prescriptions</a></li>
-    <li><a href="{% url 'patients_dashboard' %}?view=appointments">Appointments</a></li>
-    <li><a href="{% url 'patients_dashboard' %}?view=medical_history">Medical History</a></li>
-    <li><a href="{% url 'available_appointments' %}">Book Appointment</a></li>
-  </ul>
-</li>
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'service_requests' %}">Requests</a>
-</li>
-<!-- Add this new list item for notifications -->
-<li class="nav-item ms-auto">
-  <div class="dropdown">
-    <a class="nav-link dropdown-toggle" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-      <i class="fas fa-bell"></i>
-      <span class="badge bg-danger">{{ notifications|length }}</span>
-    </a>
-    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
-      {% for notification in notifications %}
-        <li><a class="dropdown-item" href="#">{{ notification.message }}</a></li>
-      {% empty %}
-        <li><a class="dropdown-item" href="#">No new notifications</a></li>
-      {% endfor %}
-      <li><hr class="dropdown-divider"></li>
-      <li><a class="dropdown-item" href="{% url 'notification_center' %}">View all notifications</a></li>
-    </ul>
-  </div>
-</li>
-<li class="nav-item">
-  {% if not request.session.username and not request.session.org_name %}
-  <li class="{% if active_page == 'user' %}active{% endif %}">
-    <a href="#">New Organization ? <i class="icofont-rounded-down"></i></a>
-    <ul class="dropdown">
-      <li><a href="{% url 'login' %}">Sign In</a></li>
-      <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
-    </ul>
-  </li>
-  {% elif request.session.username %}
-  <li class="{% if active_page == 'user' %}active{% endif %}">
-    <a href="#">Welcome {{request.session.username}} <i class="icofont-rounded-down"></i></a>
-    <ul class="dropdown">
-      <li><a href="{% url 'logout' %}">Logout</a></li>
-    </ul>
-  </li>
-  {% elif request.session.org_name %}
-  <li class="{% if active_page == 'user' %}active{% endif %}">
-    <a href="#">Welcome {{request.session.org_name}} <i class="icofont-rounded-down"></i></a>
-    <ul class="dropdown">
-      <li><a href="{% url 'logout' %}">Logout</a></li>
-    </ul>
-  </li>
-  {% endif %}
-</li>
-{% endblock %}
-
-{% block content %}
-
-<div class="available-appointments-page">
-    <div class="appointments-container">
-        <h2>Available Appointments</h2>
-        {% if appointments %}
-            <ul>
-            {% for appointment in appointments %}
-                <li>
-                    <div class="appointment-info">
-                        <span class="appointment-date">{{ appointment.date_time|date:"F d, Y, h:i a" }}</span>
-                        <span class="appointment-purpose">{{ appointment.purpose }}</span>
-                        <span class="doctor-name">with Dr. {{ appointment.patient_assignment.staff.get_full_name }}</span>
-                    </div>
-                    <form method="post" action="{% url 'book_appointment' appointment.id %}">
-                        {% csrf_token %}
-                        <button type="submit">Book Appointment</button>
-                    </form>
-                </li>
-            {% endfor %}
-            </ul>
-        {% else %}
-            <p class="no-appointments">No available appointments at this time.</p>
-        {% endif %}
-        <a href="{% url 'request_emergency_appointment' %}" class="emergency-link">Request Emergency Appointment</a>
+{% block patient_content %}
+<h2 class="mb-4">Your Appointments</h2>
+<div class="row">
+    {% for appointment in appointments %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Appointment with Dr. {{ appointment.doctor }}</h5>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-calendar-event"></i> Date: {{ appointment.date }}</li>
+                    <li><i class="bi bi-clock"></i> Time: {{ appointment.time }}</li>
+                    <li><i class="bi bi-geo-alt"></i> Location: {{ appointment.location }}</li>
+                    <li><i class="bi bi-clipboard"></i> Purpose: {{ appointment.purpose }}</li>
+                </ul>
+                <a href="#" class="btn btn-primary">Reschedule</a>
+                <a href="#" class="btn btn-danger">Cancel</a>
+            </div>
+        </div>
     </div>
+    {% empty %}
+    <div class="col">
+        <div class="alert alert-info" role="alert">
+            You don't have any upcoming appointments.
+        </div>
+    </div>
+    {% endfor %}
 </div>
 {% endblock %}
-{% block custom_footer %}
-{% endblock custom_footer %}
-{% block copyright %}
-{% endblock copyright %}

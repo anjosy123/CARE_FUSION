@@ -1,22 +1,22 @@
-{% extends 'base.html' %} {% load static %} 
-{% block title %}Login - CareFusion{% endblock %} {% block extra_css %}
+{% extends 'base.html' %} 
+{% load static %} 
+{% block title %}Login - CareFusion{% endblock %}
+{% block extra_css %}
 <style>
-  .is-valid {
-    border-color: #28a745;
-  }
-  .is-invalid {
-    border-color: #dc3545;
-  }
   .login-container {
     max-width: 400px;
     margin: 0 auto;
   }
 </style>
-{% endblock %} {% block nav_items %}
+{% endblock %}
+{% block nav_items %}
 <li class="nav-item">
   <a class="nav-link" href="{% url 'index' %}">Home</a>
 </li>
-{% endblock %} {% block topbar %} {% endblock %} {% block content %}
+{% endblock %}
+{% block topbar %} 
+{% endblock %}
+{% block content %}
 <section class="breadcrumbs">
   <div class="container">
     <div class="row">
@@ -61,14 +61,13 @@
           <div class="mb-3">
             <label for="email" class="form-label">Email</label>
             <input
-              type="text"
+              type="email"
               class="form-control"
               id="email"
               name="email"
               placeholder="Enter your email"
               required
             />
-            <div class="invalid-feedback">Please enter a valid email.</div>
           </div>
 
           <div class="mb-3">
@@ -76,19 +75,15 @@
             <input
               type="password"
               class="form-control"
-              id="passw1"
+              id="password"
               name="pass1"
               placeholder="Enter your password"
               required
             />
-            <div class="invalid-feedback">
-              Password must be at least 8 characters long, include 1 uppercase
-              letter, 1 number, and 1 special character.
-            </div>
           </div>
 
           <div class="d-grid">
-            <button class="btn btn-primary" type="submit">Login</button>
+            <button class="btn btn-primary" id="loginButton" type="submit">Login</button>
           </div>
         </form>
 
@@ -103,52 +98,4 @@
     </div>
   </div>
 </section>
-{% endblock %} {% block extra_js %}
-<script>
-  // Email Validation
-  const emailInput = document.getElementById("email");
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  emailInput.addEventListener("input", function () {
-    if (emailPattern.test(emailInput.value)) {
-      emailInput.classList.remove("is-invalid");
-      emailInput.classList.add("is-valid");
-    } else {
-      emailInput.classList.remove("is-valid");
-      emailInput.classList.add("is-invalid");
-    }
-  });
-
-  // Password Validation
-  const passwordInput = document.getElementById("passw1");
-  const passwordPattern = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
-
-  passwordInput.addEventListener("input", function () {
-    if (passwordPattern.test(passwordInput.value)) {
-      passwordInput.classList.remove("is-invalid");
-      passwordInput.classList.add("is-valid");
-    } else {
-      passwordInput.classList.remove("is-valid");
-      passwordInput.classList.add("is-invalid");
-    }
-  });
-
-  // Form validation on submit
-  const loginForm = document.getElementById("loginForm");
-
-  loginForm.addEventListener("submit", function (event) {
-    if (
-      !emailPattern.test(emailInput.value) ||
-      !passwordPattern.test(passwordInput.value)
-    ) {
-      event.preventDefault(); // Prevent form submission if invalid
-      if (!emailPattern.test(emailInput.value)) {
-        emailInput.classList.add("is-invalid");
-      }
-      if (!passwordPattern.test(passwordInput.value)) {
-        passwordInput.classList.add("is-invalid");
-      }
-    }
-  });
-</script>
 {% endblock %}

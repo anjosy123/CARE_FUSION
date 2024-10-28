@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reschedule Team Visit{% endblock title %}
+
+{% block content %}
+<div class="container">
+    <h2>Reschedule Team Visit</h2>
+    <p>Original visit: {{ visit.team.name }} to {{ visit.patient.get_full_name }} on {{ visit.scheduled_date }} at {{ visit.start_time }}</p>
+    <form method="post" id="reschedule-form">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div id="available-slots" style="display: none;">
+            <h3>Available Slots:</h3>
+            <select id="slot-select" name="slot">
+                <option value="">Select a time slot</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Reschedule Visit</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#id_new_date').change(function() {
+        var date = $(this).val();
+        var teamId = {{ visit.team.id }};
+        
+        $.get(`/get-available-slots/${teamId}/${date}/`, function(data) {
+            var slots = data.available_slots;
+            var $slotSelect = $('#slot-select');
+            $slotSelect.empty().append('<option value="">Select a time slot</option>');
+            
+            slots.forEach(function(slot) {
+                $slotSelect.append(`<option value="${slot}">${slot}</option>`);
+            });
+            
+            $('#available-slots').show();
+        });
+    });
+    
+    $('#slot-select').change(function() {
+        var selectedSlot = $(this).val();
+        if (selectedSlot) {
+            var [startHour, startMinute] = selectedSlot.split(':');
+            var endTime = new Date(0, 0, 0, parseInt(startHour), parseInt(startMinute) + 30);
+            
+            $('#id_new_start_time').val(selectedSlot);
+            $('#id_new_end_time').val(endTime.getHours().toString().padStart(2, '0') + ':' + endTime.getMinutes().toString().padStart(2, '0'));
+        }
+    });
+});
+</script>
+{% endblock %}

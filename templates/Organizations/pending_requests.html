@@ -28,8 +28,12 @@
                 <td>{{ request.created_at|date:"Y-m-d H:i" }}</td>
                 <td>
                     <a href="{% url 'patient_details' request.id %}" class="btn btn-primary btn-sm">View Details</a>
-                    <button class="btn btn-success btn-sm approve-request" data-request-id="{{ request.id }}">Approve</button>
-                    <button class="btn btn-danger btn-sm reject-request" data-request-id="{{ request.id }}">Reject</button>
+                    <form method="post" action="{% url 'handle_service_request' %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="request_id" value="{{ request.id }}">
+                        <button type="submit" name="action" value="approve" class="btn btn-success" id="approveButton">Approve Request</button>
+                        <button type="submit" name="action" value="reject" class="btn btn-danger" id="rejectButton">Reject Request</button>
+                    </form>
                 </td>
             </tr>
             {% empty %}

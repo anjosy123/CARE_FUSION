@@ -1,373 +1,370 @@
-{% extends 'base.html' %}
 {% load static %}
-
-{% block title %}Patient Dashboard - CareFusion{% endblock %}
-
-{% block extra_css %}
-{{ block.super }}
-<style>
-  .nav-item {
-    list-style-type: none;
-  }
-  .card {
-    height: 100%;
-    transition: transform 0.2s;
-    display: flex;
-    flex-direction: column;
-  }
-  .card:hover {
-    transform: translateY(-5px);
-  }
-  .card-body {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-  }
-  .card-text {
-    flex-grow: 1;
-  }
-  .btn-group {
-    margin-top: auto;
-    gap: 10px;
-  }
-  #searchTab .row {
-    margin-right: -10px;
-    margin-left: -10px;
-  }
-  #searchTab .col {
-    padding-right: 10px;
-    padding-left: 10px;
-    margin-bottom: 20px;
-  }
-  .organization-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-  }
-  .organization-card {
-    height: 100%;
-  }
-  .service-requests-section {
-    margin-top: 2rem;
-  }
-  
-  .service-request-card {
-    margin-bottom: 1rem;
-  }
-  
-  /* New styles for prescriptions, appointments, and medical history */
-  .dashboard-section {
-    margin-bottom: 2rem;
-  }
-  .dashboard-section h3 {
-    color: #2c3e50;
-    border-bottom: 2px solid #3498db;
-    padding-bottom: 10px;
-    margin-bottom: 1rem;
-  }
-  .dashboard-list {
-    list-style-type: none;
-    padding: 0;
-  }
-  .dashboard-item {
-    background-color: #ecf0f1;
-    border-radius: 5px;
-    padding: 15px;
-    margin-bottom: 10px;
-  }
-  .dropdown-menu.show {
-    display: block;
-  }
-
-  /* Dropdown styles */
-  .nav-item {
-    position: relative;
-  }
-  .nav-item > a {
-    display: block;
-    padding: 10px 15px;
-    color: #333;
-    text-decoration: none;
-  }
-  .nav-item:hover > a {
-    color: #007bff;
-  }
-  .nav-item .dropdown {
-    display: none;
-    position: absolute;
-    background-color: #fff;
-    min-width: 200px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-    z-index: 1;
-    list-style-type: none;
-    padding: 0;
-  }
-  .nav-item:hover .dropdown {
-    display: block;
-  }
-  .nav-item .dropdown li a {
-    color: #333;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: block;
-  }
-  .nav-item .dropdown li a:hover {
-    background-color: #f1f1f1;
-  }
-</style>
-{% endblock %}
-
-{% block nav_items %}
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'patients_dashboard' %}">Home</a>
-</li>
-<li class="nav-item {% if active_page == 'health' %}active{% endif %}">
-  <a href="#">My Health <i class="icofont-rounded-down"></i></a>
-  <ul class="dropdown">
-    <li><a href="{% url 'patients_dashboard' %}?view=prescriptions">Prescriptions</a></li>
-    <li><a href="{% url 'patients_dashboard' %}?view=appointments">Appointments</a></li>
-    <li><a href="{% url 'patients_dashboard' %}?view=medical_history">Medical History</a></li>
-    <li><a href="{% url 'available_appointments' %}">Book Appointment</a></li>
-  </ul>
-</li>
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'service_requests' %}">Requests</a>
-</li>
-<!-- Add this new list item for notifications -->
-<li class="nav-item ms-auto">
-  <div class="dropdown">
-    <a class="nav-link dropdown-toggle" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-      <i class="fas fa-bell"></i>
-      <span class="badge bg-danger">{{ notifications|length }}</span>
-    </a>
-    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
-      {% for notification in notifications %}
-        <li><a class="dropdown-item" href="#">{{ notification.message }}</a></li>
-      {% empty %}
-        <li><a class="dropdown-item" href="#">No new notifications</a></li>
-      {% endfor %}
-      <li><hr class="dropdown-divider"></li>
-      <li><a class="dropdown-item" href="{% url 'notification_center' %}">View all notifications</a></li>
-    </ul>
-  </div>
-</li>
-<li class="nav-item">
-  {% if not request.session.username and not request.session.org_name %}
-  <li class="{% if active_page == 'user' %}active{% endif %}">
-    <a href="#">New Organization ? <i class="icofont-rounded-down"></i></a>
-    <ul class="dropdown">
-      <li><a href="{% url 'login' %}">Sign In</a></li>
-      <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
-    </ul>
-  </li>
-  {% elif request.session.username %}
-  <li class="{% if active_page == 'user' %}active{% endif %}">
-    <a href="#">Welcome {{request.session.username}} <i class="icofont-rounded-down"></i></a>
-    <ul class="dropdown">
-      <li><a href="{% url 'logout' %}">Logout</a></li>
-    </ul>
-  </li>
-  {% elif request.session.org_name %}
-  <li class="{% if active_page == 'user' %}active{% endif %}">
-    <a href="#">Welcome {{request.session.org_name}} <i class="icofont-rounded-down"></i></a>
-    <ul class="dropdown">
-      <li><a href="{% url 'logout' %}">Logout</a></li>
-    </ul>
-  </li>
-  {% endif %}
-</li>
-{% endblock %}
-
-{% block content %}
-<div class="container-fluid">
-  {% if not request.GET.view %}
-  <!-- Palliative Care Organizations Section -->
-  <div id="searchTab" class="mt-4">
-    <h4 class="mb-3">Palliative Care Organizations</h4>
-    <div class="card mb-4">
-      <div class="card-body">
-        <!-- Search Form -->
-        <form class="d-flex" action="{% url 'patients_dashboard' %}" method="GET" role="search">
-          <input class="form-control me-2" type="search" name="q" placeholder="Search by organization name, address, or pincode" value="{{ query }}" aria-label="Search">
-          <button class="btn btn-outline-primary" type="submit">Search</button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Display Search Results -->
-    {% if organizations %}
-    <div class="organization-grid">
-      {% for organization in organizations %}
-      <div class="organization-card">
-        <div class="card h-100 shadow-sm">
-          <div class="card-body d-flex flex-column">
-            <h5 class="card-title">{{ organization.org_name }}</h5>
-            <p class="card-text flex-grow-1">
-              <strong>Address:</strong> {{ organization.org_address }}<br>
-              <strong>Pincode:</strong> {{ organization.pincode }}<br>
-              <strong>Contact:</strong> {{ organization.org_phone }}
-            </p>
-            <div class="btn-group mt-auto">
-              <li style="list-style-type: none">
-                <a href="{% url 'organization_detail' organization.org_regid %}" class="btn btn-primary btn-sm me-2">View More</a>
-              </li>
-              <li style="list-style-type: none;">
-                <a href="{% url 'submit_service_request' organization.org_regid %}" class="btn btn-outline-danger btn-sm">Submit Request</a>
-              </li>
-            </div>
-          </div>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="alert alert-info" role="alert">
-      No organizations found matching your search criteria.
-    </div>
-    {% endif %}
-  </div>
-  {% endif %}
-
-  {% if request.GET.view == 'prescriptions' %}
-  <div class="dashboard-section" id="prescriptions-section">
-    <h3>Your Prescriptions</h3>
-    <ul class="dashboard-list">
-      {% for prescription in prescriptions %}
-        <li class="dashboard-item">
-          <strong>{{ prescription.medication }}</strong> - {{ prescription.dosage }} {{ prescription.frequency }}
-          <br>
-          From {{ prescription.start_date }} to {{ prescription.end_date }}
-          <br>
-          Prescribed by Dr.{{ prescription.patient_assignment.staff.get_full_name }}
-        </li>
-      {% empty %}
-        <li>No active prescriptions.</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
-
-  {% if request.GET.view == 'appointments' %}
-  <div class="dashboard-section" id="appointments-section">
-    <h3>Your Appointments</h3>
-    <h4>Upcoming Appointments</h4>
-    <ul class="dashboard-list">
-      {% for appointment in booked_appointments %}
-        <li class="dashboard-item">
-          <strong>{{ appointment.date_time|date:"F d, Y, h:i a" }}</strong> - {{ appointment.purpose }}
-          <br>
-          With: Dr. {{ appointment.patient_assignment.staff.get_full_name }}
-          <br>
-          Status: {{ appointment.get_status_display }}
-        </li>
-      {% empty %}
-        <li>No upcoming appointments.</li>
-      {% endfor %}
-    </ul>
-    
-    <h4>Available Appointments</h4>
-    <ul class="dashboard-list">
-      {% for appointment in available_appointments %}
-        <li class="dashboard-item">
-          <strong>{{ appointment.date_time|date:"F d, Y, h:i a" }}</strong> - {{ appointment.purpose }}
-          <br>
-          With: Dr. {{ appointment.patient_assignment.staff.get_full_name }}
-          <br>
-          <form method="post" action="{% url 'book_appointment' appointment.id %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-primary btn-sm">Book Appointment</button>
-          </form>
-        </li>
-      {% empty %}
-        <li>No available appointments.</li>
-      {% endfor %}
-    </ul>
-    
-    <a href="{% url 'request_emergency_appointment' %}" class="btn btn-danger">Request Emergency Appointment</a>
-  </div>
-  {% endif %}
-
-  {% if request.GET.view == 'medical_history' %}
-  <div class="dashboard-section" id="medical-history-section">
-    <h3>Your Medical History</h3>
-    {% for entry in medical_history %}
-      <div class="dashboard-item">
-        <h4>{{ entry.organization.org_name }}</h4>
-        <pre>{{ entry.history }}</pre>
-      </div>
-    {% empty %}
-      <p>No medical history available.</p>
-    {% endfor %}
-  </div>
-  {% endif %}
-</div>
-
-<!-- Service Request Modal -->
-<div id="serviceRequestModal" class="modal fade" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalTitle">Service Request</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="serviceRequestForm" method="post" enctype="multipart/form-data">
-          {% csrf_token %}
-          <input type="hidden" id="organizationId" name="organization_id" value="">
-          <div class="mb-3">
-            <label for="doctorReferral" class="form-label">Doctor's Referral Letter</label>
-            <input type="file" class="form-control" id="doctorReferral" name="doctor_referral" required>
-          </div>
-          <div class="mb-3">
-            <label for="additionalNotes" class="form-label">Additional Notes</label>
-            <textarea class="form-control" id="additionalNotes" name="additional_notes" rows="3"></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary">Submit Request</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-{% comment %} <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
-  <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-      <div class="toast-header">
-          <strong class="me-auto">Notification</strong>
-          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-      </div>
-      <div class="toast-body">
-         Request Submitted Successfully
-      </div>
-  </div>
-</div> {% endcomment %}
-
-{% endblock %}
-
-{% block extra_js %}
-{{ block.super }}
-<script>
-function toggleDropdown(event) {
-    event.preventDefault();
-    var dropdown = document.getElementById('healthDropdown');
-    dropdown.classList.toggle('show');
-}
-
-// Close the dropdown if the user clicks outside of it
-window.onclick = function(event) {
-    if (!event.target.matches('.dropdown-toggle')) {
-        var dropdowns = document.getElementsByClassName("dropdown-menu");
-        for (var i = 0; i < dropdowns.length; i++) {
-            var openDropdown = dropdowns[i];
-            if (openDropdown.classList.contains('show')) {
-                openDropdown.classList.remove('show');
-            }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient Dashboard - CareFusion</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --light-color: #f8f9fc;
+            --dark-color: #5a5c69;
         }
-    }
-}
 
-// Your existing JavaScript...
-</script>
-{% endblock %}
-{% block custom_footer %}
-{% endblock custom_footer %}
-{% block copyright %}
-{% endblock copyright %}
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--light-color);
+            padding-top: 56px;
+        }
+
+        .navbar {
+            background-color: var(--primary-color);
+        }
+
+        .navbar-brand, .nav-link {
+            color: #fff !important;
+        }
+
+        .nav-link:hover {
+            color: var(--light-color) !important;
+        }
+
+        .dashboard-card {
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.3s;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .dashboard-card.prescriptions { border-left-color: var(--info-color); }
+        .dashboard-card.appointments { border-left-color: var(--success-color); }
+        .dashboard-card.requests { border-left-color: var(--warning-color); }
+        .dashboard-card.teams { border-left-color: var(--danger-color); }
+
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            transform: translate(50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            background-color: var(--danger-color);
+            color: white;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .card {
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .card-title {
+            color: var(--primary-color);
+        }
+
+        .card .list-unstyled li {
+            margin-bottom: 0.5rem;
+        }
+
+        .card .bi {
+            margin-right: 0.5rem;
+            color: var(--secondary-color);
+        }
+
+        #serviceRequestModal .modal-body {
+            padding: 20px;
+        }
+
+        #serviceRequestModal .form-label {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        #serviceRequestModal .form-control,
+        #serviceRequestModal .form-select {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin-bottom: 15px;
+        }
+
+        #serviceRequestModal .form-control:focus,
+        #serviceRequestModal .form-select:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+
+        #serviceRequestModal textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        #serviceRequestModal .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            padding: 8px 16px;
+            font-weight: 500;
+        }
+
+        #serviceRequestModal .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    {% block navbar %}
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid">
+            <a href="{% url 'index' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px"  style="object-fit: contain;"/></a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'patients_dashboard' %}"><i class="bi bi-house-door"></i> Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="healthDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-heart-pulse"></i> Health
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="healthDropdown">
+                            <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=prescriptions"><i class="bi bi-capsule"></i> Prescriptions</a></li>
+                            <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=medical_history"><i class="bi bi-journal-medical"></i> Medical History</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="appointmentsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-calendar"></i> Appointments
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="appointmentsDropdown">
+                            <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=appointments"><i class="bi bi-calendar-check"></i> My Appointments</a></li>
+                            <li><a class="dropdown-item" href="{% url 'request_appointment' %}"><i class="bi bi-calendar-plus"></i> Book Appointment</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="careDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-clipboard-heart"></i> Care
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="careDropdown">
+                            <li><a class="dropdown-item" href="{% url 'patient_visit_requests' %}"><i class="bi bi-clipboard-check"></i> Visit Requests</a></li>
+                            <li><a class="dropdown-item" href="{% url 'assigned_teams' %}"><i class="bi bi-people"></i> Assigned Teams</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="{% url 'patient_notifications' %}">
+                            <i class="bi bi-bell"></i>
+                            {% if notifications %}
+                                <span class="notification-badge">{{ notifications|length }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i> {{ patient.get_full_name }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="{% url 'patient_profile' %}"><i class="bi bi-person"></i> Profile</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endblock navbar %}
+
+    {% block content %}
+    <div class="container mt-4">
+        <!-- Dashboard Overview -->
+        <div class="row mb-4">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card dashboard-card appointments h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Upcoming Appointments</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ upcoming_appointments.count }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-calendar-check fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card dashboard-card prescriptions h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Active Prescriptions</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ prescriptions.count }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-capsule fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card dashboard-card requests h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pending Requests</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ service_requests.count }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-clipboard-check fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card dashboard-card teams h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Assigned Teams</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ assigned_teams.count }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-people fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="card mb-4">
+            <div class="card-body">
+                {% if request.GET.view == 'prescriptions' %}
+                    {% include 'Users/dashboard_prescriptions.html' %}
+                {% elif request.GET.view == 'appointments' %}
+                    {% include 'Users/dashboard_appointments.html' %}
+                {% elif request.GET.view == 'medical_history' %}
+                    {% include 'Users/dashboard_medical_history.html' %}
+                {% else %}
+                    <h3>Palliative Care Organizations</h3>
+                    <form method="get" action="{% url 'patients_dashboard' %}" class="mb-4">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Search organizations" name="q" value="{{ query }}">
+                            <button class="btn btn-primary" type="submit">Search</button>
+                        </div>
+                    </form>
+
+                    <div class="row row-cols-1 row-cols-md-2 g-4">
+                        {% for org in organizations %}
+                            <div class="col">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ org.org_name }}</h5>
+                                        <ul class="list-unstyled">
+                                            <li><i class="bi bi-geo-alt"></i> {{ org.org_address }}</li>
+                                            <li><i class="bi bi-telephone"></i> {{ org.org_phone }}</li>
+                                            <li><i class="bi bi-envelope"></i> {{ org.org_email }}</li>
+                                            <li><i class="bi bi-pin-map"></i> Pincode: {{ org.pincode }}</li>
+                                        </ul>
+                                        <p class="card-text"><small class="text-muted">Registration ID: {{ org.org_regid }}</small></p>
+                                        <button onclick="openServiceRequestModal('{{ org.id }}')" class="btn btn-primary">Request Service</button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="col">
+                                <div class="alert alert-info" role="alert">
+                                    No organizations found matching your search criteria.
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endblock content %}
+    <!-- Service Request Modal -->
+    <div class="modal fade" id="serviceRequestModal" tabindex="-1" aria-labelledby="serviceRequestModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="serviceRequestModalLabel">Service Request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="serviceRequestForm" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" id="organizationId" name="organization_id" value="">
+                        
+                        <div class="mb-3">
+                            <label for="serviceSelect" class="form-label">Select Service</label><br>
+                            <select class="form-select" id="serviceSelect" name="service" required>
+                                <option value="">Choose a service</option>
+                                {% for service in services %}
+                                    <option value="{{ service.id }}">{{ service.name }}</option>
+                                {% endfor %}
+                            </select><br><br>
+                        </div>
+                        
+                        <div class="mb-0">
+                            <label for="doctorReferral" class="form-label">Doctor's Referral Letter</label><br>
+                            <input type="file" class="form-control" id="doctorReferral" name="doctor_referral" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="additionalNotes" class="form-label">Additional Notes</label><br>
+                            <textarea class="form-control" id="additionalNotes" name="additional_notes" rows="3"></textarea>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">Submit Request</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function openServiceRequestModal(orgId) {
+            document.getElementById('organizationId').value = orgId;
+            const modal = new bootstrap.Modal(document.getElementById('serviceRequestModal'));
+            modal.show();
+        }
+
+        // Add any charts or additional JavaScript functionality here
+    </script>
+</body>
+</html>

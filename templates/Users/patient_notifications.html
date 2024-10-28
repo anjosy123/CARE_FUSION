@@ -1,0 +1,86 @@
+{% extends 'Users/patient_base.html' %}
+{% load static %}
+
+{% block title %}My Notifications - CareFusion{% endblock %}
+
+{% block nav_bar %}
+<li class="nav-item">
+    <a class="nav-link" href="{% url 'patients_dashboard' %}">Home</a>
+  </li>
+  <li class="nav-item {% if active_page == 'health' %}active{% endif %}">
+    <a href="#">My Health <i class="icofont-rounded-down"></i></a>
+    <ul class="dropdown">
+      <li><a href="{% url 'patients_dashboard' %}?view=prescriptions">Prescriptions</a></li>
+      <li><a href="{% url 'patients_dashboard' %}?view=appointments">Appointments</a></li>
+      <li><a href="{% url 'patients_dashboard' %}?view=medical_history">Medical History</a></li>
+      <li><a href="{% url 'patient_visit_requests' %}">Team Visit Requests</a></li>
+      <li><a href="{% url 'available_appointments' %}">Book Appointment</a></li>
+    </ul>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="{% url 'service_requests' %}">Requests</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="{% url 'assigned_teams' %}">My Care Teams</a>
+  </li>
+  <!-- Notifications dropdown -->
+  <li class="nav-item ms-auto">
+    <div class="dropdown">
+      <a class="nav-link dropdown-toggle" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-bell"></i>
+        <span class="badge bg-danger">{{ notifications|length }}</span>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
+        {% for notification in notifications %}
+          <li><a class="dropdown-item" href="#">{{ notification.message }}</a></li>
+        {% empty %}
+          <li><a class="dropdown-item" href="#">No new notifications</a></li>
+        {% endfor %}
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{% url 'notification_center' %}">View all notifications</a></li>
+      </ul>
+    </div>
+  </li>
+  <li class="nav-item">
+    {% if not request.session.username and not request.session.org_name %}
+    <li class="{% if active_page == 'user' %}active{% endif %}">
+      <a href="#">New Organization ? <i class="icofont-rounded-down"></i></a>
+      <ul class="dropdown">
+        <li><a href="{% url 'login' %}">Sign In</a></li>
+        <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
+      </ul>
+    </li>
+    {% elif request.session.username %}
+    {% comment %} <li class="{% if active_page == 'user' %}active{% endif %}">
+      <a href="#">Welcome {{request.session.username}} <i class="icofont-rounded-down"></i></a>
+      <ul class="dropdown">
+        <li><a href="{% url 'logout' %}">Logout</a></li>
+      </ul>
+    </li> {% endcomment %}
+    {% elif request.session.org_name %}
+    {% comment %} <li class="{% if active_page == 'user' %}active{% endif %}">
+      <a href="#">Welcome {{request.session.org_name}} <i class="icofont-rounded-down"></i></a>
+      <ul class="dropdown">
+        <li><a href="{% url 'logout' %}">Logout</a></li>
+      </ul>
+    </li> {% endcomment %}
+    {% endif %}
+  </li>
+{% endblock nav_bar %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>My Notifications</h2>
+    <ul class="list-group">
+        {% for notification in notifications %}
+            <li class="list-group-item {% if not notification.is_read %}list-group-item-info{% endif %}">
+                {{ notification.message }}
+                <small class="text-muted d-block">{{ notification.created_at|date:"F d, Y H:i" }}</small>
+            </li>
+        {% empty %}
+            <li class="list-group-item">You have no notifications at this time.</li>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'patients_dashboard' %}" class="btn btn-primary mt-3">Back to Dashboard</a>
+</div>
+{% endblock %}

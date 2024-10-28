@@ -1,0 +1,168 @@
+<!-- templates/Organizations/team_dashboard.html -->
+{% extends "base.html" %}
+
+{% block nav_items %}
+    {% if request.session.team_member_name %}
+        <li class="{% if active_page == 'user' %}active{% endif %}">
+            <a href="#">Welcome {{request.session.team_member_name}} <i class="icofont-rounded-down"></i></a>
+            <ul class="dropdown">
+                <li><a href="{% url 'logout' %}">Logout</a></li>
+            </ul>
+        </li>
+    {% else %}
+        {% if not request.session.username and not request.session.org_name and not request.session.team_member_name %}
+            <li class="{% if active_page == 'user' %}active{% endif %}">
+                <a href="#">New user ? <i class="icofont-rounded-down"></i></a>
+                <ul class="dropdown">
+                    <li><a href="{% url 'login' %}">Sign In</a></li>
+                    <li><a href="{% url 'signup' %}">Sign Up</a></li>
+                </ul>
+            </li>
+        {% elif request.session.username %}
+            <li class="{% if active_page == 'user' %}active{% endif %}">
+                <a href="#">Welcome {{request.session.username}} <i class="icofont-rounded-down"></i></a>
+                <ul class="dropdown">
+                    <li><a href="{% url 'logout' %}">Logout</a></li>
+                </ul>
+            </li>
+        {% elif request.session.org_name %}
+            <li class="{% if active_page == 'user' %}active{% endif %}">
+                <a href="#">Welcome {{request.session.org_name}} <i class="icofont-rounded-down"></i></a>
+                <ul class="dropdown">
+                    <li><a href="{% url 'logout' %}">Logout</a></li>
+                </ul>
+            </li>
+        {% elif request.session.team_member_name %}
+            <li class="{% if active_page == 'user' %}active{% endif %}">
+                <a href="#">Welcome {{request.session.team_member_name}} <i class="icofont-rounded-down"></i></a>
+                <ul class="dropdown">
+                    <li><a href="{% url 'logout' %}">Logout</a></li>
+                </ul>
+            </li>
+        {% endif %}
+    {% endif %}
+{% endblock nav_items %}
+
+{% block content %}
+<div class="container">
+    {% comment %} <h2>Team Dashboard</h2> {% endcomment %}
+    <div class="row">
+        <div class="col-md-3">
+            {% comment %} <h6>Your Teams</h6> {% endcomment %}
+            <ul class="list-group">
+                {% for team in teams %}
+                    <li class="list-group-item">
+                        <a href="#" class="team-select" data-team-id="{{ team.id }}">{{ team.name }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="col-md-9">
+            <div id="team-chat">
+                <h3 id="current-team-name"></h3>
+                <div id="message-list" class="mb-3"></div>
+                <form id="message-form">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <textarea id="message-content" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentTeamId = null;
+    let chatSocket = null;
+
+    function connectWebSocket(teamId) {
+        if (chatSocket) {
+            chatSocket.close();
+        }
+
+        chatSocket = new WebSocket(
+            'ws://' + window.location.host + '/ws/team/' + teamId + '/'
+        );
+
+        chatSocket.onopen = function(e) {
+            console.log('WebSocket connection established');
+        };
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            const messageList = document.querySelector('#message-list');
+            messageList.innerHTML += `
+                <div class="message">
+                    <strong>${data.sender_type === 'staff' ? 'Staff' : 'Organization'} ${data.sender_id}</strong>
+                    <span class="text-muted">${new Date().toLocaleString()}</span>
+                    <p>${data.message}</p>
+                </div>
+            `;
+            messageList.scrollTop = messageList.scrollHeight;
+        };
+
+        chatSocket.onclose = function(e) {
+            console.log('WebSocket connection closed. Reconnecting...');
+            setTimeout(() => connectWebSocket(teamId), 1000);
+        };
+    }
+
+    document.querySelectorAll('.team-select').forEach(function(element) {
+        element.addEventListener('click', function(e) {
+            e.preventDefault();
+            currentTeamId = this.dataset.teamId;
+            document.querySelector('#current-team-name').textContent = this.textContent;
+            connectWebSocket(currentTeamId);
+            loadTeamMessages(currentTeamId);
+        });
+    });
+
+    document.querySelector('#message-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const messageInputDom = document.querySelector('#message-content');
+        const message = messageInputDom.value;
+        if (currentTeamId && chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+            chatSocket.send(JSON.stringify({
+                'message': message,
+                'sender_id': '{{ request.session.org_id }}',
+                'sender_type': 'organization'
+            }));
+            messageInputDom.value = '';
+        } else {
+            console.log('WebSocket is not open. Message not sent.');
+        }
+    });
+
+    function loadTeamMessages(teamId) {
+        fetch(`/api/team-messages/${teamId}/`)
+            .then(response => response.json())
+            .then(data => {
+                const messageList = document.querySelector('#message-list');
+                messageList.innerHTML = '';
+                data.messages.forEach(message => {
+                    messageList.innerHTML += `
+                        <div class="message">
+                            <strong>${message.sender_name}</strong>
+                            <span class="text-muted">${message.created_at}</span>
+                            <p>${message.content}</p>
+                        </div>
+                    `;
+                });
+                messageList.scrollTop = messageList.scrollHeight;
+            });
+    }
+
+    // Connect to the first team's WebSocket when the page loads
+    const firstTeam = document.querySelector('.team-select');
+    if (firstTeam) {
+        firstTeam.click();
+    }
+</script>
+{% endblock %}
+
+{% block custom_footer %}
+{% endblock custom_footer %}
+{% block copyright %}
+{% endblock copyright %}

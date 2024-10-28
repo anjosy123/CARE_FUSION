@@ -1,0 +1,40 @@
+{% extends 'Users/patient_base.html' %}
+
+{% block patient_title %}Visit Requests{% endblock %}
+
+{% nav_items %}
+    
+{% endblock %}
+
+{% block patient_content %}
+<h2 class="mb-4">Your Visit Requests</h2>
+<div class="row">
+    {% for request in visit_requests %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Visit Request #{{ request.id }}</h5>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-calendar-event"></i> Requested Date: {{ request.requested_date|default:"Not specified" }}</li>
+                    <li><i class="bi bi-people"></i> Team: {{ request.team.name }}</li>
+                    <li><i class="bi bi-clipboard"></i> Purpose: {{ request.purpose|default:"Not specified" }}</li>
+                    <li><i class="bi bi-chat-text"></i> Reason: {{ request.reason }}</li>
+                    <li><i class="bi bi-check-circle"></i> Status: {{ request.status }}</li>
+                    <li><i class="bi bi-clock"></i> Requested on: {{ request.created_at|date:"F d, Y" }}</li>
+                </ul>
+                {% if request.status == 'PENDING' %}
+                <a href="#" class="btn btn-warning">Edit Request</a>
+                <a href="#" class="btn btn-danger">Cancel Request</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col">
+        <div class="alert alert-info" role="alert">
+            You don't have any active visit requests.
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

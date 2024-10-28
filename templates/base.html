@@ -8,10 +8,7 @@
     <meta name="keywords" content="Site keywords here" />
     <meta name="description" content="" />
     <meta name="copyright" content="" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
     <!-- Title -->
     <title>{% block title %} {% endblock %}</title>
@@ -20,10 +17,8 @@
     <link rel="icon" href="{% static 'img/favicon.png' %}"/>
 
     <!-- Google Fonts -->
-    <link
-      href="https://fonts.googleapis.com/css?family=Poppins:200i,300,300i,400,400i,500,500i,600,600i,700,700i,800,800i,900,900i&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css?family=Poppins:200i,300,300i,400,400i,500,500i,600,600i,700,700i,800,800i,900,900i&display=swap" rel="stylesheet" />
+    
     {% block extra_css %}
     <style>
       .nav.menu li.active > a {
@@ -67,8 +62,67 @@
           flex: 1 1 100%;
         }
       }
+      .top-link {
+        position: relative;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+      }
+      .top-link > li {
+        display: inline-block;
+        margin-right: 15px;
+        position: relative;
+      }
+      .top-link > li > a {
+        color: #1A76D1;
+        font-size: 14px;
+        text-decoration: none;
+      }
+      .top-link .dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: #fff;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        display: none;
+        min-width: 150px;
+        z-index: 999;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+      }
+      .top-link li:hover .dropdown {
+        display: block;
+      }
+      .top-link .dropdown li {
+        display: block;
+      }
+      .top-link .dropdown li a {
+        color: #333;
+        padding: 10px 15px;
+        display: block;
+        text-decoration: none;
+      }
+      .top-link .dropdown li a:hover {
+        background-color: #f8f9fa;
+      }
+      .user-login {
+        margin-left: auto;
+      }
+      .user-login .login-link {
+        color: #1A76D1;
+        font-weight: bold;
+      }
+      .user-login li {
+        margin-right: 0;
+      }
+      .user-login .dropdown {
+        right: 0;
+        left: auto;
+      }
     </style>
     {% endblock extra_css %}
+    
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" />
     <!-- Nice Select CSS -->
@@ -96,7 +150,7 @@
   </head>
 
   <body>
-    <!-- Preloader --> 
+    {% comment %} <!-- Preloader -->
     <div class="preloader">
       <div class="loader">
         <div class="loader-outter"></div>
@@ -109,33 +163,54 @@
         </div>
       </div>
     </div>
-    <!-- End Preloader -->
+    <!-- End Preloader --> {% endcomment %}
+    
     <!-- Header Area -->
     <header class="header">
       <!-- Topbar -->
       <div class="topbar">
         <div class="container">
           <div class="row">
-            <div class="col-lg-6 col-md-5 col-12">
-              <!-- Contact -->
-              <ul class="top-link">
-                {% block topbar %}
-                <li><a href="/about">About</a></li>
-                <li><a href="{% url 'organizations_home' %}">Organizations</a></li>
-                <li><a href="/contact">Contact</a></li>
-                {% endblock topbar %}
-              </ul>
-              <!-- End Contact -->
-            </div>
-            <div class="col-lg-6 col-md-7 col-12">
-              <!-- Top Contact -->
-              <ul class="top-contact">
-                <li><i class="fa fa-phone"></i>+91 9876543210</li>
-                <li>
-                  <i class="fa fa-envelope"></i><a href="mailto:support@carefusion.com">support@carefusion.com</a>
-                </li>
-              </ul>
-              <!-- End Top Contact -->
+            <div class="col-12">
+              <div class="topbar-inner d-flex justify-content-between align-items-center">
+                <!-- Contact -->
+                <ul class="top-link">
+                  {% block topbar %}
+                  <li><a href="/about">About</a></li>
+                  <li><a href="{% url 'organizations_home' %}">Organizations</a></li>
+                  <li><a href="/contact">Contact</a></li>
+                </ul>
+                <!-- End Contact -->
+                
+                <!-- User Login -->
+                <ul class="top-link user-login">
+                  {% if not request.session.username and not request.session.org_name %}
+                  <li class="{% if active_page == 'user' %}active{% endif %}">
+                    <a href="#" class="login-link">New user ? <i class="icofont-rounded-down"></i></a>
+                    <ul class="dropdown">
+                      <li><a href="{% url 'login' %}">Sign In</a></li>
+                      <li><a href="{% url 'signup' %}">Sign Up</a></li>
+                    </ul>
+                  </li>
+                  {% elif request.session.username %}
+                  <li class="{% if active_page == 'user' %}active{% endif %}">
+                    <a href="#" class="login-link">Welcome {{request.session.username}} <i class="icofont-rounded-down"></i></a>
+                    <ul class="dropdown">
+                      <li><a href="{% url 'logout' %}">Logout</a></li>
+                    </ul>
+                  </li>
+                  {% elif request.session.org_name %}
+                  <li class="{% if active_page == 'user' %}active{% endif %}">
+                    <a href="#" class="login-link">Welcome {{request.session.org_name}} <i class="icofont-rounded-down"></i></a>
+                    <ul class="dropdown">
+                      <li><a href="{% url 'logout' %}">Logout</a></li>
+                    </ul>
+                  </li>
+                  {% endif %}
+                  {% endblock topbar %}
+                </ul>
+                <!-- End User Login -->
+              </div>
             </div>
           </div>
         </div>
@@ -148,9 +223,11 @@
             <div class="row">
               <div class="col-lg-3 col-md-3 col-12">
                 <!-- Start Logo -->
+                 {% block logo %}
                 <div class="logo">
-                  <a href="{% url 'index' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" object-fit="contain;"/></a>
+                  <a href="{% url 'index' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" style="object-fit: contain;"/></a>
                 </div>
+                {% endblock logo %}
                 <!-- End Logo -->
                 <!-- Mobile Nav -->
                 <div class="mobile-nav"></div>
@@ -169,40 +246,19 @@
                           <li><a href="{% url 'organizations_home' %}">Organizations</a></li>
                         </ul>
                       </li>
-                      {% if not request.session.username and not request.session.org_name %}
-                      <li class="{% if active_page == 'user' %}active{% endif %}">
-                        <a href="#">New user ? <i class="icofont-rounded-down"></i></a>
-                        <ul class="dropdown">
-                          <li><a href="{% url 'login' %}">Sign In</a></li>
-                          <li><a href="{% url 'signup' %}">Sign Up</a></li>
-                        </ul>
-                      </li>
-                      {% elif request.session.username %}
-                      <li class="{% if active_page == 'user' %}active{% endif %}">
-                        <a href="#">Welcome {{request.session.username}} <i class="icofont-rounded-down"></i></a>
-                        <ul class="dropdown">
-                          <li><a href="{% url 'logout' %}">Logout</a></li>
-                        </ul>
-                      </li>
-                      {% elif request.session.org_name %}
-                      <li class="{% if active_page == 'user' %}active{% endif %}">
-                        <a href="#">Welcome {{request.session.org_name}} <i class="icofont-rounded-down"></i></a>
-                        <ul class="dropdown">
-                          <li><a href="{% url 'logout' %}">Logout</a></li>
-                        </ul>
-                      </li>
-                      {% endif %}
                       {% endblock nav_items %}
                     </ul>
                   </nav>
                 </div>
                 <!--/ End Main Menu -->
               </div>
-              {% comment %} <div class="col-lg-2 col-12">
+              {% comment %}
+              <div class="col-lg-2 col-12">
                 <div class="get-quote">
                   <a href="{% url 'providers' %}" class="btn" id="find-providers-btn">Find Providers</a>
                 </div>
-              </div> {% endcomment %}
+              </div>
+              {% endcomment %}
             </div>
           </div>
         </div>
@@ -234,10 +290,7 @@
             <div class="col-lg-3 col-md-6 col-12">
               <div class="single-footer">
                 <h2>About Us</h2>
-                <p>
-                  Lorem ipsum dolor sit am consectetur adipisicing elit do
-                  eiusmod tempor incididunt ut labore dolore magna.
-                </p>
+                <p>Lorem ipsum dolor sit am consectetur adipisicing elit do eiusmod tempor incididunt ut labore dolore magna.</p>
                 <!-- Social -->
                 <ul class="social">
                   <li><a href="#"><i class="icofont-facebook"></i></a></li>
@@ -259,7 +312,7 @@
                       <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>About Us</a></li>
                       <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Services</a></li>
                       <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Our Cases</a></li>
-                      <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Other Links</a></li>
+                      <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Other Links</a></li>	
                     </ul>
                   </div>
                   <div class="col-lg-6 col-md-6 col-12">
@@ -268,7 +321,7 @@
                       <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Finance</a></li>
                       <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Testimonials</a></li>
                       <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>FAQ</a></li>
-                      <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Contact Us</a></li>
+                      <li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Contact Us</a></li>	
                     </ul>
                   </div>
                 </div>
@@ -277,10 +330,7 @@
             <div class="col-lg-3 col-md-6 col-12">
               <div class="single-footer">
                 <h2>Open Hours</h2>
-                <p>
-                  Lorem ipsum dolor sit ame consectetur adipisicing elit do
-                  eiusmod tempor incididunt.
-                </p>
+                <p>Lorem ipsum dolor sit ame consectetur adipisicing elit do eiusmod tempor incididunt.</p>
                 <ul class="time-sidual">
                   <li class="day">Monday - Fridayp <span>8.00-20.00</span></li>
                   <li class="day">Saturday <span>9.00-18.30</span></li>
@@ -291,13 +341,9 @@
             <div class="col-lg-3 col-md-6 col-12">
               <div class="single-footer">
                 <h2>Newsletter</h2>
-                <p>
-                  subscribe to our newsletter to get allour news in your inbox..
-                  Lorem ipsum dolor sit amet, consectetur adipisicing elit,
-                </p>
+                <p>subscribe to our newsletter to get allour news in your inbox.. Lorem ipsum dolor sit amet, consectetur adipisicing elit,</p>
                 <form action="mail/mail.php" method="get" target="_blank" class="newsletter-inner">
-                  <input name="email" placeholder="Email Address" class="common-input" onfocus="this.placeholder = ''"
-                    onblur="this.placeholder = 'Your email address'" required="" type="email">
+                  <input name="email" placeholder="Email Address" class="common-input" onfocus="this.placeholder = ''" onblur="this.placeholder = 'Your email address'" required="" type="email">
                   <button class="button"><i class="icofont icofont-paper-plane"></i></button>
                 </form>
               </div>
@@ -306,9 +352,9 @@
         </div>
       </div>
       <!--/ End Footer Top -->
-      {% endblock custom_footer %}
+    {% endblock custom_footer %}
 
-      {% block copyright %}
+    {% block copyright %}
       <!-- Copyright -->
       <div class="copyright">
         <div class="container">
@@ -321,8 +367,8 @@
           </div>
         </div>
       </div>
-      {% endblock copyright %}
       <!--/ End Copyright -->
+    {% endblock copyright %}
     </footer>
     <!--/ End Footer Area -->
 
@@ -332,76 +378,68 @@
     <script src="{% static 'js/jquery-migrate-3.0.0.js' %}"></script>
     <!-- jquery Ui JS -->
     <script src="{% static 'js/jquery-ui.min.js' %}"></script>
-        <!-- Easing JS -->
-        <script src="{% static 'js/easing.js' %}"></script>
-        <!-- Color JS -->
-        <script src="{% static 'js/colors.js' %}"></script>
-        <!-- Popper JS -->  
-        <script src="{% static 'js/popper.min.js' %}"></script>
-        <!-- Bootstrap Datepicker JS -->
-        <script src="{% static 'js/bootstrap-datepicker.js' %}"></script>
-        <!-- Jquery Nav JS -->
-        <script src="{% static 'js/jquery.nav.js' %}"></script>
-        <!-- Slicknav JS -->
-        <script src="{% static 'js/slicknav.min.js' %}"></script>
-        <!-- ScrollUp JS -->
-        <script src="{% static 'js/jquery.scrollUp.min.js' %}"></script>
-        <!-- Niceselect JS -->
-        <script src="{% static 'js/niceselect.js' %}"></script>
-        <!-- Tilt Jquery JS -->
-        <script src="{% static 'js/tilt.jquery.min.js' %}"></script>
-        <!-- Owl Carousel JS -->
-        <script src="{% static 'js/owl-carousel.js' %}"></script>
-        <!-- counterup JS -->
-        <script src="{% static 'js/jquery.counterup.min.js' %}"></script>
-        <!-- Steller JS -->
-        <script src="{% static 'js/steller.js' %}"></script>
-        <!-- Wow JS -->
-        <script src="{% static 'js/wow.min.js' %}"></script>
-        <!-- Magnific Popup JS -->
-        <script src="{% static 'js/jquery.magnific-popup.min.js' %}"></script>
-        <!-- Counter Up CDN JS -->
-        <script src="http://cdnjs.cloudflare.com/ajax/libs/waypoints/2.0.3/waypoints.min.js"></script>
-        <!-- Bootstrap JS -->
-        <script src="{% static 'js/bootstrap.min.js' %}"></script>
-        <!-- Main JS -->
-        <script src="{% static 'js/main.js' %}"></script>
-    
-        <!-- Add this div for the warning message -->
-        <div id="warning-message" class="alert alert-warning alert-dismissible fade show" role="alert" style="display: none;">
-            You are not a registered user, please sign in.
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% if messages %}
-        <div id="message-container">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-    
-        <!-- Add this script to handle the button click event -->
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                var findProvidersBtn = document.getElementById('find-providers-btn');
-                if (findProvidersBtn) {
-                    findProvidersBtn.addEventListener('click', function(event) {
-                        event.preventDefault();
-                        {% if not request.user.is_authenticated %}
-                        var warningMessage = document.getElementById('warning-message');
-                        warningMessage.style.display = 'block';
-                        setTimeout(function() {
-                            warningMessage.style.display = 'none';
-                        }, 5000); // Hide the message after 5 seconds
-                        {% else %}
-                        window.location.href = "{% url 'providers' %}";
-                        {% endif %}
-                    });
-                }
-            });
-        </script>
-      </body>
-    </html>
+    <!-- Easing JS -->
+    <script src="{% static 'js/easing.js' %}"></script>
+    <!-- Color JS -->
+    <script src="{% static 'js/colors.js' %}"></script>
+    <!-- Popper JS -->
+    <script src="{% static 'js/popper.min.js' %}"></script>
+    <!-- Bootstrap Datepicker JS -->
+    <script src="{% static 'js/bootstrap-datepicker.js' %}"></script>
+    <!-- Jquery Nav JS -->
+    <script src="{% static 'js/jquery.nav.js' %}"></script>
+    <!-- Slicknav JS -->
+    <script src="{% static 'js/slicknav.min.js' %}"></script>
+    <!-- ScrollUp JS -->
+    <script src="{% static 'js/jquery.scrollUp.min.js' %}"></script>
+    <!-- Niceselect JS -->
+    <script src="{% static 'js/niceselect.js' %}"></script>
+    <!-- Tilt Jquery JS -->
+    <script src="{% static 'js/tilt.jquery.min.js' %}"></script>
+    <!-- Owl Carousel JS -->
+    <script src="{% static 'js/owl-carousel.js' %}"></script>
+    <!-- counterup JS -->
+    <script src="{% static 'js/jquery.counterup.min.js' %}"></script>
+    <!-- Steller JS -->
+    <script src="{% static 'js/steller.js' %}"></script>
+    <!-- Wow JS -->
+    <script src="{% static 'js/wow.min.js' %}"></script>
+    <!-- Magnific Popup JS -->
+    <script src="{% static 'js/jquery.magnific-popup.min.js' %}"></script>
+    <!-- Counter Up CDN JS -->
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/waypoints/2.0.3/waypoints.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="{% static 'js/bootstrap.min.js' %}"></script>
+    <!-- Main JS -->
+    <script src="{% static 'js/main.js' %}"></script>
+
+    <!-- Add this div for the warning message -->
+    <div id="warning-message" class="alert alert-warning alert-dismissible fade show" role="alert" style="display: none;">
+      You are not a registered user, please sign in.
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    {% block extra_js %}
+    <!-- Add this script to handle the button click event -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var findProvidersBtn = document.getElementById('find-providers-btn');
+        if (findProvidersBtn) {
+          findProvidersBtn.addEventListener('click', function(event) {
+            event.preventDefault();
+            {% if not request.user.is_authenticated %}
+            var warningMessage = document.getElementById('warning-message');
+            warningMessage.style.display = 'block';
+            setTimeout(function() {
+              warningMessage.style.display = 'none';
+            }, 5000); // Hide the message after 5 seconds
+            {% else %}
+            window.location.href = "{% url 'providers' %}";
+            {% endif %}
+          });
+        }
+      });
+    </script>
+    {% endblock extra_js %}
+  </body>
+</html>

@@ -128,4 +128,32 @@ urlpatterns = [
     path('staff/reschedule-appointment/<int:appointment_id>/', views.reschedule_appointment, name='reschedule_appointment'),
     path('staff/cancel-appointment/<int:appointment_id>/', views.cancel_appointment, name='cancel_appointment'),
     # path('staff/schedule-appointment/<int:assignment_id>/', views.schedule_appointment, name='schedule_appointment'),
+    
+    # palliative organization team management
+    
+    path('teams/', views.team_list, name='team_list'),
+    path('teams/create/', views.create_team, name='create_team'),
+    path('teams/schedule-visit/', views.schedule_team_visit, name='schedule_team_visit'),
+    path('teams/visits/', views.team_visit_list, name='team_visit_list'),
+    
+    # Team management
+    path('team-visit-calendar/', views.team_visit_calendar, name='team_visit_calendar'),
+    path('reschedule-team-visit/<int:visit_id>/', views.reschedule_team_visit, name='reschedule_team_visit'),
+    path('get-available-slots/<int:team_id>/<str:date>/', views.get_available_slots, name='get_available_slots'),
+    path('team-communication/<int:team_id>/', views.team_communication, name='team_communication'),
+    path('visit-checklist-notes/<int:visit_id>/', views.visit_checklist_notes, name='visit_checklist_notes'),
+    path('team-dashboard/', views.team_dashboard, name='team_dashboard'),
+    path('api/team-messages/<int:team_id>/', views.get_team_messages, name='get_team_messages'),
+    path('team-dashboard/change-password/', views.team_dashboard_change_password, name='team_dashboard_change_password'),
+    path('team/<int:team_id>/', views.team_detail, name='team_detail'),
+    path('request-appointment/', views.request_appointment, name='request_appointment'),
+    path('assigned-teams/', views.assigned_teams, name='assigned_teams'),
+    path('notification-center/', views.notification_center, name='notification_center'),
+    path('patient-profile/', views.patient_profile, name='patient_profile'),
+    path('org-profile/', views.org_profile, name='org_profile'),
+    path('team/<int:team_id>/request-visit/', views.request_team_visit, name='request_team_visit'),
+    path('my-visit-requests/', views.patient_visit_requests, name='patient_visit_requests'),
+    # path('service-request/', views.service_request, name='service_request'),
+    path('patient-notifications/', views.patient_notifications, name='patient_notifications'),
 ]
+

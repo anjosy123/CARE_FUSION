@@ -1,0 +1,102 @@
+{% extends 'Users/patient_base.html' %}
+{% load static %}
+
+{% block patient_title %}Request Appointment{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    body {
+        padding-top: 56px;
+    }
+    .card {
+        transition: all 0.3s ease;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+</style>
+{% endblock %}
+
+{% block patient_content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Request Appointment</h1>
+    
+    <div class="row">
+        <div class="col-lg-8 col-md-10 mx-auto">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Appointment Request Form</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.date_time.id_for_label }}" class="form-label">
+                                <i class="bi bi-calendar-event text-info me-2"></i>Date and Time
+                            </label>
+                            {{ form.date_time }}
+                            <div class="invalid-feedback">{{ form.date_time.errors }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.purpose.id_for_label }}" class="form-label">
+                                <i class="bi bi-clipboard-pulse text-info me-2"></i>Purpose of Appointment
+                            </label>
+                            {{ form.purpose }}
+                            <div class="invalid-feedback">{{ form.purpose.errors }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                <i class="bi bi-journal-text text-info me-2"></i>Additional Notes
+                            </label>
+                            {{ form.notes }}
+                            <div class="invalid-feedback">{{ form.notes.errors }}</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-send me-2"></i>Submit Request
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        flatpickr("#{{ form.date_time.id_for_label }}", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            minDate: "today",
+            maxDate: new Date().fp_incr(30),
+            minTime: "09:00",
+            maxTime: "17:00",
+        });
+
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+</script>
+{% endblock %}

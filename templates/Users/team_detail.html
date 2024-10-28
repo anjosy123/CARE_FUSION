@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block patient_title %}Team Details - {{ team.name }}{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="card-title">{{ team.name }} Details</h2>
+        <p><strong>Organization:</strong> {{ organization.org_name }}</p>
+        
+        <h3>Team Members</h3>
+        <ul class="list-group mb-3">
+            {% for member in team_members %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ member.get_full_name }} - {{ member.role }}
+                </li>
+            {% empty %}
+                <li class="list-group-item">No team members assigned yet.</li>
+            {% endfor %}
+        </ul>
+
+        <a href="{% url 'request_team_visit' team.id %}" class="btn btn-primary">Request Team Visit</a>
+        <a href="{% url 'patients_dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

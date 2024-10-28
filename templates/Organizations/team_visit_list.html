@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Team Visit List{% endblock title %}
+
+{% block nav_items %}
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a>
+</li>
+{% endblock nav_items %}
+
+{% block content %}
+<div class="container">
+    <h2>Team Visit List</h2>
+    <a href="{% url 'schedule_team_visit' %}" class="btn btn-primary mb-3">Schedule New Visit</a>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Team</th>
+                <th>Patient</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for visit in team_visits %}
+            <tr>
+                <td>{{ visit.team.name }}</td>
+                <td>{{ visit.patient.get_full_name }}</td>
+                <td>{{ visit.scheduled_date }}</td>
+                <td>{{ visit.start_time }} - {{ visit.end_time }}</td>
+                <td>{{ visit.get_status_display }}</td>
+                <td>
+                    <a href="#" class="btn btn-sm btn-info">Edit</a>
+                    <a href="#" class="btn btn-sm btn-danger">Cancel</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">No team visits scheduled yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+

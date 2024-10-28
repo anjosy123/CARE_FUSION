@@ -1,0 +1,35 @@
+<h3>Your Appointments</h3>
+<h4>Upcoming Appointments</h4>
+<ul class="list-group mb-4">
+    {% for appointment in booked_appointments %}
+        <li class="list-group-item">
+            <strong>{{ appointment.date_time|date:"F d, Y, h:i a" }}</strong> - {{ appointment.purpose }}
+            <br>
+            With: Dr. {{ appointment.patient_assignment.staff.get_full_name }}
+            <br>
+            Status: {{ appointment.get_status_display }}
+        </li>
+    {% empty %}
+        <li class="list-group-item">No upcoming appointments.</li>
+    {% endfor %}
+</ul>
+
+<h4>Available Appointments</h4>
+<ul class="list-group">
+    {% for appointment in available_appointments %}
+        <li class="list-group-item">
+            <strong>{{ appointment.date_time|date:"F d, Y, h:i a" }}</strong> - {{ appointment.purpose }}
+            <br>
+            With: Dr. {{ appointment.patient_assignment.staff.get_full_name }}
+            <br>
+            <form method="post" action="{% url 'book_appointment' appointment.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-sm mt-2">Book Appointment</button>
+            </form>
+        </li>
+    {% empty %}
+        <li class="list-group-item">No available appointments.</li>
+    {% endfor %}
+</ul>
+
+<a href="{% url 'request_emergency_appointment' %}" class="btn btn-danger mt-4">Request Emergency Appointment</a>

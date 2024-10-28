@@ -1,0 +1,66 @@
+{% load static %}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4 mb-4">Your Medical History</h1>
+    
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Records</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ medical_records|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-journal-medical fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for record in medical_records %}
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ record.condition }}</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
+                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="bi bi-three-dots-vertical text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                            aria-labelledby="dropdownMenuLink">
+                            <a class="dropdown-item" href="#">View Details</a>
+                            <a class="dropdown-item" href="#">Request Update</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-calendar-event text-info"></i> Date: {{ record.date }}</li>
+                        <li><i class="bi bi-person-badge text-info"></i> Doctor: Dr. {{ record.doctor }}</li>
+                        <li><i class="bi bi-hospital text-info"></i> Facility: {{ record.facility }}</li>
+                    </ul>
+                    <p class="card-text"><small class="text-muted">{{ record.notes }}</small></p>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info shadow-sm" role="alert">
+                <h4 class="alert-heading"><i class="bi bi-info-circle"></i> No Medical History Records</h4>
+                <p>There are no medical history records available at the moment. If you believe this is an error, please contact your healthcare provider.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    // Any medical history-specific JavaScript can go here
+</script>
