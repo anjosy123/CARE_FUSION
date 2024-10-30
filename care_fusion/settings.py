@@ -36,6 +36,7 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 BASE_URL = 'http://localhost:8000'
+# BASE_URL = 'https://care-fusion.onrender.com'
 
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')

@@ -3,7 +3,7 @@
 
 {% block title %}Palliative Organization Dashboard{% endblock title %}
 
-{% block nav_items %}
+{% block topbar %}
 <li><a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a></li>
 <li><a class="nav-link" href="{% url 'service_list' %}">Services</a></li>
 <li class="{% if active_page == 'service_requests' %}active{% endif %}">
@@ -30,32 +30,6 @@
         {% comment %} <li><a href="{% url 'visit_list' %}">Visits</a></li> {% endcomment %}
     </ul>
 </li>
-{% comment %} <li class="nav-item">
-    {% if not request.session.username and not request.session.org_name %}
-    <li class="{% if active_page == 'user' %}active{% endif %}">
-      <a href="#">New Organization ? <i class="icofont-rounded-down"></i></a>
-      <ul class="dropdown">
-        <li><a href="{% url 'login' %}">Sign In</a></li>
-        <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
-          </ul>
-        </li>
-        {% elif request.session.username %}
-        <li class="{% if active_page == 'user' %}active{% endif %}">
-          <a href="#">Welcome {{request.session.username}} <i class="icofont-rounded-down"></i></a>
-          <ul class="dropdown">
-            <li><a href="{% url 'logout' %}">Logout</a></li>
-          </ul>
-        </li>
-        {% elif request.session.org_name %}
-        <li class="{% if active_page == 'user' %}active{% endif %}">
-          <a href="#">Welcome {{request.session.org_name}} <i class="icofont-rounded-down"></i></a>
-          <ul class="dropdown">
-            <li><a href="{% url 'logout' %}">Logout</a></li>
-          </ul>
-        </li>
-      {% endif %}
-  </li>
-{% endblock %} {% endcomment %}
 {% endblock %}
 
 {% block content %}

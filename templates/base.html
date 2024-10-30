@@ -11,32 +11,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
     <!-- Title -->
-    <title>{% block title %} {% endblock %}</title>
+    <title>{% block title %}{% endblock %}</title>
 
     <!-- Favicon -->
-    <link rel="icon" href="{% static 'img/favicon.png' %}"/>
+    <link rel="icon" href="{% static 'img/favicon.png' %}" />
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css?family=Poppins:200i,300,300i,400,400i,500,500i,600,600i,700,700i,800,800i,900,900i&display=swap" rel="stylesheet" />
     
-    {% block extra_css %}
     <style>
+      /* Navigation Styles */
       .nav.menu li.active > a {
         color: #1A76D1;
         font-weight: bold;
       }
+
       .main-menu {
         width: 100%;
       }
+
       .main-menu .navigation {
         display: flex;
         justify-content: space-between;
         flex-wrap: nowrap;
       }
+
       .main-menu .navigation > li {
         flex: 1 1 auto;
         text-align: center;
       }
+
       .main-menu .navigation > li > a {
         padding: 20px 10px;
         white-space: nowrap;
@@ -44,84 +48,240 @@
         text-overflow: ellipsis;
         font-size: 14px;
       }
-      @media (max-width: 1200px) {
-        .main-menu .navigation > li > a {
-          font-size: 12px;
-        }
-      }
-      @media (max-width: 991px) {
-        .main-menu .navigation {
-          flex-wrap: wrap;
-        }
-        .main-menu .navigation > li {
-          flex: 1 1 50%;
-        }
-      }
-      @media (max-width: 767px) {
-        .main-menu .navigation > li {
-          flex: 1 1 100%;
-        }
-      }
-      .top-link {
-        position: relative;
-        padding: 0;
-        margin: 0;
-        list-style: none;
-      }
-      .top-link > li {
-        display: inline-block;
-        margin-right: 15px;
-        position: relative;
-      }
-      .top-link > li > a {
-        color: #1A76D1;
-        font-size: 14px;
-        text-decoration: none;
-      }
-      .top-link .dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        background-color: #fff;
+
+      /* Topbar Styles */
+      .topbar {
+        background: #1A76D1;  /* Light blue background */
+        padding: 8px 0;
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        display: none;
-        min-width: 150px;
-        z-index: 999;
-        padding: 0;
-        margin: 0;
-        list-style: none;
+        width: 100%;
+        top: 0;
+        z-index: 1000;
       }
-      .top-link li:hover .dropdown {
-        display: block;
-      }
-      .top-link .dropdown li {
-        display: block;
-      }
-      .top-link .dropdown li a {
-        color: #333;
-        padding: 10px 15px;
-        display: block;
-        text-decoration: none;
-      }
-      .top-link .dropdown li a:hover {
-        background-color: #f8f9fa;
-      }
-      .user-login {
+
+      .container {
+        width: 100%;
+        padding-right: 15px;
+        padding-left: 15px;
+        margin-right: auto;
         margin-left: auto;
       }
-      .user-login .login-link {
-        color: #1A76D1;
-        font-weight: bold;
+
+      .topbar-inner {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 50px;
+        height: 40px;
       }
+
+      /* Logo Styles */
+      .logo {
+        padding-left: 0;
+        margin-right: auto;
+      }
+
+      .logo img {
+        height: 45px;
+        width: auto;
+        vertical-align: middle;
+      }
+
+      /* Navigation Links */
+      .top-link {
+        display: flex;
+        align-items: right;
+        list-style: none;
+        margin: right;
+        padding: 0;
+        gap: 30px;
+        margin-right: auto;
+      }
+
+      .top-link > li > a {
+        color: #FFFFFF;
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: color 0.3s ease;
+        padding: 6px 0;
+        white-space: nowrap;
+        margin-right: auto;
+      }
+
+      .top-link > li > a:hover {
+        color: #E3F2FD;
+      }
+
+      /* User Login Section */
+      .user-login {
+        margin-left: auto;
+        position: relative;
+      }
+
       .user-login li {
-        margin-right: 0;
+        position: relative;
+        list-style: none;
       }
+
+      .user-login .login-link {
+        color: #FFFFFF;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 8px 16px;
+        border-radius: 4px;
+        background: rgba(255,255,255,0.1);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .user-login .login-link:hover {
+        background: rgba(255,255,255,0.2);
+      }
+
+      /* Dropdown Menu */
       .user-login .dropdown {
+        position: absolute;
+        top: 100%;
         right: 0;
-        left: auto;
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        min-width: 180px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(10px);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        margin-top: 5px;
+        padding: 5px 0;
       }
+
+      .user-login li:hover .dropdown {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .user-login .dropdown::before {
+        content: '';
+        position: absolute;
+        top: -5px;
+        right: 20px;
+        width: 10px;
+        height: 10px;
+        background: white;
+        transform: rotate(45deg);
+        box-shadow: -2px -2px 4px rgba(0,0,0,0.05);
+      }
+
+      .user-login .dropdown li {
+        display: block;
+        margin: 0;
+        padding: 0;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+      }
+
+      .user-login .dropdown li:last-child {
+        border-bottom: none;
+      }
+
+      .user-login .dropdown li a {
+        color: #333;
+        padding: 10px 20px;
+        display: block;
+        text-decoration: none;
+        font-size: 13px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        position: relative;
+      }
+
+      .user-login .dropdown li a:hover {
+        background: #E3F2FD;
+        color: #1A76D1;
+        padding-left: 25px;
+      }
+
+      /* Fix for dropdown positioning on mobile */
+      @media (max-width: 576px) {
+        .user-login {
+          position: static;
+        }
+        
+        .user-login .dropdown {
+          right: 10px;
+          left: auto;
+          margin-top: 5px;
+        }
+
+        .user-login .dropdown::before {
+          right: 20px;
+        }
+      }
+
+      /* Responsive Design */
+      @media (min-width: 1200px) {
+        .container {
+          max-width: 1140px;
+        }
+      }
+
+      @media (max-width: 991px) {
+        .container {
+          max-width: 960px;
+        }
+        .topbar-inner {
+          gap: 30px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          max-width: 720px;
+        }
+        .topbar-inner {
+          gap: 20px;
+        }
+        .logo img {
+          height: 25px;
+        }
+      }
+
+      @media (max-width: 576px) {
+        .container {
+          max-width: 540px;
+        }
+        .topbar-inner {
+          flex-wrap: wrap;
+          justify-content: space-between;
+          height: auto;
+          padding: 5px 0;
+        }
+        .logo {
+          margin-right: 0;
+        }
+        .top-link {
+          order: 2;
+          width: 100%;
+          justify-content: center;
+          margin-top: 8px;
+        }
+        .user-login {
+          order: 1;
+        }
+      }
+      <style>
+        .login-container {
+          max-width: 400px;
+          margin: 0 auto;
+        }
+      </style>
     </style>
-    {% endblock extra_css %}
     
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" />
@@ -168,67 +328,99 @@
     <!-- Header Area -->
     <header class="header">
       <!-- Topbar -->
-      <div class="topbar">
-        <div class="container">
-          <div class="row">
-            <div class="col-12">
-              <div class="topbar-inner d-flex justify-content-between align-items-center">
-                <!-- Contact -->
-                <ul class="top-link">
-                  {% block topbar %}
-                  <li><a href="/about">About</a></li>
-                  <li><a href="{% url 'organizations_home' %}">Organizations</a></li>
-                  <li><a href="/contact">Contact</a></li>
-                </ul>
-                <!-- End Contact -->
-                
-                <!-- User Login -->
-                <ul class="top-link user-login">
-                  {% if not request.session.username and not request.session.org_name %}
-                  <li class="{% if active_page == 'user' %}active{% endif %}">
-                    <a href="#" class="login-link">New user ? <i class="icofont-rounded-down"></i></a>
-                    <ul class="dropdown">
-                      <li><a href="{% url 'login' %}">Sign In</a></li>
-                      <li><a href="{% url 'signup' %}">Sign Up</a></li>
-                    </ul>
-                  </li>
-                  {% elif request.session.username %}
-                  <li class="{% if active_page == 'user' %}active{% endif %}">
-                    <a href="#" class="login-link">Welcome {{request.session.username}} <i class="icofont-rounded-down"></i></a>
-                    <ul class="dropdown">
-                      <li><a href="{% url 'logout' %}">Logout</a></li>
-                    </ul>
-                  </li>
-                  {% elif request.session.org_name %}
-                  <li class="{% if active_page == 'user' %}active{% endif %}">
-                    <a href="#" class="login-link">Welcome {{request.session.org_name}} <i class="icofont-rounded-down"></i></a>
-                    <ul class="dropdown">
-                      <li><a href="{% url 'logout' %}">Logout</a></li>
-                    </ul>
-                  </li>
-                  {% endif %}
-                  {% endblock topbar %}
-                </ul>
-                <!-- End User Login -->
-              </div>
-            </div>
+<div class="topbar">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="topbar-inner d-flex justify-content-between align-items-center">
+          <!-- logo -->
+          {% block logo %}
+          <div class="logo">
+            <a href="{% url 'index' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" style="object-fit: contain;"/></a>
           </div>
+          {% endblock logo %}
+          
+          <!-- Contact -->
+          <ul class="top-link">
+            {% block topbar %}
+            <li><a href="/about">About</a></li>
+            <li><a href="{% url 'organizations_home' %}">Organizations</a></li>
+            <li><a href="/contact">Contact</a></li>
+          </ul>
+          
+          <!-- User Login -->
+          <ul class="top-link user-login">
+            {% if not request.session.username and not request.session.org_name %}
+            <li class="{% if active_page == 'user' %}active{% endif %}">
+              <a href="#" class="login-link">
+                <i class="fas fa-user-circle"></i>
+                New user? 
+                <i class="fas fa-chevron-down"></i>
+              </a>
+              <ul class="dropdown">
+                <li>
+                  <a href="{% url 'login' %}">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                  </a>
+                </li>
+                <li>
+                  <a href="{% url 'signup' %}">
+                    <i class="fas fa-user-plus"></i> Sign Up
+                  </a>
+                </li>
+              </ul>
+            </li>
+            {% elif request.session.username %}
+            <li class="{% if active_page == 'user' %}active{% endif %}">
+              <a href="#" class="login-link">
+                <i class="fas fa-user"></i>
+                Welcome {{request.session.username}}
+                <i class="fas fa-chevron-down"></i>
+              </a>
+              <ul class="dropdown">
+                <li>
+                  <a href="{% url 'logout' %}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                  </a>
+                </li>
+              </ul>
+            </li>
+            {% elif request.session.org_name %}
+            <li class="{% if active_page == 'user' %}active{% endif %}">
+              <a href="#" class="login-link">
+                <i class="fas fa-building"></i>
+                Welcome {{request.session.org_name}}
+                <i class="fas fa-chevron-down"></i>
+              </a>
+              <ul class="dropdown">
+                <li>
+                  <a href="{% url 'logout' %}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                  </a>
+                </li>
+              </ul>
+            </li>
+            {% endif %}
+            {% endblock topbar %}
+          </ul>
         </div>
       </div>
-      <!-- End Topbar -->
+    </div>
+  </div>
+</div>
       <!-- Header Inner -->
       <div class="header-inner">
         <div class="container">
           <div class="inner">
             <div class="row">
               <div class="col-lg-3 col-md-3 col-12">
-                <!-- Start Logo -->
-                 {% block logo %}
+                {% comment %} <!-- Start Logo -->
+                 {% block logo1 %}
                 <div class="logo">
                   <a href="{% url 'index' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" style="object-fit: contain;"/></a>
                 </div>
-                {% endblock logo %}
-                <!-- End Logo -->
+                {% endblock logo1 %}
+                <!-- End Logo --> {% endcomment %}
                 <!-- Mobile Nav -->
                 <div class="mobile-nav"></div>
                 <!-- End Mobile Nav -->
@@ -239,13 +431,7 @@
                   <nav class="navigation">
                     <ul class="nav menu">
                       {% block nav_items %}
-                      <li class="{% if active_page == 'home' %}active{% endif %}"><a href="{% url 'index' %}">Home</a></li>
-                      <li class="{% if active_page == 'pages' %}active{% endif %}">
-                        <a href="#">Pages <i class="icofont-rounded-down"></i></a>
-                        <ul class="dropdown">
-                          <li><a href="{% url 'organizations_home' %}">Organizations</a></li>
-                        </ul>
-                      </li>
+                      
                       {% endblock nav_items %}
                     </ul>
                   </nav>
@@ -283,7 +469,7 @@
     {% block custom_footer %}
     <!-- Footer Area -->
     <footer id="footer" class="footer">
-      <!-- Footer Top -->
+      {% comment %} <!-- Footer Top -->
       <div class="footer-top">
         <div class="container">
           <div class="row">
@@ -351,7 +537,7 @@
           </div>
         </div>
       </div>
-      <!--/ End Footer Top -->
+      <!--/ End Footer Top --> {% endcomment %}
     {% endblock custom_footer %}
 
     {% block copyright %}
