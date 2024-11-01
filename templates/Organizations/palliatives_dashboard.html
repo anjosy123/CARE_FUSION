@@ -4,33 +4,68 @@
 {% block title %}Palliative Organization Dashboard{% endblock title %}
 
 {% block topbar %}
-<li><a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a></li>
-<li><a class="nav-link" href="{% url 'service_list' %}">Services</a></li>
-<li class="{% if active_page == 'service_requests' %}active{% endif %}">
-    <a href="#">Service Requests <i class="icofont-rounded-down"></i></a>
-    <ul class="dropdown">
-        <li><a href="{% url 'pending_requests' %}">Pending Requests</a></li>
-        <li><a href="{% url 'approved_rejected_requests' %}">Approved/Rejected Requests</a></li>
-    </ul>
-</li>
-<li class="{% if active_page == 'staff_corner' %}active{% endif %}">
-    <a href="#">Staff Corner <i class="icofont-rounded-down"></i></a>
-    <ul class="dropdown">
-        <li><a href="{% url 'staff_list' %}">Manage Staff</a></li>
-        <li><a href="{% url 'patient_assignment_list' %}">Patient Assignments</a></li>
-    </ul>
-</li>
-<!-- New Team Management dropdown -->
-<li class="{% if active_page == 'team_management' %}active{% endif %}">
-    <a href="#">Team Management <i class="icofont-rounded-down"></i></a>
-    <ul class="dropdown">
-        <li><a href="{% url 'team_list' %}">Manage Teams</a></li>
-        <li><a href="{% url 'team_visit_list' %}">Team Visits</a></li>
-        <li><a href="{% url 'team_visit_calendar' %}">Team Visit Calendar</a></li>
-        {% comment %} <li><a href="{% url 'visit_list' %}">Visits</a></li> {% endcomment %}
-    </ul>
-</li>
-{% endblock %}
+<div class="topbar">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="topbar-inner d-flex justify-content-between align-items-center">
+          <!-- logo -->
+          <div class="logo">
+            <a href="{% url 'palliatives_dashboard' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" style="object-fit: contain;"/></a>
+          </div>
+          
+          <!-- Navigation Links -->
+          <ul class="top-link">
+            <li><a href="{% url 'service_list' %}">Services</a></li>
+            <li class="{% if active_page == 'service_requests' %}active{% endif %}">
+                <a href="#">Service Requests <i class="icofont-rounded-down"></i></a>
+                <ul class="dropdown">
+                    <li><a href="{% url 'pending_requests' %}">Pending Requests</a></li>
+                    <li><a href="{% url 'approved_rejected_requests' %}">Approved/Rejected Requests</a></li>
+                </ul>
+            </li>
+            <li class="{% if active_page == 'staff_corner' %}active{% endif %}">
+                <a href="#">Staff Corner <i class="icofont-rounded-down"></i></a>
+                <ul class="dropdown">
+                    <li><a href="{% url 'staff_list' %}">Manage Staff</a></li>
+                    <li><a href="{% url 'patient_assignment_list' %}">Patient Assignments</a></li>
+                </ul>
+            </li>
+            <li class="{% if active_page == 'team_management' %}active{% endif %}">
+                <a href="#">Team Management <i class="icofont-rounded-down"></i></a>
+                <ul class="dropdown">
+                    <li><a href="{% url 'team_list' %}">Manage Teams</a></li>
+                    <li><a href="{% url 'team_visit_list' %}">Team Visits</a></li>
+                    <li><a href="{% url 'team_visit_calendar' %}">Team Visit Calendar</a></li>
+                </ul>
+            </li>
+          </ul>
+          
+          <!-- User Login section from base template -->
+          <ul class="top-link user-login">
+            {% if request.session.org_name %}
+            <li class="{% if active_page == 'user' %}active{% endif %}">
+              <a href="#" class="login-link">
+                <i class="fas fa-building"></i>
+                Welcome {{request.session.org_name}}
+                <i class="fas fa-chevron-down"></i>
+              </a>
+              <ul class="dropdown">
+                <li>
+                  <a href="{% url 'logout' %}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                  </a>
+                </li>
+              </ul>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock topbar %}
 
 {% block content %}
 <style>
@@ -105,6 +140,105 @@
         margin: 10px 0 0;
         color: #3498db;
     }
+
+    /* Dropdown Menu Styles */
+    .top-link li {
+        position: relative;
+    }
+
+    .top-link li .dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        min-width: 200px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(10px);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        margin-top: 5px;
+        padding: 5px 0;
+    }
+
+    .top-link li:hover .dropdown {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .top-link .dropdown::before {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: 20px;
+        width: 10px;
+        height: 10px;
+        background: white;
+        transform: rotate(45deg);
+        box-shadow: -2px -2px 4px rgba(0,0,0,0.05);
+    }
+
+    .top-link .dropdown li {
+        display: block;
+        margin: 0;
+        padding: 0;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .top-link .dropdown li:last-child {
+        border-bottom: none;
+    }
+
+    .top-link .dropdown li a {
+        color: #333;
+        padding: 10px 20px;
+        display: block;
+        text-decoration: none;
+        font-size: 13px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .top-link .dropdown li a:hover {
+        background: #E3F2FD;
+        color: #1A76D1;
+        padding-left: 25px;
+    }
+
+    /* Icon Rotation */
+    .top-link li a i.icofont-rounded-down {
+        transition: transform 0.3s ease;
+    }
+
+    .top-link li:hover a i.icofont-rounded-down {
+        transform: rotate(180deg);
+    }
+
+    /* Mobile Responsive Adjustments */
+    @media (max-width: 768px) {
+        .top-link .dropdown {
+            position: static;
+            background: #f8f9fa;
+            box-shadow: none;
+            display: none;
+            opacity: 1;
+            visibility: visible;
+            transform: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .top-link li:hover .dropdown {
+            display: block;
+        }
+
+        .top-link .dropdown::before {
+            display: none;
+        }
+    }
 </style>
 <div class="dashboard-container">
     <h4 class="dashboard-title">Palliative Organization Dashboard</h4>
@@ -143,7 +277,7 @@
             </tbody>
         </table>
     </section>
-    <section id="pending-requests" class="dashboard-section">
+    {% comment %} <section id="pending-requests" class="dashboard-section">
         <h4>Pending Service Requests</h4>
         <table class="table">
             <thead>
@@ -157,7 +291,7 @@
                 {% include "Organizations/pending_requests_partial.html" %}
             </tbody>
         </table>
-    </section>
+    </section> {% endcomment %}
     <section id="upcoming-team-visits" class="dashboard-section">
         <h4>Upcoming Team Visits</h4>
         <table class="table">
@@ -176,7 +310,7 @@
         </table>
     </section>
 </div>
-{% endblock %}
+{% endblock content %}
 
 {% block extra_js %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -228,4 +362,4 @@ $(document).ready(function() {
     setInterval(updateDashboard, 30000);
 });
 </script>
-{% endblock %}
+{% endblock extra_js %}

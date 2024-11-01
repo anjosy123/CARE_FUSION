@@ -1,10 +1,69 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block nav_items %}
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'palliatives_dashboard' %}">Home</a>
-</li>
-{% endblock %}
+{% block topbar %}
+<div class="topbar">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="topbar-inner d-flex justify-content-between align-items-center">
+          <!-- logo -->
+          <div class="logo">
+            <a href="{% url 'palliatives_dashboard' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" style="object-fit: contain;"/></a>
+          </div>
+          
+          <!-- Navigation Links -->
+          <ul class="top-link">
+            <li><a href="{% url 'service_list' %}">Services</a></li>
+            <li class="{% if active_page == 'service_requests' %}active{% endif %}">
+                <a href="#">Service Requests <i class="icofont-rounded-down"></i></a>
+                <ul class="dropdown">
+                    <li><a href="{% url 'pending_requests' %}">Pending Requests</a></li>
+                    <li><a href="{% url 'approved_rejected_requests' %}">Approved/Rejected Requests</a></li>
+                </ul>
+            </li>
+            <li class="{% if active_page == 'staff_corner' %}active{% endif %}">
+                <a href="#">Staff Corner <i class="icofont-rounded-down"></i></a>
+                <ul class="dropdown">
+                    <li><a href="{% url 'staff_list' %}">Manage Staff</a></li>
+                    <li><a href="{% url 'patient_assignment_list' %}">Patient Assignments</a></li>
+                </ul>
+            </li>
+            <li class="{% if active_page == 'team_management' %}active{% endif %}">
+                <a href="#">Team Management <i class="icofont-rounded-down"></i></a>
+                <ul class="dropdown">
+                    <li><a href="{% url 'team_list' %}">Manage Teams</a></li>
+                    <li><a href="{% url 'team_visit_list' %}">Team Visits</a></li>
+                    <li><a href="{% url 'team_visit_calendar' %}">Team Visit Calendar</a></li>
+                </ul>
+            </li>
+          </ul>
+          
+          <!-- User Login section from base template -->
+          <ul class="top-link user-login">
+            {% if request.session.org_name %}
+            <li class="{% if active_page == 'user' %}active{% endif %}">
+              <a href="#" class="login-link">
+                <i class="fas fa-building"></i>
+                Welcome {{request.session.org_name}}
+                <i class="fas fa-chevron-down"></i>
+              </a>
+              <ul class="dropdown">
+                <li>
+                  <a href="{% url 'logout' %}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                  </a>
+                </li>
+              </ul>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock topbar %}
 
 {% block title %}Patient Assignments{% endblock %}
 

@@ -1,7 +1,7 @@
 <!-- templates/Organizations/team_dashboard.html -->
 {% extends "base.html" %}
 
-{% block nav_items %}
+{% block topbar %}
     {% if request.session.team_member_name %}
         <li class="{% if active_page == 'user' %}active{% endif %}">
             <a href="#">Welcome {{request.session.team_member_name}} <i class="icofont-rounded-down"></i></a>
@@ -41,7 +41,7 @@
             </li>
         {% endif %}
     {% endif %}
-{% endblock nav_items %}
+{% endblock topbar %}
 
 {% block content %}
 <div class="container">

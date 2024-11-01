@@ -280,7 +280,106 @@
           max-width: 400px;
           margin: 0 auto;
         }
-      </style>
+
+      /* Updated Dropdown Menu Styles */
+      .top-link li {
+        position: relative;
+      }
+
+      .top-link .dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        min-width: 200px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(10px);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        margin-top: 5px;
+        padding: 5px 0;
+      }
+
+      .top-link li:hover .dropdown {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .top-link .dropdown::before {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: 20px;
+        width: 10px;
+        height: 10px;
+        background: white;
+        transform: rotate(45deg);
+        box-shadow: -2px -2px 4px rgba(0,0,0,0.05);
+      }
+
+      .top-link .dropdown li {
+        display: block;
+        margin: 0;
+        padding: 0;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+      }
+
+      .top-link .dropdown li:last-child {
+        border-bottom: none;
+      }
+
+      .top-link .dropdown li a {
+        color: #333;
+        padding: 10px 20px;
+        display: block;
+        text-decoration: none;
+        font-size: 13px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+
+      .top-link .dropdown li a:hover {
+        background: #E3F2FD;
+        color: #1A76D1;
+        padding-left: 25px;
+      }
+
+      /* Dropdown icon animation */
+      .top-link li > a i.icofont-rounded-down {
+        transition: transform 0.3s ease;
+      }
+
+      .top-link li:hover > a i.icofont-rounded-down {
+        transform: rotate(180deg);
+      }
+
+      /* Mobile responsiveness for dropdowns */
+      @media (max-width: 768px) {
+        .top-link .dropdown {
+          position: static;
+          background: rgba(255,255,255,0.05);
+          box-shadow: none;
+          margin-top: 0;
+          padding-left: 15px;
+        }
+
+        .top-link .dropdown::before {
+          display: none;
+        }
+
+        .top-link .dropdown li a {
+          color: #fff;
+          padding: 8px 15px;
+        }
+
+        .top-link .dropdown li a:hover {
+          background: rgba(255,255,255,0.1);
+        }
+      }
     </style>
     
     <!-- Bootstrap CSS -->
@@ -310,25 +409,12 @@
   </head>
 
   <body>
-    {% comment %} <!-- Preloader -->
-    <div class="preloader">
-      <div class="loader">
-        <div class="loader-outter"></div>
-        <div class="loader-inner"></div>
-        <div class="indicator">
-          <svg width="16px" height="12px">
-            <polyline id="back" points="1 6 4 6 6 11 10 1 12 6 15 6"></polyline>
-            <polyline id="front" points="1 6 4 6 6 11 10 1 12 6 15 6"></polyline>
-          </svg>
-        </div>
-      </div>
-    </div>
-    <!-- End Preloader --> {% endcomment %}
-    
     <!-- Header Area -->
     <header class="header">
+
+      {% block topbar %}
       <!-- Topbar -->
-<div class="topbar">
+      <div class="topbar">
   <div class="container">
     <div class="row">
       <div class="col-12">
@@ -342,7 +428,6 @@
           
           <!-- Contact -->
           <ul class="top-link">
-            {% block topbar %}
             <li><a href="/about">About</a></li>
             <li><a href="{% url 'organizations_home' %}">Organizations</a></li>
             <li><a href="/contact">Contact</a></li>
@@ -401,13 +486,14 @@
               </ul>
             </li>
             {% endif %}
-            {% endblock topbar %}
           </ul>
         </div>
       </div>
     </div>
   </div>
-</div>
+      </div>
+      {% endblock topbar %}
+
       <!-- Header Inner -->
       <div class="header-inner">
         <div class="container">
@@ -426,17 +512,6 @@
                 <!-- End Mobile Nav -->
               </div>
               <div class="col-lg-7 col-md-9 col-12">
-                <!-- Main Menu -->
-                <div class="main-menu">
-                  <nav class="navigation">
-                    <ul class="nav menu">
-                      {% block nav_items %}
-                      
-                      {% endblock nav_items %}
-                    </ul>
-                  </nav>
-                </div>
-                <!--/ End Main Menu -->
               </div>
               {% comment %}
               <div class="col-lg-2 col-12">
