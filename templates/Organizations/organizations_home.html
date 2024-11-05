@@ -1,133 +1,295 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Organizations{% endblock title %}
-{% block nav_items %}
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'index' %}">Home</a>
-  {% if not request.session.username and not request.session.org_name %}
-  <li class="{% if active_page == 'user' %}active{% endif %}">
-    <a href="#">New Organization ? <i class="icofont-rounded-down"></i></a>
-    <ul class="dropdown">
-      <li><a href="{% url 'login' %}">Sign In</a></li>
-      <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
-        </ul>
-      </li>
-      {% elif request.session.username %}
-      <li class="{% if active_page == 'user' %}active{% endif %}">
-        <a href="#">Welcome {{request.session.username}} <i class="icofont-rounded-down"></i></a>
-        <ul class="dropdown">
-          <li><a href="{% url 'logout' %}">Logout</a></li>
-        </ul>
-      </li>
-      {% elif request.session.org_name %}
-      <li class="{% if active_page == 'user' %}active{% endif %}">
-        <a href="#">Welcome {{request.session.org_name}} <i class="icofont-rounded-down"></i></a>
-        <ul class="dropdown">
-          <li><a href="{% url 'logout' %}">Logout</a></li>
-        </ul>
-      </li>
-    {% endif %}
-</li>
-{% endblock nav_items %}
 
 {% block head %}
 <style>
+    /* Updated styles to match base.html theme */
     .services-container {
         background-color: #f8f9fa;
-        padding: 50px 0;
+        padding: 80px 0;
     }
     .service-card {
         background-color: #ffffff;
         border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease-in-out;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
         height: 100%;
     }
     .service-card:hover {
         transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
     }
     .service-icon {
-        background-color: #007bff;
+        background-color: #1A76D1;  /* Updated to match base theme color */
         color: #ffffff;
-        width: 60px;
-        height: 60px;
+        width: 70px;
+        height: 70px;
         border-radius: 50%;
         display: flex;
         justify-content: center;
         align-items: center;
-        font-size: 24px;
-        margin: 0 auto 20px;
+        font-size: 28px;
+        margin: 0 auto 25px;
+        transition: all 0.3s ease;
+    }
+    .service-card:hover .service-icon {
+        background-color: #0056b3;
     }
     .service-title {
-        color: #007bff;
-        font-weight: bold;
-        margin-bottom: 15px;
+        color: #1A76D1;  /* Updated to match base theme color */
+        font-weight: 600;
+        margin-bottom: 20px;
+        font-size: 22px;
     }
     .service-description {
         color: #6c757d;
+        font-size: 15px;
+        line-height: 1.6;
     }
     .section-title {
-        color: #007bff;
+        color: #1A76D1;  /* Updated to match base theme color */
         font-weight: bold;
-        margin-bottom: 40px;
+        margin-bottom: 50px;
+        position: relative;
+        padding-bottom: 15px;
+    }
+    .section-title:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 50px;
+        height: 3px;
+        background: #1A76D1;
     }
     .btn-primary {
-        background-color: #007bff;
-        border-color: #007bff;
+        background-color: #1A76D1;
+        border-color: #1A76D1;
+        padding: 10px 25px;
+        border-radius: 5px;
+        font-weight: 500;
+        transition: all 0.3s ease;
     }
     .btn-primary:hover {
         background-color: #0056b3;
         border-color: #0056b3;
+        transform: translateY(-2px);
     }
 </style>
 {% endblock head %}
 
-{% block body %}
+{% block topbar %}
+      <!-- Topbar -->
+      <div class="topbar">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="topbar-inner d-flex justify-content-between align-items-center">
+          <!-- logo -->
+          {% block logo %}
+          <div class="logo">
+            <a href="{% url 'index' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" style="object-fit: contain;"/></a>
+          </div>
+          {% endblock logo %}
+          
+          <!-- Contact -->
+          <ul class="top-link">
+            {% comment %} <li><a href="/about">About</a></li> {% endcomment %}
+            <li><a href="{% url 'organizations_home' %}">Organizations</a></li>
+            <li><a href="/contact">Contact</a></li>
+          </ul>
+          
+          <!-- User Login -->
+          <ul class="top-link user-login">
+            {% if not request.session.username and not request.session.org_name %}
+            <li class="{% if active_page == 'user' %}active{% endif %}">
+              <a href="#" class="login-link">
+                <i class="fas fa-user-circle"></i>
+                New user? 
+                <i class="fas fa-chevron-down"></i>
+              </a>
+              <ul class="dropdown">
+                <li>
+                  <a href="{% url 'login' %}">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                  </a>
+                </li>
+                <li>
+                  <a href="{% url 'org_signup' %}">
+                    <i class="fas fa-user-plus"></i> Sign Up
+                  </a>
+                </li>
+              </ul>
+            </li>
+            {% elif request.session.username %}
+            <li class="{% if active_page == 'user' %}active{% endif %}">
+              <a href="#" class="login-link">
+                <i class="fas fa-user"></i>
+                Welcome {{request.session.username}}
+                <i class="fas fa-chevron-down"></i>
+              </a>
+              <ul class="dropdown">
+                <li>
+                  <a href="{% url 'logout' %}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                  </a>
+                </li>
+              </ul>
+            </li>
+            {% elif request.session.org_name %}
+            <li class="{% if active_page == 'user' %}active{% endif %}">
+              <a href="#" class="login-link">
+                <i class="fas fa-building"></i>
+                Welcome {{request.session.org_name}}
+                <i class="fas fa-chevron-down"></i>
+              </a>
+              <ul class="dropdown">
+                <li>
+                  <a href="{% url 'logout' %}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                  </a>
+                </li>
+              </ul>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+      </div>
+      {% endblock topbar %}
+
+<!-- Remove the duplicate styles block from content -->
+<!-- Keep existing blocks and styles unchanged -->
+
+{% block content %}
 <div class="services-container">
     <div class="container">
-        <h1 class="text-center section-title mb-5">Our Services</h1>
+        {% comment %} <h1 class="text-center section-title">Palliative Care Organizations</h1> {% endcomment %}
+        
+        <!-- Featured Organizations Section -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="service-card p-4 text-center">
+                    <div class="service-icon">
+                        <i class="fas fa-hospital"></i>
+                    </div>
+                    <h3 class="service-title">Home Care Services</h3>
+                    <p class="service-description">Professional medical care and support services provided in the comfort of your home.</p>
+                    {% comment %} <a href="#" class="btn btn-primary mt-3">Learn More</a> {% endcomment %}
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="service-card p-4 text-center">
+                    <div class="service-icon">
+                        <i class="fas fa-hands-helping"></i>
+                    </div>
+                    <h3 class="service-title">Support Groups</h3>
+                    <p class="service-description">Connect with others and share experiences in our supportive community groups.</p>
+                    {% comment %} <a href="#" class="btn btn-primary mt-3">Join Now</a> {% endcomment %}
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="service-card p-4 text-center">
+                    <div class="service-icon">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <h3 class="service-title">Medical Consultation</h3>
+                    <p class="service-description">Expert medical advice and care planning from experienced professionals.</p>
+                    {% comment %} <a href="#" class="btn btn-primary mt-3">Schedule</a> {% endcomment %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Educational Videos Section -->
+        <h2 class="text-center section-title">Educational Resources</h2>
+        <div class="row g-4 mb-5">
+            <div class="col-md-6">
+                <div class="service-card p-4">
+                    <div class="ratio ratio-16x9 mb-4">
+                        <iframe src="https://www.youtube.com/embed/SAMPLE_VIDEO_ID1" title="Understanding Palliative Care" allowfullscreen></iframe>
+                    </div>
+                    <h4 class="service-title">Understanding Palliative Care</h4>
+                    <p class="service-description">Learn about the basics of palliative care and how it can help patients and families.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="service-card p-4">
+                    <div class="ratio ratio-16x9 mb-4">
+                        <iframe src="https://www.youtube.com/embed/SAMPLE_VIDEO_ID2" title="Caregiver Resources" allowfullscreen></iframe>
+                    </div>
+                    <h4 class="service-title">Caregiver Resources</h4>
+                    <p class="service-description">Essential information and tips for caregivers providing palliative care.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Latest News & Updates -->
+        <h2 class="text-center section-title">Latest Updates</h2>
         <div class="row g-4">
             <div class="col-md-4">
                 <div class="service-card p-4">
-                    <div class="service-icon">
-                        <i class="fas fa-heartbeat"></i>
-                    </div>
-                    <h3 class="service-title text-center">Palliative Care</h3>
-                    <p class="service-description text-center">Comprehensive care focused on providing relief from the symptoms and stress of a serious illness.</p>
-                    <div class="text-center mt-3">
-                        <a href="#" class="btn btn-primary">Learn More</a>
+                    <img src="{% static 'img/news1.jpg' %}" alt="News 1" class="img-fluid rounded mb-3">
+                    <h4 class="service-title">New Care Guidelines</h4>
+                    <p class="service-description">Updated guidelines for palliative care practices and standards.</p>
+                    <div class="mt-3">
+                        <small class="text-muted">Posted on: March 15, 2024</small>
                     </div>
                 </div>
             </div>
+            
             <div class="col-md-4">
                 <div class="service-card p-4">
-                    <div class="service-icon">
-                        <i class="fas fa-home"></i>
-                    </div>
-                    <h3 class="service-title text-center">Home Care</h3>
-                    <p class="service-description text-center">Professional medical care and support services provided in the comfort of your own home.</p>
-                    <div class="text-center mt-3">
-                        <a href="#" class="btn btn-primary">Learn More</a>
+                    <img src="{% static 'img/news2.jpg' %}" alt="News 2" class="img-fluid rounded mb-3">
+                    <h4 class="service-title">Community Events</h4>
+                    <p class="service-description">Upcoming workshops and community support meetings.</p>
+                    <div class="mt-3">
+                        <small class="text-muted">Posted on: March 10, 2024</small>
                     </div>
                 </div>
             </div>
+            
             <div class="col-md-4">
                 <div class="service-card p-4">
-                    <div class="service-icon">
-                        <i class="fas fa-pills"></i>
-                    </div>
-                    <h3 class="service-title text-center">Medication Management</h3>
-                    <p class="service-description text-center">Expert assistance in managing and administering medications for optimal health outcomes.</p>
-                    <div class="text-center mt-3">
-                        <a href="#" class="btn btn-primary">Learn More</a>
+                    <img src="{% static 'img/news3.jpg' %}" alt="News 3" class="img-fluid rounded mb-3">
+                    <h4 class="service-title">Volunteer Programs</h4>
+                    <p class="service-description">Join our volunteer network and make a difference in someone's life.</p>
+                    <div class="mt-3">
+                        <small class="text-muted">Posted on: March 5, 2024</small>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock body %}
 
-{% block scripts %}
-<script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
-{% endblock scripts %}
+<!-- Add this additional style block for new components -->
+<style>
+    .ratio {
+        position: relative;
+        width: 100%;
+    }
+    .ratio-16x9 {
+        padding-top: 56.25%;
+    }
+    .ratio iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        border-radius: 8px;
+    }
+    .img-fluid {
+        max-width: 100%;
+        height: auto;
+    }
+</style>
+{% endblock content %}

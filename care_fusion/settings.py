@@ -35,8 +35,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-# BASE_URL = 'http://localhost:8000'
-BASE_URL = 'https://care-fusion.onrender.com'
+BASE_URL = 'http://localhost:8000'
+# BASE_URL = 'https://care-fusion.onrender.com'
 
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
@@ -77,12 +77,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'social_django.middleware.SocialAuthExceptionMiddleware',
-    # 'allauth.account.middleware.AccountMiddleware',
 ]
 
-# Session settings in settings.py
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-# Session settings in settings.py
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # One week
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Option to expire session on browser close
 SESSION_SAVE_EVERY_REQUEST = True  # Extend session on every request
@@ -138,39 +135,34 @@ LOGGING = {
 }
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'care_fusion',
-#         'USER': 'root',
-#         'PASSWORD': '',
-#         'HOST': 'localhost',
-#         'PORT': '3306',
-#         'OPTIONS': {
-#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-#         },
-#     }
-# }
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'carefusion_pointlegif',
-        'USER': 'carefusion_pointlegif',
-        'PASSWORD': '6ae869ae5c889ef8471ed3a420544da2e411609e',
-        'HOST': '8t-wx.h.filess.io',
-        'PORT': '3307',
+        'NAME': 'care_fusion',
+        'USER': 'root',
+        'PASSWORD': '',
+        'HOST': 'localhost',
+        'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
 }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'carefusion_pointlegif',
+#         'USER': 'carefusion_pointlegif',
+#         'PASSWORD': '6ae869ae5c889ef8471ed3a420544da2e411609e',
+#         'HOST': '8t-wx.h.filess.io',
+#         'PORT': '3307',
+#         'OPTIONS': {
+#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+#         },
+#     }
+# }
 
-
-
-# Password validation
-# https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -189,7 +181,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.0/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
@@ -200,8 +191,6 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -209,8 +198,6 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -218,14 +205,10 @@ AUTHENTICATION_BACKENDS = [
     'social_core.backends.google.GoogleOAuth2',
     'accounts.backends.OrganizationBackend',
     'django.contrib.auth.backends.ModelBackend', 
-    # 'allauth.account.auth_backends.AuthenticationBackend', 
 ]
 
-# SITE_ID = 2
-# LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'patients_dashboard'
 LOGOUT_REDIRECT_URL = 'index'
-# LOGIN_REDIRECT_URL = 'patients_dashboard'
 AUTH_USER_MODEL = 'accounts.User'
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('GOOGLE_CLIENT_ID')
@@ -273,9 +256,9 @@ ACCOUNT_UNIQUE_EMAIL = True
 
 
 
-# Add this line to specify custom allauth template directory
+
 ACCOUNT_TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates', 'account')
-# AUTH_USER_MODEL = 'accounts.Staff'
+
 
 
 MESSAGE_TAGS={
