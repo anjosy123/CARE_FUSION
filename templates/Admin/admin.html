@@ -179,6 +179,90 @@
       .btn-decline:hover {
         background-color: #d35400;
       }
+
+      .edit-form-container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        color: #2c3e50;
+        font-weight: 500;
+      }
+
+      .form-group input,
+      .form-group textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #bdc3c7;
+        border-radius: 4px;
+      }
+
+      .form-group textarea {
+        height: 100px;
+        resize: vertical;
+      }
+
+      .form-actions {
+        margin-top: 30px;
+        display: flex;
+        gap: 10px;
+      }
+
+      .status-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .status-active {
+        background-color: #27ae60;
+        color: white;
+      }
+
+      .status-inactive {
+        background-color: #e74c3c;
+        color: white;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .tab-button {
+        padding: 10px 20px;
+        border: none;
+        background-color: #ecf0f1;
+        cursor: pointer;
+        border-radius: 5px;
+        font-size: 16px;
+      }
+
+      .tab-button.active {
+        background-color: #2c3e50;
+        color: white;
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
     </style>
   </head>
 
@@ -191,11 +275,10 @@
         </div>
         <nav class="menu">
           <ul>
-            <li><a href="#">Dashboard</a></li>
+            <li><a href="#" class="active">Dashboard</a></li>
             <li><a href="{% url 'manage_users' %}">Manage Patients</a></li>
-            <li><a href="{% url 'approve_organizations' %}" id = "approve_organizations">Approve Organizations</a></li>
-            <li><a href="#">View Reports</a></li>
-            <li><a href="#">Settings</a></li>
+            <li><a href="{% url 'manage_organizations' %}">Manage Organizations</a></li>
+            <li><a href="{% url 'approve_organizations' %}">Approve Organizations</a></li>
             <li><a href="{% url 'logout' %}">Logout</a></li>
           </ul>
         </nav>
@@ -212,23 +295,27 @@
         <section class="cards">
           <div class="card">
             <h3>Total Patients</h3>
-            <p>0</p>
-            <!-- Placeholder, will be dynamically updated -->
+            <p>{{ total_patients }}</p>
           </div>
           <div class="card">
-            <h3>Pending Organization Requests</h3>
-            <p>0</p>
-            <!-- Placeholder, will be dynamically updated -->
+            <h3>Pending Organizations</h3>
+            <p>{{ pending_organizations }}</p>
           </div>
           <div class="card">
             <h3>Approved Organizations</h3>
-            <p>0</p>
-            <!-- Placeholder, will be dynamically updated -->
+            <p>{{ approved_organizations }}</p>
           </div>
         </section>
 
-        <!-- Manage Patients -->
-        <section class="manage-section">
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab-button active" onclick="openTab('patients')">Manage Patients</button>
+          <button class="tab-button" onclick="openTab('pending-orgs')">Pending Organizations</button>
+          <button class="tab-button" onclick="openTab('approved-orgs')">Approved Organizations</button>
+        </div>
+
+        <!-- Patients Tab -->
+        <section id="patients" class="tab-content active manage-section">
           <h2>Manage Patients</h2>
           <table class="table">
             <thead>
@@ -241,14 +328,25 @@
               </tr>
             </thead>
             <tbody>
-              <!-- User data will be populated dynamically here -->
+              {% for patient in patients %}
+              <tr>
+                <td>{{ patient.id }}</td>
+                <td>{{ patient.get_full_name }}</td>
+                <td>{{ patient.email }}</td>
+                <td>{% if patient.is_email_verified %}Verified{% else %}Pending{% endif %}</td>
+                <td>
+                  <a href="{% url 'edit_user' patient.id %}" class="btn btn-edit">Edit</a>
+                  <a href="{% url 'delete_user' patient.id %}" class="btn btn-delete">Delete</a>
+                </td>
+              </tr>
+              {% endfor %}
             </tbody>
           </table>
         </section>
 
-        <!-- Approve Organization Requests -->
-        <section class="manage-section">
-          <h2>Approve Organization Requests</h2>
+        <!-- Pending Organizations Tab -->
+        <section id="pending-orgs" class="tab-content manage-section">
+          <h2>Pending Organization Requests</h2>
           <table class="table">
             <thead>
               <tr>
@@ -260,11 +358,88 @@
               </tr>
             </thead>
             <tbody>
-              <!-- Organization requests will be populated dynamically here -->
+              {% for org in pending_org_requests %}
+              <tr>
+                <td>{{ org.org_regid }}</td>
+                <td>{{ org.org_name }}</td>
+                <td>{{ org.org_email }}</td>
+                <td>Pending</td>
+                <td>
+                  <form method="POST" action="{% url 'approve_organization' org.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-approve">Approve</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+
+        <!-- Approved Organizations Tab -->
+        <section id="approved-orgs" class="tab-content manage-section">
+          <h2>Approved Organizations</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Reg ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for org in organizations %}
+              <tr>
+                <td>{{ org.org_regid }}</td>
+                <td>{{ org.org_name }}</td>
+                <td>{{ org.org_email }}</td>
+                <td>{{ org.org_phone }}</td>
+                <td>{{ org.org_address }}</td>
+                <td>
+                  <span class="status-badge {% if org.is_active %}status-active{% else %}status-inactive{% endif %}">
+                    {% if org.is_active %}Active{% else %}Disabled{% endif %}
+                  </span>
+                </td>
+                <td>
+                  <a href="{% url 'edit_organization' org.id %}" class="btn btn-edit">Edit</a>
+                  <form method="POST" action="{% url 'toggle_organization_status' org.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn {% if org.is_active %}btn-decline{% else %}btn-approve{% endif %}">
+                      {% if org.is_active %}Disable{% else %}Enable{% endif %}
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
             </tbody>
           </table>
         </section>
       </main>
     </div>
+
+    <!-- Add JavaScript for tab functionality -->
+    <script>
+      function openTab(tabName) {
+        // Hide all tab contents
+        const tabContents = document.getElementsByClassName('tab-content');
+        for (let content of tabContents) {
+          content.classList.remove('active');
+        }
+
+        // Remove active class from all tab buttons
+        const tabButtons = document.getElementsByClassName('tab-button');
+        for (let button of tabButtons) {
+          button.classList.remove('active');
+        }
+
+        // Show the selected tab content and activate the button
+        document.getElementById(tabName).classList.add('active');
+        event.currentTarget.classList.add('active');
+      }
+    </script>
   </body>
 </html>

@@ -1,0 +1,41 @@
+{% extends 'Admin/admin.html' %}
+
+{% block content %}
+<section class="manage-section">
+  <h2>Manage Approved Organizations</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Reg ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Address</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for org in organizations %}
+      <tr>
+        <td>{{ org.org_regid }}</td>
+        <td>{{ org.org_name }}</td>
+        <td>{{ org.org_email }}</td>
+        <td>{{ org.org_phone }}</td>
+        <td>{{ org.org_address }}</td>
+        <td>{% if org.is_active %}Active{% else %}Disabled{% endif %}</td>
+        <td>
+          <a href="{% url 'edit_organization' org.id %}" class="btn btn-edit">Edit</a>
+          <form method="POST" action="{% url 'toggle_organization_status' org.id %}" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn {% if org.is_active %}btn-decline{% else %}btn-approve{% endif %}">
+              {% if org.is_active %}Disable{% else %}Enable{% endif %}
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

@@ -345,12 +345,30 @@ def services(request):
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def admin_dashboard(request):
-    if request.session.has_key('user_id'):
-        return render(request, 'Admin/admin.html')
-    else:
+    if not request.session.get('user_id') or request.session.get('role') != 'admin':
+        messages.error(request, "Please login as admin to access this page.")
         return redirect('login')
 
-from django.db.models import Q
+    # Get counts for dashboard cards
+    total_patients = User.objects.exclude(email="carefusion.ai@gmail.com").count()
+    pending_organizations = Organizations.objects.filter(approve=False).count()
+    approved_organizations = Organizations.objects.filter(approve=True).count()
+
+    # Get lists for tables
+    patients = User.objects.exclude(email="carefusion.ai@gmail.com")
+    pending_org_requests = Organizations.objects.filter(approve=False)
+
+    context = {
+        'total_patients': total_patients,
+        'pending_organizations': pending_organizations,
+        'approved_organizations': approved_organizations,
+        'patients': patients,
+        'pending_org_requests': pending_org_requests,
+    }
+    
+    return render(request, 'Admin/admin.html', context)
+
+
 
 
 def handlelogin(request):
@@ -2589,3 +2607,53 @@ def patient_profile(request):
 def org_profile(request):
     # Implement logic to display and edit organization profile
     pass
+
+def manage_organizations(request):
+    if not request.session.get('user_id') or request.session.get('role') != 'admin':
+        messages.error(request, "Please login as admin to access this page.")
+        return redirect('login')
+        
+    # Get all organizations that are both approved and email verified
+    organizations = Organizations.objects.filter(
+        approve=True,
+        is_email_verified=True
+    ).order_by('org_name')
+    
+    context = {
+        'organizations': organizations,
+        'total_organizations': organizations.count()
+    }
+    return render(request, 'Admin/manage_organizations.html', context)
+
+def edit_organization(request, org_id):
+    if not request.session.get('user_id') or request.session.get('role') != 'admin':
+        messages.error(request, "Please login as admin to access this page.")
+        return redirect('login')
+        
+    organization = get_object_or_404(Organizations, id=org_id)
+    
+    if request.method == 'POST':
+        organization.org_name = request.POST['org_name']
+        organization.org_email = request.POST['org_email']
+        organization.org_regid = request.POST['org_regid']
+        organization.org_address = request.POST['org_address']
+        organization.org_phone = request.POST['org_phone']
+        organization.pincode = request.POST['pincode']
+        organization.save()
+        messages.success(request, 'Organization details updated successfully!')
+        return redirect('manage_organizations')
+
+    return render(request, 'Admin/edit_organization.html', {'organization': organization})
+
+def toggle_organization_status(request, org_id):
+    if not request.session.get('user_id') or request.session.get('role') != 'admin':
+        messages.error(request, "Please login as admin to access this page.")
+        return redirect('login')
+        
+    organization = get_object_or_404(Organizations, id=org_id)
+    organization.is_active = not organization.is_active
+    organization.save()
+    
+    status = "enabled" if organization.is_active else "disabled"
+    messages.success(request, f'Organization has been {status} successfully!')
+    return redirect('manage_organizations')

@@ -500,26 +500,12 @@
           <div class="inner">
             <div class="row">
               <div class="col-lg-3 col-md-3 col-12">
-                {% comment %} <!-- Start Logo -->
-                 {% block logo1 %}
-                <div class="logo">
-                  <a href="{% url 'index' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" style="object-fit: contain;"/></a>
-                </div>
-                {% endblock logo1 %}
-                <!-- End Logo --> {% endcomment %}
                 <!-- Mobile Nav -->
                 <div class="mobile-nav"></div>
                 <!-- End Mobile Nav -->
               </div>
               <div class="col-lg-7 col-md-9 col-12">
               </div>
-              {% comment %}
-              <div class="col-lg-2 col-12">
-                <div class="get-quote">
-                  <a href="{% url 'providers' %}" class="btn" id="find-providers-btn">Find Providers</a>
-                </div>
-              </div>
-              {% endcomment %}
             </div>
           </div>
         </div>
@@ -688,14 +674,14 @@
         if (findProvidersBtn) {
           findProvidersBtn.addEventListener('click', function(event) {
             event.preventDefault();
-            {% if not request.user.is_authenticated %}
-            var warningMessage = document.getElementById('warning-message');
-            warningMessage.style.display = 'block';
-            setTimeout(function() {
-              warningMessage.style.display = 'none';
-            }, 5000); // Hide the message after 5 seconds
+            {% if not request.session.username and not request.session.org_name %}
+              var warningMessage = document.getElementById('warning-message');
+              warningMessage.style.display = 'block';
+              setTimeout(function() {
+                warningMessage.style.display = 'none';
+              }, 3000); // Hide the message after 3 seconds
             {% else %}
-            window.location.href = "{% url 'providers' %}";
+              window.location.href = "{% url 'providers' %}";
             {% endif %}
           });
         }

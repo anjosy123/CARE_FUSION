@@ -1,0 +1,44 @@
+{% extends 'Admin/admin.html' %}
+
+{% block content %}
+<div class="edit-form-container">
+  <h2>Edit Organization</h2>
+  <form method="POST">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="org_name">Organization Name</label>
+      <input type="text" id="org_name" name="org_name" value="{{ organization.org_name }}" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="org_email">Email</label>
+      <input type="email" id="org_email" name="org_email" value="{{ organization.org_email }}" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="org_regid">Registration ID</label>
+      <input type="text" id="org_regid" name="org_regid" value="{{ organization.org_regid }}" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="org_address">Address</label>
+      <textarea id="org_address" name="org_address" required>{{ organization.org_address }}</textarea>
+    </div>
+    
+    <div class="form-group">
+      <label for="org_phone">Phone</label>
+      <input type="text" id="org_phone" name="org_phone" value="{{ organization.org_phone }}" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="pincode">Pincode</label>
+      <input type="text" id="pincode" name="pincode" value="{{ organization.pincode }}" required>
+    </div>
+    
+    <div class="form-actions">
+      <button type="submit" class="btn btn-edit">Update Organization</button>
+      <a href="{% url 'manage_organizations' %}" class="btn btn-decline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
