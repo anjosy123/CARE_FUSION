@@ -144,11 +144,8 @@ def service_list(request):
 
 def service_create(request):
     if 'org_id' not in request.session:
-        return JsonResponse({
-            'success': False,
-            'message': "Please log in to access this page.",
-            'redirect': reverse('org_login')
-        })
+        messages.error(request, "Please log in to access this page.")
+        return redirect('org_login')
 
     try:
         organization = Organizations.objects.get(id=request.session['org_id'])
@@ -159,30 +156,21 @@ def service_create(request):
                 service = form.save(commit=False)
                 service.organization = organization
                 service.save()
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Service created successfully.',
-                    'redirect': reverse('service_list')
-                })
+                messages.success(request, 'Service created successfully.')
+                return redirect('service_list')
             else:
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Invalid form data.',
-                    'errors': form.errors
-                })
+                messages.error(request, 'Please correct the errors below.')
         else:
             form = ServiceForm()
-            return render(request, 'Organizations/service_form.html', {
-                'form': form, 
-                'org_name': organization.org_name
-            })
+        
+        return render(request, 'Organizations/service_form.html', {
+            'form': form,
+            'org_name': organization.org_name
+        })
             
     except Organizations.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'message': "Organization not found. Please log in again.",
-            'redirect': reverse('org_login')
-        })
+        messages.error(request, "Organization not found. Please log in again.")
+        return redirect('org_login')
 
 def service_edit(request, pk):
     

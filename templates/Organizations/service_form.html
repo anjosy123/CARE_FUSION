@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% load static %}
-
 {% block title %}{% if service %}Edit{% else %}Add{% endif %} Service{% endblock %}
 
 {% block topbar %}
@@ -68,59 +67,36 @@
 {% endblock topbar %}
 
 {% block content %}
-<div class="breadcrumbs overlay">
-    <div class="container">
-        <div class="bread-inner">
-            <div class="row">
-                <div class="col-12">
-                    <h2>{% if service %}Edit{% else %}Add{% endif %} Service</h2>
-                    <ul class="bread-list">
-                        <li><a href="{% url 'palliatives_dashboard' %}">Home</a></li>
-                        <li><i class="icofont-simple-right"></i></li>
-                        <li><a href="{% url 'service_list' %}">Services</a></li>
-                        <li><i class="icofont-simple-right"></i></li>
-                        <li class="active">{% if service %}Edit{% else %}Add{% endif %} Service</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<section class="contact-us section">
+<div class="main-content">
     <div class="container">
-        <div class="inner">
-            <div class="row">
-                <div class="col-lg-6 offset-lg-3 col-md-8 offset-md-2 col-12">
-                    <div class="form-main">
-                        <div class="title">
-                            <h4>{% if service %}Edit{% else %}Add{% endif %} Service</h4>
-                            <h6>Please fill out the form below</h6>
-                        </div>
-                        <form onsubmit="return submitForm(this, '{% url 'service_create' %}')">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <form method="post" class="service-form">
                             {% csrf_token %}
                             {% for field in form %}
-                                <div class="row">
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                                            {{ field }}
-                                            {% if field.errors %}
-                                                <div class="text-danger">
-                                                    {{ field.errors }}
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
+                            <div class="form-group">
+                                <label for="{{ field.id_for_label }}" class="form-label">
+                                    {{ field.label }}
+                                </label>
+                                {{ field }}
+                                {% if field.errors %}
+                                <div class="error-message">
+                                    {{ field.errors }}
                                 </div>
+                                {% endif %}
+                            </div>
                             {% endfor %}
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="form-group button">
-                                        <button type="submit" class="btn">Save</button><br><br>
-                                        <a href="{% url 'service_list' %}" class="btn btn-alt">Cancel</a>
-                                    </div>
-                                </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Service
+                                </button>
+                                <a href="{% url 'service_list' %}" class="btn btn-light">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
                             </div>
                         </form>
                     </div>
@@ -128,31 +104,194 @@
             </div>
         </div>
     </div>
-</section>
+</div>
 {% endblock %}
 
 {% block head %}
 {{ block.super }}
 <style>
-    .form-group label {
-        font-weight: 600;
-        margin-bottom: 5px;
+    /* Professional color scheme */
+    :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #34495e;
+        --accent-color: #3498db;
+        --light-gray: #f5f6fa;
+        --border-color: #dcdde1;
+        --error-color: #e74c3c;
+        --success-color: #2ecc71;
     }
-    .form-group input,
-    .form-group textarea,
-    .form-group select {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #e6e6e6;
-        border-radius: 5px;
+
+    /* Page Header */
+    .page-header {
+        background: var(--primary-color);
+        padding: 2rem 0;
+        margin-bottom: 2rem;
     }
-    .btn-alt {
-        background-color: #6c757d;
-        color: #fff;
+
+    .page-header h1 {
+        color: white;
+        font-size: 1.75rem;
+        font-weight: 500;
+        margin: 0.5rem 0;
     }
-    .btn-alt:hover {
-        background-color: #5a6268;
-        color: #fff;
+
+    /* Breadcrumb styling */
+    .breadcrumb {
+        background: transparent;
+        padding: 0;
+        margin: 0;
+    }
+
+    .breadcrumb-item a {
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+    }
+
+    .breadcrumb-item.active {
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* Main Content */
+    .main-content {
+        padding: 2rem 0;
+        background: var(--light-gray);
+        min-height: calc(100vh - 200px);
+    }
+
+    /* Card styling */
+    .card {
+        border: none;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
+        border-radius: 8px;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    /* Form styling */
+    .service-form .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: var(--secondary-color);
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .form-control {
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    textarea.form-control {
+        min-height: 120px;
+    }
+
+    /* Error message styling */
+    .error-message {
+        color: var(--error-color);
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        background: rgba(231, 76, 60, 0.1);
+        border-radius: 4px;
+    }
+
+    /* Button styling */
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn i {
+        font-size: 1rem;
+    }
+
+    .btn-primary {
+        background: var(--accent-color);
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+
+    .btn-light {
+        background: #fff;
+        border: 1px solid var(--border-color);
+        color: var(--secondary-color);
+    }
+
+    .btn-light:hover {
+        background: var(--light-gray);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .page-header {
+            padding: 1.5rem 0;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* Custom form field styling */
+    select.form-control {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%232c3e50' viewBox='0 0 16 16'%3E%3Cpath d='M8 11.5l-5-5h10l-5 5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        padding-right: 2.5rem;
+    }
+
+    /* Success message styling */
+    .alert-success {
+        background-color: rgba(46, 204, 113, 0.1);
+        border: 1px solid var(--success-color);
+        color: var(--success-color);
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1.5rem;
     }
 </style>
 {% endblock %}
