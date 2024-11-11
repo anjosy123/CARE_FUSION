@@ -59,7 +59,6 @@ INSTALLED_APPS = [
     'channels',
 ]
 
-# SITE_ID = 1
 
 ASGI_APPLICATION = 'care_fusion.asgi.application'
 
