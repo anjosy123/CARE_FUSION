@@ -104,62 +104,85 @@ def doctor_dashboard(request):
 
 def nurse_dashboard(request):
     if request.session.get('role') != 'staff' or Staff.objects.get(id=request.session.get('staff_id')).role != 'NURSE':
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('login')
-    # Add nurse-specific logic here
+        return JsonResponse({
+            'success': False,
+            'message': "You don't have permission to access this page.",
+            'redirect': reverse('login')
+        })
     return render(request, 'staff/nurse_dashboard.html')
-
 
 def volunteer_dashboard(request):
     if request.session.get('role') != 'staff' or Staff.objects.get(id=request.session.get('staff_id')).role != 'VOLUNTEER':
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('login')
-    # Add volunteer-specific logic here
+        return JsonResponse({
+            'success': False,
+            'message': "You don't have permission to access this page.",
+            'redirect': reverse('login')
+        })
     return render(request, 'staff/volunteer_dashboard.html')
 
 def service_list(request):
-    # Check if the organization is logged in via session
     if 'org_id' not in request.session:
-        messages.error(request, "Please log in to access this page.")
-        return redirect('org_login')  # Redirect to your organization login page
+        return JsonResponse({
+            'success': False,
+            'message': "Please log in to access this page.",
+            'redirect': reverse('org_login')
+        })
 
-    org_id = request.session['org_id']
-    
     try:
-        organization = Organizations.objects.get(id=org_id)
+        organization = Organizations.objects.get(id=request.session['org_id'])
+        services = Service.objects.filter(organization=organization)
+        return render(request, 'Organizations/service_list.html', {
+            'services': services, 
+            'org_name': organization.org_name
+        })
     except Organizations.DoesNotExist:
-        messages.error(request, "Organization not found. Please log in again.")
-        return redirect('org_login')
-
-    services = Service.objects.filter(organization=organization)
-    return render(request, 'Organizations/service_list.html', {'services': services, 'org_name': organization.org_name})
+        return JsonResponse({
+            'success': False,
+            'message': "Organization not found. Please log in again.",
+            'redirect': reverse('org_login')
+        })
 
 def service_create(request):
-    # Check if the organization is logged in via session
     if 'org_id' not in request.session:
-        messages.error(request, "Please log in to access this page.")
-        return redirect('org_login')  # Redirect to your organization login page
+        return JsonResponse({
+            'success': False,
+            'message': "Please log in to access this page.",
+            'redirect': reverse('org_login')
+        })
 
-    org_id = request.session['org_id']
-    
     try:
-        organization = Organizations.objects.get(id=org_id)
+        organization = Organizations.objects.get(id=request.session['org_id'])
+        
+        if request.method == 'POST':
+            form = ServiceForm(request.POST)
+            if form.is_valid():
+                service = form.save(commit=False)
+                service.organization = organization
+                service.save()
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Service created successfully.',
+                    'redirect': reverse('service_list')
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Invalid form data.',
+                    'errors': form.errors
+                })
+        else:
+            form = ServiceForm()
+            return render(request, 'Organizations/service_form.html', {
+                'form': form, 
+                'org_name': organization.org_name
+            })
+            
     except Organizations.DoesNotExist:
-        messages.error(request, "Organization not found. Please log in again.")
-        return redirect('org_login')
-
-    if request.method == 'POST':
-        form = ServiceForm(request.POST)
-        if form.is_valid():
-            service = form.save(commit=False)
-            service.organization = organization
-            service.save()
-            messages.success(request, 'Service created successfully.')
-            return redirect('service_list')
-    else:
-        form = ServiceForm()
-
-    return render(request, 'Organizations/service_form.html', {'form': form, 'org_name': organization.org_name})
+        return JsonResponse({
+            'success': False,
+            'message': "Organization not found. Please log in again.",
+            'redirect': reverse('org_login')
+        })
 
 def service_edit(request, pk):
     
@@ -351,12 +374,27 @@ def admin_dashboard(request):
 
     # Get counts for dashboard cards
     total_patients = User.objects.exclude(email="carefusion.ai@gmail.com").count()
-    pending_organizations = Organizations.objects.filter(approve=False).count()
-    approved_organizations = Organizations.objects.filter(approve=True).count()
+    pending_organizations = Organizations.objects.filter(
+        approve=False, 
+        is_email_verified=True
+    ).count()
+    approved_organizations = Organizations.objects.filter(
+        approve=True, 
+        is_email_verified=True
+    ).count()
 
     # Get lists for tables
     patients = User.objects.exclude(email="carefusion.ai@gmail.com")
-    pending_org_requests = Organizations.objects.filter(approve=False)
+    pending_org_requests = Organizations.objects.filter(
+        approve=False,
+        is_email_verified=True
+    ).order_by('-id')
+    
+    # Get approved organizations
+    approved_orgs = Organizations.objects.filter(
+        approve=True,
+        is_email_verified=True
+    ).order_by('org_name')
 
     context = {
         'total_patients': total_patients,
@@ -364,6 +402,8 @@ def admin_dashboard(request):
         'approved_organizations': approved_organizations,
         'patients': patients,
         'pending_org_requests': pending_org_requests,
+        'approved_orgs': approved_orgs,
+        'organizations': approved_orgs,  # Keep this for backward compatibility
     }
     
     return render(request, 'Admin/admin.html', context)
@@ -550,11 +590,18 @@ def patients_dashboard(request):
     patient = get_object_or_404(User, id=user_id)
     assignments = PatientAssignment.objects.filter(patient=patient, is_active=True).select_related('organization')
 
+    # Updated organization query to include only active and approved organizations
     query = request.GET.get('q', '')
-    organizations = Organizations.objects.filter(approve=1)
+    organizations = Organizations.objects.filter(
+        approve=True,          # Organization is approved
+        is_active=True,        # Organization is active
+        is_email_verified=True # Organization email is verified
+    )
+    
     if query:
         organizations = organizations.filter(org_name__icontains=query)
 
+    # Rest of the existing queries
     service_requests = ServiceRequest.objects.filter(patient_id=user_id).order_by('-created_at')
     prescriptions = Prescription.objects.filter(patient_assignment__in=assignments).order_by('-start_date')
     
@@ -569,14 +616,18 @@ def patients_dashboard(request):
     
     notifications = Notification.objects.filter(patient_id=user_id).order_by('-created_at')[:5]
 
-    assigned_teams = Team.objects.filter(organization__patient_assignments__patient=patient).distinct().prefetch_related('members')
+    # Filter teams to only include those from active organizations
+    assigned_teams = Team.objects.filter(
+        organization__patient_assignments__patient=patient,
+        organization__approve=True,
+        organization__is_active=True
+    ).distinct().prefetch_related('members')
 
     upcoming_appointments = booked_appointments.filter(
         date_time__gte=timezone.now(),
         date_time__lte=timezone.now() + timedelta(days=7)
     )
 
-    # New: Recent team visit requests
     recent_visit_requests = TeamVisitRequest.objects.filter(patient=patient).order_by('-created_at')[:5]
 
     # Pagination
@@ -590,14 +641,14 @@ def patients_dashboard(request):
         'organizations': organizations,
         'query': query,
         'service_requests': service_requests_page,
-        'prescriptions': prescriptions[:10],  # Limit to 10 most recent
-        'booked_appointments': booked_appointments[:5],  # Limit to 5 most recent
-        'available_appointments': available_appointments[:5],  # Limit to 5 most recent
+        'prescriptions': prescriptions[:10],
+        'booked_appointments': booked_appointments[:5],
+        'available_appointments': available_appointments[:5],
         'medical_history': medical_history,
         'notifications': notifications,
         'assigned_teams': assigned_teams,
         'upcoming_appointments': upcoming_appointments,
-        'recent_visit_requests': recent_visit_requests,  # New
+        'recent_visit_requests': recent_visit_requests,
     }
 
     return render(request, 'Users/patients_dashboard.html', context)
@@ -887,6 +938,7 @@ def handlesignup(request):
     
     # Render the signup form if the request is not a POST
     return render(request, 'Users/signup.html')
+
 
 
 
@@ -1423,50 +1475,71 @@ def confirm_staff_email(request, uidb64, token):
     
 def edit_staff(request, staff_id):
     if 'org_id' not in request.session:
-        messages.error(request, "Please log in to access this page.")
-        return redirect('login')
+        return JsonResponse({
+            'success': False,
+            'message': "Please log in to access this page.",
+            'redirect': reverse('login')
+        })
     
-    org_id = request.session['org_id']
     try:
-        organization = Organizations.objects.get(id=org_id)
+        organization = Organizations.objects.get(id=request.session['org_id'])
         staff = get_object_or_404(Staff, id=staff_id, organization=organization)
+        
         if request.method == 'POST':
             form = StaffForm(request.POST, request.FILES, instance=staff)
             if form.is_valid():
                 form.save()
-                messages.success(request, 'Staff updated successfully')
-                return redirect('staff_list')
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Staff updated successfully',
+                    'redirect': reverse('staff_list')
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Invalid form data.',
+                    'errors': form.errors
+                })
         else:
             form = StaffForm(instance=staff)
-        
-        context = {
-            'form': form,
-            'staff': staff,
-            'organization': organization,
-        }
-        return render(request, 'Organizations/edit_staff.html', context)
+            return render(request, 'Organizations/edit_staff.html', {
+                'form': form,
+                'staff': staff,
+                'organization': organization,
+            })
+            
     except Organizations.DoesNotExist:
-        messages.error(request, "Organization not found. Please log in again.")
-        return redirect('login')
-
+        return JsonResponse({
+            'success': False,
+            'message': "Organization not found. Please log in again.",
+            'redirect': reverse('login')
+        })
 
 def toggle_staff_status(request, staff_id):
     if 'org_id' not in request.session:
-        messages.error(request, "Please log in to access this page.")
-        return redirect('login')
+        return JsonResponse({
+            'success': False,
+            'message': "Please log in to access this page.",
+            'redirect': reverse('login')
+        })
     
-    org_id = request.session['org_id']
     try:
-        organization = Organizations.objects.get(id=org_id)
+        organization = Organizations.objects.get(id=request.session['org_id'])
         staff = get_object_or_404(Staff, id=staff_id, organization=organization)
         staff.is_active = not staff.is_active
         staff.save()
         status = "activated" if staff.is_active else "deactivated"
-        messages.success(request, f'Staff {status} successfully')
-        return redirect('staff_list')
+        return JsonResponse({
+            'success': True,
+            'message': f'Staff {status} successfully',
+            'redirect': reverse('staff_list')
+        })
     except Organizations.DoesNotExist:
-        messages.error(request, "Organization not found. Please log in again.")
-        return redirect('login')
+        return JsonResponse({
+            'success': False,
+            'message': "Organization not found. Please log in again.",
+            'redirect': reverse('login')
+        })
 
 def get_staff_details(request):
     if 'org_id' not in request.session:
@@ -1851,31 +1924,61 @@ def notification_center(request):
     notifications = Notification.objects.filter(patient=request.user).order_by('-created_at')
     return render(request, 'notification_center.html', {'notifications': notifications})
 
+# def messaging(request):
+#     if request.method == 'POST':
+#         recipient_id = request.POST.get('recipient')
+#         content = request.POST.get('content')
+#         recipient = get_object_or_404(User, id=recipient_id)
+        
+#         Message.objects.create(sender=request.user, recipient=recipient, content=content)
+#         messages.success(request, 'Message sent successfully.')
+        
+#         # Create a notification for the recipient
+#         Notification.objects.create(
+#             patient=recipient,
+#             message=f"New message from {request.user.get_full_name() or request.user.username}."
+#         )
+        
+#         return redirect('messaging')
+
+#     received_messages = Message.objects.filter(recipient=request.user).order_by('-timestamp')
+#     sent_messages = Message.objects.filter(sender=request.user).order_by('-timestamp')
+    
+#     context = {
+#         'received_messages': received_messages,
+#         'sent_messages': sent_messages,
+#     }
+#     return render(request, 'messaging.html', context)
+
+
 def messaging(request):
     if request.method == 'POST':
         recipient_id = request.POST.get('recipient')
         content = request.POST.get('content')
-        recipient = get_object_or_404(User, id=recipient_id)
-        
-        Message.objects.create(sender=request.user, recipient=recipient, content=content)
-        messages.success(request, 'Message sent successfully.')
-        
-        # Create a notification for the recipient
-        Notification.objects.create(
-            patient=recipient,
-            message=f"New message from {request.user.get_full_name() or request.user.username}."
-        )
-        
-        return redirect('messaging')
+        try:
+            recipient = get_object_or_404(User, id=recipient_id)
+            Message.objects.create(sender=request.user, recipient=recipient, content=content)
+            Notification.objects.create(
+                patient=recipient,
+                message=f"New message from {request.user.get_full_name() or request.user.username}."
+            )
+            return JsonResponse({
+                'success': True,
+                'message': 'Message sent successfully.',
+                'redirect': reverse('messaging')
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Error sending message: {str(e)}'
+            })
 
     received_messages = Message.objects.filter(recipient=request.user).order_by('-timestamp')
     sent_messages = Message.objects.filter(sender=request.user).order_by('-timestamp')
-    
-    context = {
+    return render(request, 'messaging.html', {
         'received_messages': received_messages,
         'sent_messages': sent_messages,
-    }
-    return render(request, 'messaging.html', context)
+    })
 
 def schedule_appointment(request):
     # Check if user is logged in via session
@@ -2608,52 +2711,68 @@ def org_profile(request):
     # Implement logic to display and edit organization profile
     pass
 
-def manage_organizations(request):
-    if not request.session.get('user_id') or request.session.get('role') != 'admin':
-        messages.error(request, "Please login as admin to access this page.")
-        return redirect('login')
+# def manage_organizations(request):
+#     if not request.session.get('user_id') or request.session.get('role') != 'admin':
+#         messages.error(request, "Please login as admin to access this page.")
+#         return redirect('login')
         
-    # Get all organizations that are both approved and email verified
-    organizations = Organizations.objects.filter(
-        approve=True,
-        is_email_verified=True
-    ).order_by('org_name')
+#     # Get all organizations that are both approved and email verified
+#     organizations = Organizations.objects.filter(
+#         approve=True,
+#         is_email_verified=True
+#     ).order_by('org_name')
     
-    context = {
-        'organizations': organizations,
-        'total_organizations': organizations.count()
-    }
-    return render(request, 'Admin/manage_organizations.html', context)
+#     context = {
+#         'organizations': organizations,
+#         'total_organizations': organizations.count()
+#     }
+#     return render(request, 'Admin/manage_organizations.html', context)
 
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def edit_organization(request, org_id):
     if not request.session.get('user_id') or request.session.get('role') != 'admin':
         messages.error(request, "Please login as admin to access this page.")
         return redirect('login')
-        
+    
     organization = get_object_or_404(Organizations, id=org_id)
     
     if request.method == 'POST':
+        # Update organization details
         organization.org_name = request.POST['org_name']
         organization.org_email = request.POST['org_email']
         organization.org_regid = request.POST['org_regid']
-        organization.org_address = request.POST['org_address']
         organization.org_phone = request.POST['org_phone']
+        organization.org_address = request.POST['org_address']
         organization.pincode = request.POST['pincode']
-        organization.save()
-        messages.success(request, 'Organization details updated successfully!')
-        return redirect('manage_organizations')
-
+        
+        try:
+            organization.save()
+            messages.success(request, 'Organization updated successfully!')
+            return redirect('manage_organizations')
+        except Exception as e:
+            messages.error(request, f'Error updating organization: {str(e)}')
+    
     return render(request, 'Admin/edit_organization.html', {'organization': organization})
 
+@require_POST
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def toggle_organization_status(request, org_id):
     if not request.session.get('user_id') or request.session.get('role') != 'admin':
-        messages.error(request, "Please login as admin to access this page.")
+        messages.error(request, "You don't have permission to access this page.")
         return redirect('login')
-        
-    organization = get_object_or_404(Organizations, id=org_id)
-    organization.is_active = not organization.is_active
-    organization.save()
     
-    status = "enabled" if organization.is_active else "disabled"
-    messages.success(request, f'Organization has been {status} successfully!')
-    return redirect('manage_organizations')
+    try:
+        organization = Organizations.objects.get(id=org_id)
+        organization.approve = not organization.approve
+        organization.save()
+        
+        status = "enabled" if organization.approve else "disabled"
+        messages.success(request, f"Organization has been {status} successfully!")
+        return redirect('admin_dashboard')
+        
+    except Organizations.DoesNotExist:
+        messages.error(request, "Organization not found.")
+        return redirect('admin_dashboard')
+    except Exception as e:
+        messages.error(request, f"An error occurred: {str(e)}")
+        return redirect('admin_dashboard')

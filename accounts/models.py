@@ -76,6 +76,7 @@ class Organizations(models.Model):
     approve = models.BooleanField(default=False)
     pincode = models.CharField(max_length=10)
     is_email_verified = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True) 
     email_verification_token = models.UUIDField(default=uuid.uuid4, editable=False)
     teams = models.ManyToManyField('Team', related_name='team_organizations', blank=True)
     

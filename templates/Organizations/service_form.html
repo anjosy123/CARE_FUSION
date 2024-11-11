@@ -97,7 +97,7 @@
                             <h4>{% if service %}Edit{% else %}Add{% endif %} Service</h4>
                             <h6>Please fill out the form below</h6>
                         </div>
-                        <form class="form" method="post">
+                        <form onsubmit="return submitForm(this, '{% url 'service_create' %}')">
                             {% csrf_token %}
                             {% for field in form %}
                                 <div class="row">

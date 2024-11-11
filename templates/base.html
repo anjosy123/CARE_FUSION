@@ -16,6 +16,8 @@
     <!-- Favicon -->
     <link rel="icon" href="{% static 'img/favicon.png' %}" />
 
+    <link rel="stylesheet" href="{% static 'css/messages.css' %}">
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css?family=Poppins:200i,300,300i,400,400i,500,500i,600,600i,700,700i,800,800i,900,900i&display=swap" rel="stylesheet" />
     
@@ -619,6 +621,7 @@
     </footer>
     <!--/ End Footer Area -->
 
+    <script src="{% static 'js/messages.js' %}"></script>
     <!-- jquery Min JS -->
     <script src="{% static 'js/jquery.min.js' %}"></script>
     <!-- jquery Migrate JS -->
@@ -669,7 +672,7 @@
     {% block extra_js %}
     <!-- Add this script to handle the button click event -->
     <script>
-      document.addEventListener('DOMContentLoaded', function() {
+      {% comment %} document.addEventListener('DOMContentLoaded', function() {
         var findProvidersBtn = document.getElementById('find-providers-btn');
         if (findProvidersBtn) {
           findProvidersBtn.addEventListener('click', function(event) {
@@ -685,7 +688,45 @@
             {% endif %}
           });
         }
-      });
+      }); {% endcomment %}
+      <script>
+        // Add this to your base template
+        function handleResponse(response) {
+            if (response.success) {
+                showMessage(response.message, 'success');
+                if (response.redirect) {
+                    setTimeout(() => window.location.href = response.redirect, 1000);
+                }
+            } else {
+                showMessage(response.message, 'error');
+                if (response.errors) {
+                    Object.values(response.errors).forEach(error => {
+                        showMessage(error[0], 'error');
+                    });
+                }
+                if (response.redirect) {
+                    setTimeout(() => window.location.href = response.redirect, 1000);
+                }
+            }
+        }
+        
+        // Add this to handle form submissions
+        function submitForm(formElement, url) {
+            const formData = new FormData(formElement);
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(handleResponse)
+            .catch(error => {
+                showMessage('An error occurred while processing your request.', 'error');
+            });
+            return false;
+        }
     </script>
     {% endblock extra_js %}
   </body>

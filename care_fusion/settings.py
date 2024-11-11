@@ -59,6 +59,8 @@ INSTALLED_APPS = [
     'channels',
 ]
 
+# SITE_ID = 1
+
 ASGI_APPLICATION = 'care_fusion.asgi.application'
 
 CHANNEL_LAYERS = {
@@ -261,6 +263,6 @@ ACCOUNT_TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates', 'account')
 
 
 
-MESSAGE_TAGS={
-    messages.ERROR:'danger'
-}
+# MESSAGE_TAGS={
+#     messages.ERROR:'danger'
+# }

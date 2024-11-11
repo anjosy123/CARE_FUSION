@@ -263,6 +263,194 @@
       .tab-content.active {
         display: block;
       }
+
+      .tab-content {
+        display: none;
+      }
+
+      .status-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .status-active {
+        background-color: #27ae60;
+        color: white;
+      }
+
+      .status-inactive {
+        background-color: #e74c3c;
+        color: white;
+      }
+
+      .btn-edit {
+        background-color: #3498db;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        text-decoration: none;
+        margin-right: 5px;
+      }
+
+      .btn-approve {
+        background-color: #27ae60;
+        color: white;
+      }
+
+      .btn-decline {
+        background-color: #e74c3c;
+        color: white;
+      }
+
+      .no-data-message {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+      }
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1rem;
+        background-color: transparent;
+    }
+    
+    .table th,
+    .table td {
+        padding: 15px;
+        vertical-align: middle;
+        border: 1px solid #dee2e6;
+        text-align: left;
+    }
+    
+    .table thead th {
+        vertical-align: bottom;
+        border-bottom: 2px solid #dee2e6;
+        background-color: #34495e;
+        color: #ecf0f1;
+    }
+    
+    /* Update status badge styles */
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 15px;
+        font-size: 14px;
+        font-weight: 500;
+        display: inline-block;
+        text-align: center;
+        min-width: 80px;
+    }
+    
+    .status-active {
+        background-color: #27ae60;
+        color: white;
+    }
+    
+    .status-inactive {
+        background-color: #e74c3c;
+        color: white;
+    }
+    
+    /* Update button styles */
+    .btn {
+        display: inline-block;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: background-color 0.3s, transform 0.2s;
+    }
+    
+    .btn:hover {
+        transform: translateY(-1px);
+    }
+    
+    .btn-edit {
+        background-color: #3498db;
+        color: white;
+        margin-right: 5px;
+    }
+    
+    .btn-edit:hover {
+        background-color: #2980b9;
+    }
+    
+    .btn-approve {
+        background-color: #27ae60;
+        color: white;
+    }
+    
+    .btn-approve:hover {
+        background-color: #219a52;
+    }
+    
+    .btn-decline {
+        background-color: #e74c3c;
+        color: white;
+    }
+    
+    .btn-decline:hover {
+        background-color: #c0392b;
+    }
+    
+    /* Form styles */
+    .d-inline {
+        display: inline-block;
+    }
+    
+    .form-inline {
+        display: inline-block;
+        margin: 0;
+        padding: 0;
+    }
+    
+    /* Organization section styles */
+    #approved-orgs {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    #approved-orgs h2 {
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-size: 24px;
+        font-weight: 500;
+    }
+    
+    .no-data-message {
+        text-align: center;
+        padding: 30px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        color: #6c757d;
+        font-size: 16px;
+    }
+    
+    /* Action buttons container */
+    .action-buttons {
+        white-space: nowrap;
+        min-width: 150px;
+    }
+    
+    /* Responsive table */
+    @media (max-width: 768px) {
+        .table-responsive {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .action-buttons {
+            min-width: 120px;
+        }
+    }
     </style>
   </head>
 
@@ -275,9 +463,9 @@
         </div>
         <nav class="menu">
           <ul>
-            <li><a href="#" class="active">Dashboard</a></li>
-            <li><a href="{% url 'manage_users' %}">Manage Patients</a></li>
-            <li><a href="{% url 'manage_organizations' %}">Manage Organizations</a></li>
+            <li><a href="{% url 'admin_dashboard' %}" class="active">Dashboard</a></li>
+            {% comment %} <li><a href="{% url 'manage_users' %}">Manage Patients</a></li> {% endcomment %}
+            {% comment %} <li><a href="{% url 'manage_organizations' %}">Manage Organizations</a></li> {% endcomment %}
             <li><a href="{% url 'approve_organizations' %}">Approve Organizations</a></li>
             <li><a href="{% url 'logout' %}">Logout</a></li>
           </ul>
@@ -378,7 +566,8 @@
 
         <!-- Approved Organizations Tab -->
         <section id="approved-orgs" class="tab-content manage-section">
-          <h2>Approved Organizations</h2>
+          <h2>Approved Organizations ({{ approved_organizations }})</h2>
+          {% if organizations or approved_orgs %}  <!-- Check both variables -->
           <table class="table">
             <thead>
               <tr>
@@ -387,29 +576,31 @@
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Address</th>
+                <th>Pincode</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {% for org in organizations %}
+              {% for org in organizations|default:approved_orgs %}  <!-- Use either variable -->
               <tr>
                 <td>{{ org.org_regid }}</td>
                 <td>{{ org.org_name }}</td>
                 <td>{{ org.org_email }}</td>
                 <td>{{ org.org_phone }}</td>
                 <td>{{ org.org_address }}</td>
+                <td>{{ org.pincode }}</td>
                 <td>
-                  <span class="status-badge {% if org.is_active %}status-active{% else %}status-inactive{% endif %}">
-                    {% if org.is_active %}Active{% else %}Disabled{% endif %}
+                  <span class="status-badge {% if org.approve %}status-active{% else %}status-inactive{% endif %}">
+                    {% if org.approve %}Active{% else %}Inactive{% endif %}
                   </span>
                 </td>
-                <td>
-                  <a href="{% url 'edit_organization' org.id %}" class="btn btn-edit">Edit</a>
-                  <form method="POST" action="{% url 'toggle_organization_status' org.id %}" style="display: inline;">
+                <td class="action-buttons">
+                  {% comment %} <a href="{% url 'edit_organization' org.id %}" class="btn btn-edit">Edit</a> {% endcomment %}
+                  <form action="{% url 'toggle_organization_status' org.id %}" method="post" class="d-inline">
                     {% csrf_token %}
-                    <button type="submit" class="btn {% if org.is_active %}btn-decline{% else %}btn-approve{% endif %}">
-                      {% if org.is_active %}Disable{% else %}Enable{% endif %}
+                    <button type="submit" class="btn {% if org.approve %}btn-decline{% else %}btn-approve{% endif %}">
+                      {% if org.approve %}Disable{% else %}Enable{% endif %}
                     </button>
                   </form>
                 </td>
@@ -417,9 +608,12 @@
               {% endfor %}
             </tbody>
           </table>
+          {% else %}
+          <div class="no-data-message">
+            <p>No approved organizations found.</p>
+          </div>
+          {% endif %}
         </section>
-      </main>
-    </div>
 
     <!-- Add JavaScript for tab functionality -->
     <script>
@@ -427,7 +621,7 @@
         // Hide all tab contents
         const tabContents = document.getElementsByClassName('tab-content');
         for (let content of tabContents) {
-          content.classList.remove('active');
+          content.style.display = 'none';
         }
 
         // Remove active class from all tab buttons
@@ -437,8 +631,51 @@
         }
 
         // Show the selected tab content and activate the button
-        document.getElementById(tabName).classList.add('active');
+        document.getElementById(tabName).style.display = 'block';
         event.currentTarget.classList.add('active');
+      }
+
+      // Show the first tab by default
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelector('.tab-button').click();
+      });
+
+      function toggleOrganization(orgId) {
+        fetch(`/dashboard/toggle-organization-status/${orgId}/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+          },
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showMessage(data.message, 'success');
+            // Optionally reload the page or update the UI
+            setTimeout(() => location.reload(), 1000);
+          } else {
+            showMessage(data.message, 'error');
+          }
+        })
+        .catch(error => {
+          showMessage('An error occurred while processing your request.', 'error');
+        });
+      }
+
+      // Helper function to get CSRF token
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
       }
     </script>
   </body>

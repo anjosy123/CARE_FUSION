@@ -155,8 +155,9 @@ urlpatterns = [
     path('my-visit-requests/', views.patient_visit_requests, name='patient_visit_requests'),
     # path('service-request/', views.service_request, name='service_request'),
     path('patient-notifications/', views.patient_notifications, name='patient_notifications'),
-    path('admin/manage-organizations/', views.manage_organizations, name='manage_organizations'),
+    # path('admin/manage-organizations/', views.manage_organizations, name='manage_organizations'),
     path('admin/edit-organization/<int:org_id>/', views.edit_organization, name='edit_organization'),
-    path('admin/toggle-organization-status/<int:org_id>/', views.toggle_organization_status, name='toggle_organization_status'),
+    path('dashboard/toggle-organization-status/<int:org_id>/', views.toggle_organization_status, name='toggle_organization_status'),
+    # path('admin/toggle-organization-status/<int:org_id>/', views.toggle_organization_status, name='toggle_organization_status'),
 ]
 
