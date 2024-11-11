@@ -5,6 +5,8 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import ServiceRequest,Service,Staff,PatientAssignment,Prescription,Appointment, Team, TeamVisit, TeamMessage, VisitChecklist, VisitNote
 from django.core.exceptions import ValidationError
 from datetime import datetime
+import os
+import imghdr
 
 User = get_user_model()
 
@@ -14,6 +16,7 @@ class UserRegisterForm(UserCreationForm):
     class Meta:
         model = User
         fields = ['username', 'email', 'password1', 'password2']
+
 
 class StaffForm(forms.ModelForm):
     class Meta:
@@ -25,11 +28,125 @@ class StaffForm(forms.ModelForm):
         # Make email field required
         self.fields['email'].required = True
         
+        # Add help text for profile pic
+        self.fields['profile_pic'].help_text = 'Only JPG/JPEG files are allowed. Maximum file size: 5MB'
+        
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if Staff.objects.filter(email=email).exists():
-            raise ValidationError("A staff member with this email already exists.")
+        # Exclude current instance when checking for duplicates during update
+        if self.instance.pk:
+            if Staff.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
+                raise ValidationError("A staff member with this email already exists.")
+        else:
+            if Staff.objects.filter(email=email).exists():
+                raise ValidationError("A staff member with this email already exists.")
         return email
+
+    def clean_profile_pic(self):
+        profile_pic = self.cleaned_data.get('profile_pic')
+        
+        if profile_pic:
+            # Check file size (5MB limit)
+            if profile_pic.size > 5 * 1024 * 1024:
+                raise ValidationError("Image file size must be less than 5MB.")
+            
+            # Get file extension
+            ext = os.path.splitext(profile_pic.name)[1].lower()
+            
+            # Check if it's a jpg/jpeg file
+            valid_extensions = ['.jpg', '.jpeg']
+            
+            if ext not in valid_extensions:
+                raise ValidationError("Only JPG/JPEG files are allowed.")
+            
+            # Additional check for actual file content
+            try:
+                # Read the first few bytes to check file type
+                file_type = imghdr.what(profile_pic)
+                if file_type not in ['jpeg', 'jpg']:
+                    raise ValidationError("Invalid image format. Only JPG/JPEG files are allowed.")
+            except Exception:
+                raise ValidationError("Could not verify image format. Please upload a valid JPG/JPEG file.")
+
+        return profile_pic
+
+    def clean_phone_number(self):
+        phone = self.cleaned_data.get('phone_number')
+        if not phone:
+            raise ValidationError("Phone number is required.")
+        
+        # Remove any non-digit characters
+        phone = ''.join(filter(str.isdigit, phone))
+        
+        # Check if phone number is exactly 10 digits
+        if len(phone) < 10:
+            raise ValidationError("Phone number must be 10 digits. Current number is too short.")
+        elif len(phone) > 10:
+            raise ValidationError("Phone number must be 10 digits. Current number is too long.")
+        
+        # Validate that the phone number starts with a valid digit (optional)
+        if not phone.startswith(('6', '7', '8', '9')):
+            raise ValidationError("Phone number must start with 6, 7, 8, or 9.")
+        
+        # Format the phone number before saving (optional)
+        formatted_phone = f"{phone[:5]}{phone[5:]}"
+        
+        return formatted_phone
+    
+    
+
+    def clean_experience(self):
+        experience = self.cleaned_data.get('experience')
+        
+        if experience is not None:
+            if experience < 0:
+                raise ValidationError("Experience cannot be negative.")
+            if experience > 50:
+                raise ValidationError("Experience cannot be more than 50 years.")
+                
+        return experience
+
+    def clean_first_name(self):
+        first_name = self.cleaned_data.get('first_name')
+        
+        if first_name:
+            # Remove extra whitespace
+            first_name = ' '.join(first_name.split())
+            
+            # Check if contains only letters and spaces
+            if not all(char.isalpha() or char.isspace() for char in first_name):
+                raise ValidationError("Name should only contain letters and spaces.")
+            
+            # Check minimum length
+            if len(first_name) < 2:
+                raise ValidationError("Name is too short.")
+                
+            # Check maximum length
+            if len(first_name) > 30:
+                raise ValidationError("Name is too long.")
+                
+        return first_name
+
+    def clean_last_name(self):
+        last_name = self.cleaned_data.get('last_name')
+        
+        if last_name:
+            # Remove extra whitespace
+            last_name = ' '.join(last_name.split())
+            
+            # Check if contains only letters and spaces
+            if not all(char.isalpha() or char.isspace() for char in last_name):
+                raise ValidationError("Name should only contain letters and spaces.")
+            
+            # Check minimum length
+            if len(last_name) < 2:
+                raise ValidationError("Name is too short.")
+                
+            # Check maximum length
+            if len(last_name) > 30:
+                raise ValidationError("Name is too long.")
+                
+        return last_name
         
 class StaffStatusForm(forms.ModelForm):
     class Meta:

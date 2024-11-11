@@ -1188,26 +1188,19 @@ def submit_service_request(request, org_id):
                 service_request.organization = organization
                 service_request.save()
 
-                try:
-                    send_confirmation_email(user, organization, service_request)
-                    messages.success(request, 'Service request submitted successfully. A confirmation email has been sent.')
-                except Exception:
-                    messages.success(request, 'Service request submitted successfully, but there was an issue sending the confirmation email.')
-                    logger.warning(f"Service request submitted but email failed for user {user.id}")
-
+                send_confirmation_email(user, organization, service_request)
+                messages.success(request, 'Service request submitted successfully.')
                 return redirect('patients_dashboard')
             except ValidationError as e:
                 messages.error(request, str(e))
-                logger.error(f"Validation error in submit_service_request: {str(e)}")
         else:
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"{field.capitalize()}: {error}")
-            logger.warning(f"Form validation failed in submit_service_request: {form.errors}")
     else:
         form = ServiceRequestForm(organization=organization)
-
-    return render(request, 'Users/submit_service_request.html', {'form': form})
+    
+    return render(request, 'Users/submit_service_request.html', {'form': form, 'organization': organization})
 
 @require_POST
 def handle_service_request(request):

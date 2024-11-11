@@ -138,7 +138,7 @@
     <!-- Top Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container-fluid">
-            <a href="{% url 'index' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px"  style="object-fit: contain;"/></a>
+            <a href="{% url 'patients_dashboard' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px"  style="object-fit: contain;"/></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -162,7 +162,7 @@
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="appointmentsDropdown">
                             <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=appointments"><i class="bi bi-calendar-check"></i> My Appointments</a></li>
-                            <li><a class="dropdown-item" href="{% url 'request_appointment' %}"><i class="bi bi-calendar-plus"></i> Book Appointment</a></li>
+                            {% comment %} <li><a class="dropdown-item" href="{% url 'request_appointment' %}"><i class="bi bi-calendar-plus"></i> Book Appointment</a></li> {% endcomment %}
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
@@ -189,8 +189,8 @@
                             <i class="bi bi-person-circle"></i> {{ patient.get_full_name }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{% url 'patient_profile' %}"><i class="bi bi-person"></i> Profile</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a></li>
+                            {% comment %} <li><a class="dropdown-item" href="{% url 'patient_profile' %}"><i class="bi bi-person"></i> Profile</a></li> {% endcomment %}
+                            {% comment %} <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a></li> {% endcomment %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                         </ul>
