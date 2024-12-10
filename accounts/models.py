@@ -422,6 +422,11 @@ class NotificationPreferences(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='notification_preferences')
     email_enabled = models.BooleanField(default=True)
     appointment_reminders = models.BooleanField(default=True)
+    class Meta:
+        db_table = 'accounts_notificationpreferences'
+
+    def __str__(self):
+        return f"Notification preferences for {self.user.username}"
 
 class PrivacySettings(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='privacy_settings')

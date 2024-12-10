@@ -2,6 +2,15 @@
 
 {% block content %}
 <div class="container mt-4">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
     <div class="row">
         <div class="col-lg-8 mx-auto">
             <!-- Account Settings Card -->
@@ -12,7 +21,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <!-- Change Password Section -->
+                    {% comment %} <!-- Change Password Section -->
                     <div class="mb-4">
                         <h6 class="mb-3">Change Password</h6>
                         <form method="post" action="{% url 'change_password' %}">
@@ -33,7 +42,7 @@
                         </form>
                     </div>
 
-                    <hr>
+                    <hr> {% endcomment %}
 
                     <!-- Notification Preferences -->
                     <div class="mb-4">

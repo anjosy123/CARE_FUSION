@@ -17,8 +17,8 @@ from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
 import random, logging, os, string
 from django.utils import timezone
-from .models import Organizations,Contact,ServiceRequest,Service,Staff,PatientAssignment,Prescription,Appointment,Team, TeamVisit, TeamSchedule, User, TeamMessage, VisitChecklist, VisitNote, TeamDashboard
-from .forms import ServiceRequestForm,ServiceForm,StaffForm,PatientAssignmentForm,PrescriptionForm,AppointmentForm,TeamForm, TeamVisitForm, RescheduleTeamVisitForm, TeamMessageForm, VisitChecklistForm, VisitNoteForm
+from .models import Organizations,Contact,ServiceRequest,Service,Staff,PatientAssignment,Prescription,Appointment,Team, TeamVisit, TeamSchedule, User, TeamMessage, VisitChecklist, VisitNote, TeamDashboard, PrivacySettings
+from .forms import ServiceRequestForm,ServiceForm,StaffForm,PatientAssignmentForm,PrescriptionForm,AppointmentForm,TeamForm, TeamVisitForm, RescheduleTeamVisitForm, TeamMessageForm, VisitChecklistForm, VisitNoteForm, ProfileUpdateForm
 from django.contrib.auth import get_user_model
 from .utils import send_verification_email, send_appointment_email
 from django.db.models import Q
@@ -27,7 +27,7 @@ from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-from .models import Staff, Notification, Message, TeamVisitRequest
+from .models import Staff, Notification, Message, TeamVisitRequest, PrivacySettings
 import uuid
 from datetime import datetime, timedelta, time
 from calendar import monthrange
@@ -2904,15 +2904,32 @@ def change_password(request):
     messages.success(request, 'Password changed successfully.')
     return redirect('patient_settings')
 
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+from .models import User, NotificationPreferences
+
 @require_POST
 def update_notification_preferences(request):
     if not request.session.get('user_id'):
         return JsonResponse({'status': 'error', 'message': 'Not authenticated'})
 
     user = get_object_or_404(User, id=request.session['user_id'])
-    user.notification_preferences.email_enabled = 'email_notifications' in request.POST
-    user.notification_preferences.appointment_reminders = 'appointment_reminders' in request.POST
-    user.notification_preferences.save()
+    
+    # Get or create notification preferences
+    notification_prefs, created = NotificationPreferences.objects.get_or_create(
+        user=user,
+        defaults={
+            'email_enabled': False,
+            'appointment_reminders': False
+        }
+    )
+    
+    # Update the preferences
+    notification_prefs.email_enabled = 'email_notifications' in request.POST
+    notification_prefs.appointment_reminders = 'appointment_reminders' in request.POST
+    notification_prefs.save()
     
     messages.success(request, 'Notification preferences updated successfully.')
     return redirect('patient_settings')
@@ -2923,8 +2940,18 @@ def update_privacy_settings(request):
         return JsonResponse({'status': 'error', 'message': 'Not authenticated'})
 
     user = get_object_or_404(User, id=request.session['user_id'])
-    user.privacy_settings.profile_visible = 'profile_visible' in request.POST
-    user.privacy_settings.save()
+    
+    # Get or create privacy settings
+    privacy_settings, created = PrivacySettings.objects.get_or_create(
+        user=user,
+        defaults={
+            'profile_visible': False
+        }
+    )
+    
+    # Update the settings
+    privacy_settings.profile_visible = 'profile_visible' in request.POST
+    privacy_settings.save()
     
     messages.success(request, 'Privacy settings updated successfully.')
     return redirect('patient_settings')
