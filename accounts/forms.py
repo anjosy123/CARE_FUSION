@@ -158,6 +158,7 @@ class PatientAssignmentForm(forms.ModelForm):
         model = PatientAssignment
         fields = ['patient', 'staff']
         
+
 class ServiceRequestForm(forms.ModelForm):
     class Meta:
         model = ServiceRequest
@@ -179,6 +180,19 @@ class ServiceRequestForm(forms.ModelForm):
                 raise ValidationError("Only PDF files are allowed for doctor's referral.")
         return doctor_referral
 
+    def clean_doctor_referral(self):
+        file = self.cleaned_data.get('doctor_referral')
+        if file:
+            # Add file validation if needed
+            if file.size > 5 * 1024 * 1024:  # 5MB limit
+                raise ValidationError("File size must be under 5MB")
+            
+            # Check file extension
+            valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
+            ext = os.path.splitext(file.name)[1].lower()
+            if ext not in valid_extensions:
+                raise ValidationError("Only PDF and image files are allowed")
+        return file
 
 class ServiceForm(forms.ModelForm):
     class Meta:
@@ -336,4 +350,14 @@ class AppointmentRequestForm(forms.ModelForm):
         widgets = {
             'date_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
             'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+
+class ProfileUpdateForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
         }

@@ -586,6 +586,21 @@ def patients_dashboard(request):
         is_email_verified=True # Organization email is verified
     )
     
+    if request.method == 'POST':
+        org_id = request.POST.get('organization_id')
+        organization = get_object_or_404(Organizations, id=org_id)
+        form = ServiceRequestForm(request.POST, request.FILES, organization=organization)
+        if form.is_valid():
+            service_request = form.save(commit=False)
+            service_request.patient = patient
+            service_request.organization = organization
+            service_request.save()
+            messages.success(request, 'Service request submitted successfully.')
+            return redirect('patients_dashboard')
+    else:
+        # Initialize an empty form
+        form = ServiceRequestForm()
+    
     if query:
         organizations = organizations.filter(org_name__icontains=query)
 
@@ -618,6 +633,12 @@ def patients_dashboard(request):
 
     recent_visit_requests = TeamVisitRequest.objects.filter(patient=patient).order_by('-created_at')[:5]
 
+    # Add pending requests count
+    pending_requests_count = ServiceRequest.objects.filter(
+        patient_id=user_id,
+        status='PENDING'
+    ).count()
+
     # Pagination
     page_number = request.GET.get('page', 1)
     items_per_page = 10
@@ -637,6 +658,8 @@ def patients_dashboard(request):
         'assigned_teams': assigned_teams,
         'upcoming_appointments': upcoming_appointments,
         'recent_visit_requests': recent_visit_requests,
+        'form': ServiceRequestForm(),
+        'pending_requests_count': pending_requests_count,
     }
 
     return render(request, 'Users/patients_dashboard.html', context)
@@ -930,6 +953,7 @@ def handlesignup(request):
 
 
 
+
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def handlelogout(request):  
     request.session.clear()
@@ -1168,7 +1192,7 @@ def organization_detail(request, id):
     organization = Organizations.objects.get(org_regid=id)
     return render(request,'Users/organization_detail.html', {'organization': organization})
 
-# @login_required
+
 def submit_service_request(request, org_id):
     organization = get_object_or_404(Organizations, org_regid=org_id)
 
@@ -1201,6 +1225,7 @@ def submit_service_request(request, org_id):
         form = ServiceRequestForm(organization=organization)
     
     return render(request, 'Users/submit_service_request.html', {'form': form, 'organization': organization})
+
 
 @require_POST
 def handle_service_request(request):
@@ -2684,9 +2709,36 @@ def notification_center(request):
     # Implement logic to display all notifications
     pass
 
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def patient_profile(request):
-    # Implement logic to display and edit patient profile
-    pass
+    if not request.session.get('user_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+
+    user_id = request.session['user_id']
+    patient = get_object_or_404(User, id=user_id)
+    
+    # Check if user is authenticated via social auth (Google)
+    is_social_auth = patient.social_auth.filter(provider='google-oauth2').exists() if hasattr(patient, 'social_auth') else False
+    
+    # If user is authenticated via Google, ensure email is marked as verified
+    if is_social_auth and not patient.is_email_verified:
+        patient.is_email_verified = True
+        patient.save()
+    
+    # Get pending requests count for the notification badge
+    pending_requests_count = ServiceRequest.objects.filter(
+        patient=patient,
+        status='PENDING'
+    ).count()
+
+    context = {
+        'patient': patient,
+        'pending_requests_count': pending_requests_count,
+        'is_social_auth': is_social_auth
+    }
+    
+    return render(request, 'Users/patient_profile.html', context)
 
 def org_profile(request):
     # Implement logic to display and edit organization profile
@@ -2757,3 +2809,140 @@ def toggle_organization_status(request, org_id):
     except Exception as e:
         messages.error(request, f"An error occurred: {str(e)}")
         return redirect('admin_dashboard')
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def patient_service_requests(request):
+    if not request.session.get('user_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+
+    user_id = request.session['user_id']
+    patient = get_object_or_404(User, id=user_id)
+    
+    # Get all service requests for the patient, ordered by most recent first
+    service_requests = ServiceRequest.objects.filter(
+        patient=patient
+    ).select_related(
+        'organization',
+        'service'
+    ).order_by('-created_at')
+
+    context = {
+        'service_requests': service_requests,
+        'patient': patient,
+    }
+
+    return render(request, 'Users/patient_service_requests.html', context)
+
+def get_services(request, org_id):
+    organization = get_object_or_404(Organizations, id=org_id)
+    services = Service.objects.filter(organization=organization)
+    services_data = [{'id': service.id, 'name': service.name} for service in services]
+    return JsonResponse({'services': services_data})
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def update_profile(request):
+    if not request.session.get('user_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+
+    user_id = request.session['user_id']
+    patient = get_object_or_404(User, id=user_id)
+
+    if request.method == 'POST':
+        form = ProfileUpdateForm(request.POST, instance=patient)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Your profile has been updated successfully.')
+            return redirect('patient_profile')
+    else:
+        form = ProfileUpdateForm(instance=patient)
+
+    context = {
+        'form': form,
+        'patient': patient
+    }
+
+    return render(request, 'Users/update_profile.html', context)
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def patient_settings(request):
+    if not request.session.get('user_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+
+    user_id = request.session['user_id']
+    patient = get_object_or_404(User, id=user_id)
+
+    context = {
+        'patient': patient,
+    }
+    
+    return render(request, 'Users/patient_settings.html', context)
+
+@require_POST
+def change_password(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'status': 'error', 'message': 'Not authenticated'})
+
+    current_password = request.POST.get('current_password')
+    new_password = request.POST.get('new_password')
+    confirm_password = request.POST.get('confirm_password')
+
+    user = get_object_or_404(User, id=request.session['user_id'])
+
+    if not user.check_password(current_password):
+        messages.error(request, 'Current password is incorrect.')
+        return redirect('patient_settings')
+
+    if new_password != confirm_password:
+        messages.error(request, 'New passwords do not match.')
+        return redirect('patient_settings')
+
+    user.set_password(new_password)
+    user.save()
+    messages.success(request, 'Password changed successfully.')
+    return redirect('patient_settings')
+
+@require_POST
+def update_notification_preferences(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'status': 'error', 'message': 'Not authenticated'})
+
+    user = get_object_or_404(User, id=request.session['user_id'])
+    user.notification_preferences.email_enabled = 'email_notifications' in request.POST
+    user.notification_preferences.appointment_reminders = 'appointment_reminders' in request.POST
+    user.notification_preferences.save()
+    
+    messages.success(request, 'Notification preferences updated successfully.')
+    return redirect('patient_settings')
+
+@require_POST
+def update_privacy_settings(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'status': 'error', 'message': 'Not authenticated'})
+
+    user = get_object_or_404(User, id=request.session['user_id'])
+    user.privacy_settings.profile_visible = 'profile_visible' in request.POST
+    user.privacy_settings.save()
+    
+    messages.success(request, 'Privacy settings updated successfully.')
+    return redirect('patient_settings')
+
+@require_POST
+def deactivate_account(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'status': 'error', 'message': 'Not authenticated'})
+
+    confirmation = request.POST.get('confirm_deactivation')
+    if confirmation != 'DEACTIVATE':
+        messages.error(request, 'Please type DEACTIVATE to confirm account deactivation.')
+        return redirect('patient_settings')
+
+    user = get_object_or_404(User, id=request.session['user_id'])
+    user.is_active = False
+    user.save()
+    
+    logout(request)
+    messages.success(request, 'Your account has been deactivated.')
+    return redirect('login')

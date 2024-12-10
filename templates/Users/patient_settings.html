@@ -1,0 +1,120 @@
+{% extends 'Users/patients_dashboard.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Account Settings Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-gear-fill"></i> Account Settings
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Change Password Section -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">Change Password</h6>
+                        <form method="post" action="{% url 'change_password' %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="current_password" class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="current_password" name="current_password" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="new_password" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="new_password" name="new_password" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Change Password</button>
+                        </form>
+                    </div>
+
+                    <hr>
+
+                    <!-- Notification Preferences -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">Notification Preferences</h6>
+                        <form method="post" action="{% url 'update_notification_preferences' %}">
+                            {% csrf_token %}
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications" 
+                                    {% if patient.notification_preferences.email_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="email_notifications">
+                                    Email Notifications
+                                </label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="appointment_reminders" name="appointment_reminders"
+                                    {% if patient.notification_preferences.appointment_reminders %}checked{% endif %}>
+                                <label class="form-check-label" for="appointment_reminders">
+                                    Appointment Reminders
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Preferences</button>
+                        </form>
+                    </div>
+
+                    <hr>
+
+                    <!-- Privacy Settings -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">Privacy Settings</h6>
+                        <form method="post" action="{% url 'update_privacy_settings' %}">
+                            {% csrf_token %}
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="profile_visible" name="profile_visible"
+                                    {% if patient.privacy_settings.profile_visible %}checked{% endif %}>
+                                <label class="form-check-label" for="profile_visible">
+                                    Make profile visible to healthcare providers
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Privacy Settings</button>
+                        </form>
+                    </div>
+
+                    <hr>
+
+                    <!-- Account Deactivation -->
+                    <div class="mb-4">
+                        <h6 class="mb-3 text-danger">Danger Zone</h6>
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deactivateAccountModal">
+                            Deactivate Account
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deactivate Account Modal -->
+<div class="modal fade" id="deactivateAccountModal" tabindex="-1" aria-labelledby="deactivateAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deactivateAccountModalLabel">Deactivate Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to deactivate your account? This action cannot be undone.</p>
+                <form method="post" action="{% url 'deactivate_account' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="deactivation_reason" class="form-label">Please tell us why you're leaving (optional)</label>
+                        <textarea class="form-control" id="deactivation_reason" name="deactivation_reason" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_deactivation" class="form-label">Type "DEACTIVATE" to confirm</label>
+                        <input type="text" class="form-control" id="confirm_deactivation" name="confirm_deactivation" required>
+                    </div>
+                    <button type="submit" class="btn btn-danger">Deactivate Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

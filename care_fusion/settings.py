@@ -35,8 +35,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-# BASE_URL = 'http://localhost:8000'
-BASE_URL = 'https://care-fusion.onrender.com'
+BASE_URL = 'http://localhost:8000'
+# BASE_URL = 'https://care-fusion.onrender.com'
 
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
@@ -136,33 +136,33 @@ LOGGING = {
 }
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'care_fusion',
-#         'USER': 'root',
-#         'PASSWORD': '',
-#         'HOST': 'localhost',
-#         'PORT': '3306',
-#         'OPTIONS': {
-#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-#         },
-#     }
-# }
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'carefusion_pointlegif',
-        'USER': 'carefusion_pointlegif',
-        'PASSWORD': '6ae869ae5c889ef8471ed3a420544da2e411609e',
-        'HOST': '8t-wx.h.filess.io',
-        'PORT': '3307',
+        'NAME': 'care_fusion',
+        'USER': 'root',
+        'PASSWORD': '',
+        'HOST': 'localhost',
+        'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'carefusion_pointlegif',
+#         'USER': 'carefusion_pointlegif',
+#         'PASSWORD': '6ae869ae5c889ef8471ed3a420544da2e411609e',
+#         'HOST': '8t-wx.h.filess.io',
+#         'PORT': '3307',
+#         'OPTIONS': {
+#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+#         },
+#     }
+# }
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -241,6 +241,7 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.associate_user',  
     'social_core.pipeline.social_auth.load_extra_data', 
     'social_core.pipeline.user.user_details',          
+    'accounts.pipeline.mark_email_verified',
 )
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://127.0.0.1:8000/oauth/complete/google/'

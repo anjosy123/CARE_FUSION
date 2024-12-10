@@ -5,3 +5,9 @@ def set_role(backend, user, response, *args, **kwargs):
     session['email'] = user.email
     session['role'] = 'user'
     return
+
+def mark_email_verified(backend, user, response, *args, **kwargs):
+    if backend.name == 'google-oauth2':
+        user.is_email_verified = True
+        user.save()
+    return None

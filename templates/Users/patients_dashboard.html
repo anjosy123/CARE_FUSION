@@ -145,7 +145,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'patients_dashboard' %}"><i class="bi bi-house-door"></i> Home</a>
+                        {% comment %} <a class="nav-link" href="{% url 'patients_dashboard' %}"><i class="bi bi-house-door"></i> Home</a> {% endcomment %}
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="healthDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -162,7 +162,7 @@
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="appointmentsDropdown">
                             <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=appointments"><i class="bi bi-calendar-check"></i> My Appointments</a></li>
-                            {% comment %} <li><a class="dropdown-item" href="{% url 'request_appointment' %}"><i class="bi bi-calendar-plus"></i> Book Appointment</a></li> {% endcomment %}
+                            <li><a class="dropdown-item" href="{% url 'request_appointment' %}"><i class="bi bi-calendar-plus"></i> Book Appointment</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
@@ -170,6 +170,7 @@
                             <i class="bi bi-clipboard-heart"></i> Care
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="careDropdown">
+                            <li><a class="dropdown-item" href="{% url 'patient_service_requests' %}"><i class="bi bi-list-check"></i> Service Requests</a></li>
                             <li><a class="dropdown-item" href="{% url 'patient_visit_requests' %}"><i class="bi bi-clipboard-check"></i> Visit Requests</a></li>
                             <li><a class="dropdown-item" href="{% url 'assigned_teams' %}"><i class="bi bi-people"></i> Assigned Teams</a></li>
                         </ul>
@@ -189,8 +190,8 @@
                             <i class="bi bi-person-circle"></i> {{ patient.get_full_name }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            {% comment %} <li><a class="dropdown-item" href="{% url 'patient_profile' %}"><i class="bi bi-person"></i> Profile</a></li> {% endcomment %}
-                            {% comment %} <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a></li> {% endcomment %}
+                            <li><a class="dropdown-item" href="{% url 'patient_profile' %}"><i class="bi bi-person"></i> Profile</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                         </ul>
@@ -202,6 +203,18 @@
     {% endblock navbar %}
 
     {% block content %}
+    <div class="container mt-3">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
     <div class="container mt-4">
         <!-- Dashboard Overview -->
         <div class="row mb-4">
@@ -236,18 +249,20 @@
                 </div>
             </div>
             <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card dashboard-card requests h-100 py-2">
+                <div class="card dashboard-card requests border-0 shadow h-100 py-2">
                     <div class="card-body">
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pending Requests</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ service_requests.count }}</div>
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                    Pending Requests</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_requests_count }}</div>
                             </div>
                             <div class="col-auto">
-                                <i class="bi bi-clipboard-check fa-2x text-gray-300"></i>
+                                <i class="bi bi-clock-history fa-2x text-warning"></i>
                             </div>
                         </div>
                     </div>
+                    <a href="{% url 'patient_service_requests' %}" class="stretched-link"></a>
                 </div>
             </div>
             <div class="col-xl-3 col-md-6 mb-4">
@@ -324,28 +339,39 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="serviceRequestForm" method="post" enctype="multipart/form-data">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        <input type="hidden" id="organizationId" name="organization_id" value="">
-                        
-                        <div class="mb-3">
-                            <label for="serviceSelect" class="form-label">Select Service</label><br>
-                            <select class="form-select" id="serviceSelect" name="service" required>
-                                <option value="">Choose a service</option>
-                                {% for service in services %}
-                                    <option value="{{ service.id }}">{{ service.name }}</option>
-                                {% endfor %}
-                            </select><br><br>
-                        </div>
-                        
-                        <div class="mb-0">
-                            <label for="doctorReferral" class="form-label">Doctor's Referral Letter</label><br>
-                            <input type="file" class="form-control" id="doctorReferral" name="doctor_referral" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="additionalNotes" class="form-label">Additional Notes</label><br>
-                            <textarea class="form-control" id="additionalNotes" name="additional_notes" rows="3"></textarea>
-                        </div>
+                        <input type="hidden" name="organization_id" id="organizationId">
+                    
+                    <div class="mb-3">
+                        <label for="id_service" class="form-label">Select Service</label>
+                        {{ form.service }}
+                        {% if form.service.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.service.errors|join:", " }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_doctor_referral" class="form-label">Doctor's Referral Letter</label>
+                        {{ form.doctor_referral }}
+                        {% if form.doctor_referral.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.doctor_referral.errors|join:", " }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_additional_notes" class="form-label">Additional Notes</label>
+                        {{ form.additional_notes }}
+                        {% if form.additional_notes.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.additional_notes.errors|join:", " }}
+                            </div>
+                        {% endif %}
+                    </div>
                         <div class="text-center">
                             <button type="submit" class="btn btn-primary">Submit Request</button>
                         </div>

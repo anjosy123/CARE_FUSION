@@ -418,6 +418,15 @@ class TeamDashboard(models.Model):
     def __str__(self):
         return f"Dashboard for {self.staff.get_full_name()} in {self.team.name}"
 
+class NotificationPreferences(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='notification_preferences')
+    email_enabled = models.BooleanField(default=True)
+    appointment_reminders = models.BooleanField(default=True)
+
+class PrivacySettings(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='privacy_settings')
+    profile_visible = models.BooleanField(default=True)
+
 
 
 
