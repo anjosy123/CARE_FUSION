@@ -375,6 +375,11 @@ class TeamMessage(models.Model):
     organization = models.ForeignKey(Organizations, on_delete=models.CASCADE, related_name='sent_messages', null=True, blank=True)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    sender_type = models.CharField(
+        max_length=20, 
+        choices=[('staff', 'Staff'), ('organization', 'Organization')],
+        default='staff'  # Add this default value
+    )
 
     class Meta:
         ordering = ['created_at']
@@ -382,6 +387,11 @@ class TeamMessage(models.Model):
     def __str__(self):
         sender_name = self.sender.get_full_name() if self.sender else self.organization.org_name
         return f"Message from {sender_name} to {self.team.name} at {self.created_at}"
+
+    def get_sender_name(self):
+        if self.sender_type == 'staff':
+            return self.sender.get_full_name() if self.sender else "Unknown Staff"
+        return self.organization.org_name if self.organization else "Unknown Organization"
 
 class VisitChecklist(models.Model):
     team_visit = models.OneToOneField('TeamVisit', on_delete=models.CASCADE, related_name='checklist')

@@ -451,6 +451,68 @@
             min-width: 120px;
         }
     }
+
+    /* Add these to your existing styles */
+    .messages-container {
+        margin-bottom: 20px;
+    }
+
+    .alert {
+        padding: 15px;
+        margin-bottom: 10px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        position: relative;
+    }
+
+    .alert-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
+
+    .alert-error, .alert-danger {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+    }
+
+    .alert-warning {
+        color: #856404;
+        background-color: #fff3cd;
+        border-color: #ffeeba;
+    }
+
+    .alert-info {
+        color: #0c5460;
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+    }
+
+    .alert-dismissible {
+        padding-right: 4rem;
+    }
+
+    .btn-close {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 0.75rem 1.25rem;
+        color: inherit;
+        background: transparent;
+        border: 0;
+        float: right;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+        text-shadow: 0 1px 0 #fff;
+        opacity: .5;
+        cursor: pointer;
+    }
+
+    .btn-close:hover {
+        opacity: .75;
+    }
     </style>
   </head>
 
@@ -474,6 +536,18 @@
 
       <!-- Main Content -->
       <main class="main-content">
+        <!-- Messages Section -->
+        {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <header>
           <h1>Admin Dashboard</h1>
           <p>Welcome back, Admin. Here's what's happening today:</p>

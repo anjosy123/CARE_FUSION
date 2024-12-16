@@ -2383,43 +2383,52 @@ def get_available_slots(request, team_id, date):
     return JsonResponse({'available_slots': available_slots})
 
 def team_communication(request, team_id):
-    role = request.session.get('role')
-    org_id = request.session.get('org_id')
-
-    if not role or not org_id:
+    if not request.session.get('org_id') and not request.session.get('staff_id'):
         messages.error(request, "Please log in to access this page.")
         return redirect('login')
 
-    organization = get_object_or_404(Organizations, id=org_id)
-    team = get_object_or_404(Team, id=team_id, organization=organization)
-
-    if role == 'staff':
-        staff_id = request.session.get('staff_id')
-        if not staff_id:
-            messages.error(request, "Staff information not found. Please log in again.")
-            return redirect('login')
-
-        staff = get_object_or_404(Staff, id=staff_id)
+    team = get_object_or_404(Team, id=team_id)
+    
+    # Determine sender type and validate access
+    if request.session.get('org_id'):
+        organization = get_object_or_404(Organizations, id=request.session['org_id'])
+        if team.organization != organization:
+            messages.error(request, "You don't have access to this team.")
+            return redirect('team_list')
+        sender_type = 'organization'
+        sender_id = organization.id
+    else:
+        staff = get_object_or_404(Staff, id=request.session['staff_id'])
         if staff not in team.members.all():
             messages.error(request, "You are not a member of this team.")
             return redirect('team_list')
-
-        sender_id = staff_id
         sender_type = 'staff'
-    elif role == 'organization':
-        sender_id = org_id
-        sender_type = 'organization'
-    else:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('login')
+        sender_id = staff.id
 
-    team_messages = TeamMessage.objects.filter(team=team)
+    # Handle message posting
+    if request.method == 'POST':
+        content = request.POST.get('message')
+        if content:
+            message = TeamMessage.objects.create(
+                team=team,
+                content=content,
+                sender_type=sender_type
+            )
+            if sender_type == 'staff':
+                message.sender_id = sender_id
+            else:
+                message.organization_id = sender_id
+            message.save()
+            return JsonResponse({'status': 'success'})
+
+    # Get messages with proper ordering and sender information
+    messages = TeamMessage.objects.filter(team=team).select_related('sender', 'organization').order_by('created_at')
 
     context = {
         'team': team,
-        'team_messages': team_messages,
-        'sender_id': sender_id,
+        'team_messages': messages,
         'sender_type': sender_type,
+        'sender_id': sender_id,
     }
     return render(request, 'Organizations/team_communication.html', context)
 
