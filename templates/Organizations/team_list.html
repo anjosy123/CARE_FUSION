@@ -69,6 +69,19 @@
 
 {% block content %}
 <div class="container">
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'warning dismissible' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %} {% if 'dismissible' in message.tags %}alert-dismissible{% endif %}">
+            {% if 'dismissible' in message.tags %}
+            <button type="button" class="close" onclick="this.parentElement.style.display='none'">&times;</button>
+            {% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <h2>Team Management</h2>
     <a href="{% url 'create_team' %}" class="btn btn-primary mb-3">Create New Team</a>
     <table class="table">
@@ -76,12 +89,13 @@
             <tr>
                 <th>Team Name</th>
                 <th>Members</th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for team in teams %}
-            <tr>
+            <tr class="{% if not team.is_active %}table-secondary{% endif %}">
                 <td>{{ team.name }}</td>
                 <td>
                     {% for member in team.members.all %}
@@ -89,17 +103,79 @@
                     {% endfor %}
                 </td>
                 <td>
+                    <span class="badge {% if team.is_active %}badge-success{% else %}badge-danger{% endif %}">
+                        {{ team.is_active|yesno:"Active,Disabled" }}
+                    </span>
+                </td>
+                <td>
                     <a href="{% url 'team_communication' team.id %}" class="btn btn-sm btn-primary">Communication</a>
-                    <a href="#" class="btn btn-sm btn-info">Edit</a>
-                    <a href="#" class="btn btn-sm btn-danger">Delete</a>
+                    <a href="{% url 'edit_team' team.id %}" class="btn btn-sm btn-info">Edit</a>
+                    <button class="btn btn-sm {% if team.is_active %}btn-danger{% else %}btn-success{% endif %} toggle-team-status" 
+                            data-team-id="{{ team.id }}" 
+                            data-csrf-token="{{ csrf_token }}">
+                        {{ team.is_active|yesno:"Disable,Enable" }}
+                    </button>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="3">No teams created yet.</td>
+                <td colspan="4">No teams created yet.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle team status toggle
+    document.querySelectorAll('.toggle-team-status').forEach(button => {
+        button.addEventListener('click', function() {
+            const teamId = this.dataset.teamId;
+            const csrfToken = this.dataset.csrfToken;
+            
+            fetch(`/teams/${teamId}/toggle-status/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update button text and class
+                    this.textContent = data.is_active ? 'Disable' : 'Enable';
+                    this.classList.toggle('btn-danger', data.is_active);
+                    this.classList.toggle('btn-success', !data.is_active);
+                    
+                    // Update status badge
+                    const statusBadge = this.closest('tr').querySelector('.badge');
+                    statusBadge.textContent = data.is_active ? 'Active' : 'Disabled';
+                    statusBadge.classList.toggle('badge-success', data.is_active);
+                    statusBadge.classList.toggle('badge-danger', !data.is_active);
+                    
+                    // Update row styling
+                    this.closest('tr').classList.toggle('table-secondary', !data.is_active);
+                    
+                    // Show success message
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'alert alert-success alert-dismissible';
+                    messageDiv.innerHTML = `
+                        ${data.message}
+                        <button type="button" class="close" onclick="this.parentElement.style.display='none'">&times;</button>
+                    `;
+                    document.querySelector('.messages').appendChild(messageDiv);
+                    
+                    // Auto-hide message after 5 seconds
+                    setTimeout(() => messageDiv.style.display = 'none', 5000);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+});
+</script>
 {% endblock %}

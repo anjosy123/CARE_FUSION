@@ -1,5 +1,5 @@
 from django import forms
-from .models import Service
+from .models import Service, Team
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from .models import ServiceRequest,Service,Staff,PatientAssignment,Prescription,Appointment, Team, TeamVisit, TeamMessage, VisitChecklist, VisitNote
@@ -268,22 +268,27 @@ class AppointmentForm(forms.ModelForm):
     
 # palliative organization team management
 
-class TeamForm(forms.ModelForm):
-    members = forms.ModelMultipleChoiceField(
-        queryset=Staff.objects.none(),  # We'll set this in __init__
-        widget=forms.CheckboxSelectMultiple(attrs={'class': 'scrollable-checklist'}),
-        required=False
-    )
 
+
+class TeamForm(forms.ModelForm):
     class Meta:
         model = Team
         fields = ['name', 'members']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'members': forms.CheckboxSelectMultiple()
+        }
 
-    def __init__(self, *args, **kwargs):
-        organization = kwargs.pop('organization', None)
-        super(TeamForm, self).__init__(*args, **kwargs)
+    def __init__(self, *args, organization=None, **kwargs):
+        super().__init__(*args, **kwargs)
         if organization:
             self.fields['members'].queryset = Staff.objects.filter(organization=organization)
+
+    def clean_members(self):
+        members = self.cleaned_data.get('members')
+        if members and members.count() < 2:
+            raise forms.ValidationError("A team must have at least 2 members.")
+        return members
 
 class TeamVisitForm(forms.ModelForm):
     patient = forms.ModelChoiceField(queryset=User.objects.none())

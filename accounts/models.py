@@ -1,12 +1,12 @@
 from django.utils import timezone
 from django.db import models
-from django.contrib.auth.models import BaseUserManager,User,AbstractUser
+from django.contrib.auth.models import User,AbstractUser
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils.crypto import get_random_string
-from django.db.models import Max
+# from django.db.models import Max
 import uuid
-from django.conf import settings
-from datetime import timedelta
+# from django.conf import settings
+# from datetime import timedelta
 
 class User(AbstractUser):
     is_email_verified = models.BooleanField(default=False)
@@ -267,6 +267,7 @@ class Team(models.Model):
     members = models.ManyToManyField(Staff, related_name='staff_teams')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -375,11 +376,6 @@ class TeamMessage(models.Model):
     organization = models.ForeignKey(Organizations, on_delete=models.CASCADE, related_name='sent_messages', null=True, blank=True)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    sender_type = models.CharField(
-        max_length=20, 
-        choices=[('staff', 'Staff'), ('organization', 'Organization')],
-        default='staff'  # Add this default value
-    )
 
     class Meta:
         ordering = ['created_at']
@@ -387,11 +383,6 @@ class TeamMessage(models.Model):
     def __str__(self):
         sender_name = self.sender.get_full_name() if self.sender else self.organization.org_name
         return f"Message from {sender_name} to {self.team.name} at {self.created_at}"
-
-    def get_sender_name(self):
-        if self.sender_type == 'staff':
-            return self.sender.get_full_name() if self.sender else "Unknown Staff"
-        return self.organization.org_name if self.organization else "Unknown Organization"
 
 class VisitChecklist(models.Model):
     team_visit = models.OneToOneField('TeamVisit', on_delete=models.CASCADE, related_name='checklist')
@@ -417,16 +408,20 @@ class VisitNote(models.Model):
         return f"Note by {self.staff} for visit on {self.team_visit.scheduled_date}"
 
 class TeamDashboard(models.Model):
-    team = models.ForeignKey(Team, on_delete=models.CASCADE)
-    staff = models.ForeignKey(Staff, on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='dashboards')
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='team_dashboards')
     username = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
+    created_at = models.DateTimeField(default=timezone.now)  # Changed from auto_now_add
+    last_login = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = ['team', 'staff']
+        verbose_name = 'Team Dashboard'
+        verbose_name_plural = 'Team Dashboards'
 
     def __str__(self):
-        return f"Dashboard for {self.staff.get_full_name()} in {self.team.name}"
+        return f"{self.staff.get_full_name()}'s dashboard for {self.team.name}"
 
 class NotificationPreferences(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='notification_preferences')

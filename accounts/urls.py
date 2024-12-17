@@ -164,5 +164,7 @@ urlpatterns = [
     path('patient/update-notification-preferences/', views.update_notification_preferences, name='update_notification_preferences'),
     path('patient/update-privacy-settings/', views.update_privacy_settings, name='update_privacy_settings'),
     path('patient/deactivate-account/', views.deactivate_account, name='deactivate_account'),
+    path('teams/<int:team_id>/edit/', views.edit_team, name='edit_team'),
+    path('teams/<int:team_id>/toggle-status/', views.toggle_team_status, name='toggle_team_status'),
 ]
 

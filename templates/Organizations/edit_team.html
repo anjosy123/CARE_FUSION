@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit Team{% endblock title %}
+
+{% block content %}
+<div class="container">
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'warning dismissible' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %} {% if 'dismissible' in message.tags %}alert-dismissible{% endif %}">
+            {% if 'dismissible' in message.tags %}
+            <button type="button" class="close" onclick="this.parentElement.style.display='none'">&times;</button>
+            {% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <h2>Edit Team: {{ team.name }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="form-group">
+            {{ form.name.errors }}
+            <label for="{{ form.name.id_for_label }}">Team Name:</label>
+            {{ form.name }}
+        </div>
+        <div class="form-group">
+            {{ form.members.errors }}
+            <label for="{{ form.members.id_for_label }}">Select Team Members:</label>
+            <div class="scrollable-checklist">
+                {{ form.members }}
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Team</button>
+        <a href="{% url 'team_list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .scrollable-checklist {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        padding: 10px;
+    }
+    
+    .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+    }
+    
+    .alert-dismissible {
+        padding-right: 35px;
+        position: relative;
+    }
+    
+    .alert-dismissible .close {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 15px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}

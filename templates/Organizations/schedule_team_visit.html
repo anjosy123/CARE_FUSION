@@ -71,45 +71,484 @@
 
 {% block extra_css %}
 <style>
+     /* Navigation Styles */
+      .nav.menu li.active > a {
+        color: #1A76D1;
+        font-weight: bold;
+      }
+
+      .main-menu {
+        width: 100%;
+      }
+
+      .main-menu .navigation {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+      }
+
+      .main-menu .navigation > li {
+        flex: 1 1 auto;
+        text-align: center;
+      }
+
+      .main-menu .navigation > li > a {
+        padding: 20px 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 14px;
+      }
+
+      /* Topbar Styles */
+      .topbar {
+        background: #1A76D1;  /* Light blue background */
+        padding: 8px 0;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        width: 100%;
+        top: 0;
+        z-index: 1000;
+      }
+
+      .container {
+        width: 100%;
+        padding-right: 15px;
+        padding-left: 15px;
+        margin-right: auto;
+        margin-left: auto;
+      }
+
+      .topbar-inner {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 50px;
+        height: 40px;
+      }
+
+      /* Logo Styles */
+      .logo {
+        padding-left: 0;
+        margin-right: auto;
+      }
+
+      .logo img {
+        height: 45px;
+        width: auto;
+        vertical-align: middle;
+      }
+
+      /* Navigation Links */
+      .top-link {
+        display: flex;
+        align-items: right;
+        list-style: none;
+        margin: right;
+        padding: 0;
+        gap: 30px;
+        margin-right: auto;
+      }
+
+      .top-link > li > a {
+        color: #FFFFFF;
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: color 0.3s ease;
+        padding: 6px 0;
+        white-space: nowrap;
+        margin-right: auto;
+      }
+
+      .top-link > li > a:hover {
+        color: #E3F2FD;
+      }
+
+      /* User Login Section */
+      .user-login {
+        margin-left: auto;
+        position: relative;
+      }
+
+      .user-login li {
+        position: relative;
+        list-style: none;
+      }
+
+      .user-login .login-link {
+        color: #FFFFFF;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 8px 16px;
+        border-radius: 4px;
+        background: rgba(255,255,255,0.1);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .user-login .login-link:hover {
+        background: rgba(255,255,255,0.2);
+      }
+
+      /* Dropdown Menu */
+      .user-login .dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        min-width: 180px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(10px);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        margin-top: 5px;
+        padding: 5px 0;
+      }
+
+      .user-login li:hover .dropdown {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .user-login .dropdown::before {
+        content: '';
+        position: absolute;
+        top: -5px;
+        right: 20px;
+        width: 10px;
+        height: 10px;
+        background: white;
+        transform: rotate(45deg);
+        box-shadow: -2px -2px 4px rgba(0,0,0,0.05);
+      }
+
+      .user-login .dropdown li {
+        display: block;
+        margin: 0;
+        padding: 0;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+      }
+
+      .user-login .dropdown li:last-child {
+        border-bottom: none;
+      }
+
+      .user-login .dropdown li a {
+        color: #333;
+        padding: 10px 20px;
+        display: block;
+        text-decoration: none;
+        font-size: 13px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        position: relative;
+      }
+
+      .user-login .dropdown li a:hover {
+        background: #E3F2FD;
+        color: #1A76D1;
+        padding-left: 25px;
+      }
+
+      /* Fix for dropdown positioning on mobile */
+      @media (max-width: 576px) {
+        .user-login {
+          position: static;
+        }
+        
+        .user-login .dropdown {
+          right: 10px;
+          left: auto;
+          margin-top: 5px;
+        }
+
+        .user-login .dropdown::before {
+          right: 20px;
+        }
+      }
+
+      /* Responsive Design */
+      @media (min-width: 1200px) {
+        .container {
+          max-width: 1140px;
+        }
+      }
+
+      @media (max-width: 991px) {
+        .container {
+          max-width: 960px;
+        }
+        .topbar-inner {
+          gap: 30px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          max-width: 720px;
+        }
+        .topbar-inner {
+          gap: 20px;
+        }
+        .logo img {
+          height: 25px;
+        }
+      }
+
+      @media (max-width: 576px) {
+        .container {
+          max-width: 540px;
+        }
+        .topbar-inner {
+          flex-wrap: wrap;
+          justify-content: space-between;
+          height: auto;
+          padding: 5px 0;
+        }
+        .logo {
+          margin-right: 0;
+        }
+        .top-link {
+          order: 2;
+          width: 100%;
+          justify-content: center;
+          margin-top: 8px;
+        }
+        .user-login {
+          order: 1;
+        }
+      }
+      <style>
+        .login-container {
+          max-width: 400px;
+          margin: 0 auto;
+        }
+
+      /* Updated Dropdown Menu Styles */
+      .top-link li {
+        position: relative;
+      }
+
+      .top-link .dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        min-width: 200px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(10px);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        margin-top: 5px;
+        padding: 5px 0;
+      }
+
+      .top-link li:hover .dropdown {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .top-link .dropdown::before {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: 20px;
+        width: 10px;
+        height: 10px;
+        background: white;
+        transform: rotate(45deg);
+        box-shadow: -2px -2px 4px rgba(0,0,0,0.05);
+      }
+
+      .top-link .dropdown li {
+        display: block;
+        margin: 0;
+        padding: 0;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+      }
+
+      .top-link .dropdown li:last-child {
+        border-bottom: none;
+      }
+
+      .top-link .dropdown li a {
+        color: #333;
+        padding: 10px 20px;
+        display: block;
+        text-decoration: none;
+        font-size: 13px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+
+      .top-link .dropdown li a:hover {
+        background: #E3F2FD;
+        color: #1A76D1;
+        padding-left: 25px;
+      }
+
+      /* Dropdown icon animation */
+      .top-link li > a i.icofont-rounded-down {
+        transition: transform 0.3s ease;
+      }
+
+      .top-link li:hover > a i.icofont-rounded-down {
+        transform: rotate(180deg);
+      }
+
+      /* Mobile responsiveness for dropdowns */
+      @media (max-width: 768px) {
+        .top-link .dropdown {
+          position: static;
+          background: rgba(255,255,255,0.05);
+          box-shadow: none;
+          margin-top: 0;
+          padding-left: 15px;
+        }
+
+        .top-link .dropdown::before {
+          display: none;
+        }
+
+        .top-link .dropdown li a {
+          color: #fff;
+          padding: 8px 15px;
+        }
+
+        .top-link .dropdown li a:hover {
+          background: rgba(255,255,255,0.1);
+        }
+      }
     .schedule-container {
         max-width: 600px;
-        margin: 2rem auto;
-        padding: 2rem;
-        background-color: #f8f9fa;
+        margin: 30px auto;
+        padding: 25px;
+        background: #ffffff;
         border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
+
     .schedule-title {
-        color: #007bff;
-        margin-bottom: 1.5rem;
+        color: #2c3e50;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #1A76D1;
         text-align: center;
+        font-size: 1.5rem;
     }
-    .schedule-form label {
-        font-weight: bold;
-        color: #495057;
+
+    .schedule-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
     }
-    .schedule-form input,
-    .schedule-form select {
-        width: 100%;
-        padding: 0.5rem;
-        margin-bottom: 1rem;
-        border: 1px solid #ced4da;
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    /* Label styling */
+    .form-group label {
+        color: #34495e;
+        font-weight: 500;
+        font-size: 0.95rem;
+        order: -1; /* This ensures labels appear first */
+    }
+
+    /* Select/Input styling */
+    .form-group select,
+    .form-group input {
+        padding: 10px;
+        border: 1px solid #dce4ec;
         border-radius: 4px;
+        font-size: 0.9rem;
+        background-color: white;
+        transition: all 0.3s ease;
     }
+
+    .form-group select:focus,
+    .form-group input:focus {
+        border-color: #1A76D1;
+        box-shadow: 0 0 0 3px rgba(26, 118, 209, 0.1);
+        outline: none;
+    }
+
+    /* Error message styling */
+    .errorlist {
+        list-style: none;
+        padding: 0;
+        margin: 5px 0 0 0;
+        color: #e74c3c;
+        font-size: 0.85rem;
+    }
+
+    /* Submit button styling */
     .schedule-button {
-        display: block;
-        width: 100%;
-        padding: 0.75rem;
-        background-color: #007bff;
+        background-color: #1A76D1;
         color: white;
+        padding: 12px;
         border: none;
         border-radius: 4px;
         font-size: 1rem;
+        font-weight: 500;
         cursor: pointer;
-        transition: background-color 0.2s;
+        transition: all 0.3s ease;
+        margin-top: 10px;
     }
+
     .schedule-button:hover {
-        background-color: #0056b3;
+        background-color: #1557A0;
+    }
+
+    .schedule-button:active {
+        transform: translateY(1px);
+    }
+
+    /* Required field indicator */
+    .form-group label::after {
+        content: "*";
+        color: #e74c3c;
+        margin-left: 4px;
+    }
+
+    /* Specific styling for select dropdowns */
+    .form-group select {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 1em;
+        padding-right: 30px;
+    }
+
+    /* Date and time input specific styling */
+    .form-group input[type="date"],
+    .form-group input[type="time"] {
+        -webkit-appearance: none;
+        min-height: 38px;
+    }
+
+    @media (max-width: 768px) {
+        .schedule-container {
+            margin: 15px;
+            padding: 20px;
+        }
     }
 </style>
 {% endblock extra_css %}
@@ -123,9 +562,66 @@
             <div class="form-group">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {{ field }}
+                {% if field.errors %}
+                    <ul class="errorlist">
+                        {% for error in field.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
             </div>
         {% endfor %}
         <button type="submit" class="schedule-button">Schedule Visit</button>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add visual feedback for form interactions
+    const formGroups = document.querySelectorAll('.form-group');
+    
+    formGroups.forEach(group => {
+        const input = group.querySelector('input, select');
+        const label = group.querySelector('label');
+
+        if (input && label) {
+            // Add active class to form group when input is focused
+            input.addEventListener('focus', () => {
+                group.classList.add('active');
+                label.style.color = '#1A76D1';
+            });
+
+            input.addEventListener('blur', () => {
+                group.classList.remove('active');
+                label.style.color = '#34495e';
+            });
+
+            // Add filled class if input has value
+            if (input.value) {
+                group.classList.add('filled');
+            }
+
+            input.addEventListener('change', () => {
+                if (input.value) {
+                    group.classList.add('filled');
+                } else {
+                    group.classList.remove('filled');
+                }
+            });
+        }
+    });
+
+    // Add loading state to submit button
+    const form = document.querySelector('.schedule-form');
+    const submitButton = document.querySelector('.schedule-button');
+
+    form.addEventListener('submit', () => {
+        submitButton.textContent = 'Scheduling...';
+        submitButton.disabled = true;
+        submitButton.style.opacity = '0.7';
+    });
+});
+</script>
 {% endblock %}

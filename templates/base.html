@@ -21,6 +21,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css?family=Poppins:200i,300,300i,400,400i,500,500i,600,600i,700,700i,800,800i,900,900i&display=swap" rel="stylesheet" />
     
+    {% block extra_css %}
     <style>
       /* Navigation Styles */
       .nav.menu li.active > a {
@@ -383,6 +384,8 @@
         }
       }
     </style>
+
+    {% endblock extra_css %}
     
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" />
@@ -719,6 +722,37 @@
             });
             return false;
         }
+    </script>
+    <!-- Add this for notifications -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Update notification badge
+        function updateNotificationBadge(count) {
+          const badge = document.querySelector('.notification-badge');
+          if (badge) {
+            if (count > 0) {
+              badge.textContent = count;
+              badge.style.display = 'block';
+            } else {
+              badge.style.display = 'none';
+            }
+          }
+        }
+
+        // Check for new notifications periodically
+        function checkNotifications() {
+          fetch('/check-notifications/')
+            .then(response => response.json())
+            .then(data => {
+              updateNotificationBadge(data.count);
+            });
+        }
+
+        // Check every 30 seconds
+        if (document.querySelector('.notification-badge')) {
+          setInterval(checkNotifications, 30000);
+        }
+      });
     </script>
     {% endblock extra_js %}
   </body>

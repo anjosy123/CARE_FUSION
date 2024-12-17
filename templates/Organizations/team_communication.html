@@ -1,163 +1,235 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Team Communication - {{ team.name }}{% endblock title %}
-
-{% block topbar %}
-<div class="topbar">
-  <div class="container">
-    <div class="row">
-      <div class="col-12">
-        <div class="topbar-inner d-flex justify-content-between align-items-center">
-          <!-- logo -->
-          <div class="logo">
-            <a href="{% url 'palliatives_dashboard' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" style="object-fit: contain;"/></a>
-          </div>
-          
-          <!-- Navigation Links -->
-          <ul class="top-link">
-            <li><a href="{% url 'service_list' %}">Services</a></li>
-            <li class="{% if active_page == 'service_requests' %}active{% endif %}">
-                <a href="#">Service Requests <i class="icofont-rounded-down"></i></a>
-                <ul class="dropdown">
-                    <li><a href="{% url 'pending_requests' %}">Pending Requests</a></li>
-                    <li><a href="{% url 'approved_rejected_requests' %}">Approved/Rejected Requests</a></li>
-                </ul>
-            </li>
-            <li class="{% if active_page == 'staff_corner' %}active{% endif %}">
-                <a href="#">Staff Corner <i class="icofont-rounded-down"></i></a>
-                <ul class="dropdown">
-                    <li><a href="{% url 'staff_list' %}">Manage Staff</a></li>
-                    <li><a href="{% url 'patient_assignment_list' %}">Patient Assignments</a></li>
-                </ul>
-            </li>
-            <li class="{% if active_page == 'team_management' %}active{% endif %}">
-                <a href="#">Team Management <i class="icofont-rounded-down"></i></a>
-                <ul class="dropdown">
-                    <li><a href="{% url 'team_list' %}">Manage Teams</a></li>
-                    <li><a href="{% url 'team_visit_list' %}">Team Visits</a></li>
-                    <li><a href="{% url 'team_visit_calendar' %}">Team Visit Calendar</a></li>
-                </ul>
-            </li>
-          </ul>
-          
-          <!-- User Login section from base template -->
-          <ul class="top-link user-login">
-            {% if request.session.org_name %}
-            <li class="{% if active_page == 'user' %}active{% endif %}">
-              <a href="#" class="login-link">
-                <i class="fas fa-building"></i>
-                Welcome {{request.session.org_name}}
-                <i class="fas fa-chevron-down"></i>
-              </a>
-              <ul class="dropdown">
-                <li>
-                  <a href="{% url 'logout' %}">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                  </a>
-                </li>
-              </ul>
-            </li>
-            {% endif %}
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
+{% block logo %}
+<div class="logo">
+  <a href="{% url 'palliatives_dashboard' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" style="object-fit: contain;"/></a>
 </div>
-{% endblock topbar %}
+{% endblock logo %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid mt-4">
     <div class="row">
-        <div class="col-12">
-            <h6 class="text-center">Team Communication - {{ team.name }}</h6>
-        </div>
-    </div>
-
-    <div class="row mt-4">
-        <div class="col-12 col-md-8 offset-md-2">
-            <div id="chat-log" class="message-list p-3 border rounded" style="height: 400px; overflow-y: scroll; background-color: #f8f9fa;">
-                {% for message in team_messages %}
-                    <div class="message mb-2">
-                        <p>
-                            <strong>
-                                {% if message.sender %}
-                                    {{ message.sender.get_full_name }}
-                                {% elif message.organization %}
-                                    {{ message.organization.org_name }} (Organization)
-                                {% else %}
-                                    Unknown Sender
-                                {% endif %}
-                            </strong>
-                            <span class="text-muted"> - {{ message.created_at|date:"F d, Y H:i" }}</span>
-                        </p>
-                        <p>{{ message.content }}</p>
-                    </div>
-                {% empty %}
-                    <p>No messages yet.</p>
-                {% endfor %}
+        <!-- Team Info Sidebar -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Team Information</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{{ team.name }}</h6>
+                    <hr>
+                    <h6>Team Members:</h6>
+                    <ul class="list-unstyled">
+                        {% for member in team.members.all %}
+                            <li>{{ member.get_full_name }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="row mt-3">
-        <div class="col-12 col-md-8 offset-md-2">
-            <div class="input-group">
-                <input id="chat-message-input" type="text" class="form-control" placeholder="Type your message..." aria-label="Type your message">
-                <button id="chat-message-submit" class="btn btn-primary" type="button">Send</button>
+        <!-- Chat Area -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Team Communication</h5>
+                    <div class="btn-group">
+                        <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            Filter Messages
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" data-filter="all">All Messages</a></li>
+                            <li><a class="dropdown-item" href="#" data-filter="PATIENT_UPDATE">Patient Updates</a></li>
+                            <li><a class="dropdown-item" href="#" data-filter="VISIT_REPORT">Visit Reports</a></li>
+                            <li><a class="dropdown-item" href="#" data-filter="EMERGENCY">Emergency</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="chat-messages" class="chat-container mb-3">
+                        {% for message in messages %}
+                            <div class="message-bubble {% if message.is_urgent %}urgent{% endif %}" 
+                                 data-category="{{ message.category }}">
+                                <div class="message-header">
+                                    <strong>{{ message.get_sender_name }}</strong>
+                                    <span class="badge bg-secondary">{{ message.get_category_display }}</span>
+                                    {% if message.is_urgent %}
+                                        <span class="badge bg-danger">Urgent</span>
+                                    {% endif %}
+                                </div>
+                                <div class="message-content">
+                                    {{ message.content }}
+                                </div>
+                                <div class="message-footer">
+                                    <small class="text-muted">{{ message.created_at|date:"M d, Y H:i" }}</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <form id="message-form" class="mt-3">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <select class="form-select mb-2" id="message-category">
+                                <option value="GENERAL">General Communication</option>
+                                <option value="PATIENT_UPDATE">Patient Update</option>
+                                <option value="VISIT_REPORT">Visit Report</option>
+                                <option value="EMERGENCY">Emergency</option>
+                            </select>
+                            <textarea class="form-control mb-2" id="message-content" rows="3" 
+                                      placeholder="Type your message..."></textarea>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="is-urgent">
+                                <label class="form-check-label" for="is-urgent">
+                                    Mark as Urgent
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Send Message</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Patient List Sidebar -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Team Patients</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for patient in team_patients %}
+                            <a href="#" class="list-group-item list-group-item-action patient-select" 
+                               data-patient-id="{{ patient.id }}">
+                                {{ patient.get_full_name }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-{{ sender_id|json_script:"sender-id" }}
-{{ sender_type|json_script:"sender-type" }}
-{{ team.id|json_script:"team-id" }}
-
 <script>
-    const teamId = JSON.parse(document.getElementById('team-id').textContent);
-    const senderId = JSON.parse(document.getElementById('sender-id').textContent);
-    const senderType = JSON.parse(document.getElementById('sender-type').textContent);
-
     const chatSocket = new WebSocket(
-        'ws://' + window.location.host + '/ws/team/' + teamId + '/'
+        'ws://' + window.location.host + '/ws/team/{{ team.id }}/'
     );
+
+    const messageForm = document.getElementById('message-form');
+    const chatMessages = document.getElementById('chat-messages');
 
     chatSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
-        document.querySelector('#chat-log').innerHTML += (
-            '<div class="message mb-2">' +
-            '<p><strong>' + data.sender_id + ' (' + data.sender_type + ')</strong></p>' +
-            '<p>' + data.message + '</p>' +
-            '</div>'
-        );
+        addMessage(data);
     };
 
-    chatSocket.onclose = function(e) {
-        console.error('Chat socket closed unexpectedly');
-    };
-
-    document.querySelector('#chat-message-input').focus();
-    document.querySelector('#chat-message-input').onkeyup = function(e) {
-        if (e.keyCode === 13) {
-            document.querySelector('#chat-message-submit').click();
+    messageForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const messageContent = document.getElementById('message-content').value;
+        const messageCategory = document.getElementById('message-category').value;
+        const isUrgent = document.getElementById('is-urgent').checked;
+        const selectedPatient = document.querySelector('.patient-select.active');
+        
+        if (messageContent.trim()) {
+            chatSocket.send(JSON.stringify({
+                'message': messageContent,
+                'category': messageCategory,
+                'is_urgent': isUrgent,
+                'patient_id': selectedPatient ? selectedPatient.dataset.patientId : null,
+                'sender_type': '{{ sender_type }}',
+                'sender_id': '{{ sender_id }}'
+            }));
+            
+            messageForm.reset();
         }
-    };
+    });
 
-    document.querySelector('#chat-message-submit').onclick = function(e) {
-        const messageInputDom = document.querySelector('#chat-message-input');
-        const message = messageInputDom.value;
-        chatSocket.send(JSON.stringify({
-            'message': message,
-            'sender_id': senderId,
-            'sender_type': senderType
-        }));
-        messageInputDom.value = '';
-    };
+    function addMessage(data) {
+        const messageHTML = `
+            <div class="message-bubble ${data.is_urgent ? 'urgent' : ''}" data-category="${data.category}">
+                <div class="message-header">
+                    <strong>${data.sender_name}</strong>
+                    <span class="badge bg-secondary">${data.category}</span>
+                    ${data.is_urgent ? '<span class="badge bg-danger">Urgent</span>' : ''}
+                </div>
+                <div class="message-content">
+                    ${data.message}
+                </div>
+                <div class="message-footer">
+                    <small class="text-muted">${new Date(data.timestamp).toLocaleString()}</small>
+                </div>
+            </div>
+        `;
+        
+        chatMessages.insertAdjacentHTML('beforeend', messageHTML);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Filter messages
+    document.querySelectorAll('[data-filter]').forEach(filter => {
+        filter.addEventListener('click', function(e) {
+            e.preventDefault();
+            const category = this.dataset.filter;
+            
+            document.querySelectorAll('.message-bubble').forEach(message => {
+                if (category === 'all' || message.dataset.category === category) {
+                    message.style.display = 'block';
+                } else {
+                    message.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    // Patient selection
+    document.querySelectorAll('.patient-select').forEach(patient => {
+        patient.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.patient-select').forEach(p => p.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
 </script>
+
+<style>
+    .chat-container {
+        height: 400px;
+        overflow-y: auto;
+        padding: 1rem;
+    }
+
+    .message-bubble {
+        margin-bottom: 1rem;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+
+    .message-bubble.urgent {
+        border-color: #dc3545;
+        background-color: #fff5f5;
+    }
+
+    .message-header {
+        margin-bottom: 0.5rem;
+    }
+
+    .message-content {
+        margin-bottom: 0.5rem;
+    }
+
+    .message-footer {
+        font-size: 0.8rem;
+    }
+
+    .patient-select.active {
+        background-color: #007bff;
+        color: white;
+    }
+</style>
 {% endblock %}
-{% block custom_footer %}
-{% endblock custom_footer %}
-{% block copyright %}
-{% endblock copyright %}

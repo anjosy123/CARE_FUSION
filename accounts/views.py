@@ -2162,48 +2162,6 @@ def team_list(request):
     return render(request, 'Organizations/team_list.html', context)
 
 
-@organization_login_required
-def create_team(request):
-    org_id = request.session.get('org_id')
-    organization = get_object_or_404(Organizations, id=org_id)
-
-    if request.method == 'POST':
-        form = TeamForm(request.POST, organization=organization)
-        if form.is_valid():
-            team = form.save(commit=False)
-            team.organization = organization
-            team.save()
-            form.save_m2m()
-
-            # Create TeamDashboard and send credentials
-            for member in team.members.all():
-                password = generate_password()
-                TeamDashboard.objects.create(
-                    team=team,
-                    staff=member,
-                    username=member.email,
-                    password=make_password(password)
-                )
-                # Send email with credentials
-                send_mail(
-                    'Team Dashboard Credentials',
-                    f'Your team dashboard username: {member.email}\nPassword: {password}',
-                    settings.DEFAULT_FROM_EMAIL,
-                    [member.email],
-                    fail_silently=False,
-                )
-
-            messages.success(request, 'Team created successfully and credentials sent to members.')
-            return redirect('team_list')
-    else:
-        form = TeamForm(organization=organization)
-
-    context = {
-        'form': form,
-        'organization': organization,
-    }
-    return render(request, 'Organizations/create_team.html', context)
-
 def generate_password():
     return ''.join(random.choices(string.ascii_letters + string.digits, k=12))
 
@@ -2383,52 +2341,43 @@ def get_available_slots(request, team_id, date):
     return JsonResponse({'available_slots': available_slots})
 
 def team_communication(request, team_id):
-    if not request.session.get('org_id') and not request.session.get('staff_id'):
+    role = request.session.get('role')
+    org_id = request.session.get('org_id')
+
+    if not role or not org_id:
         messages.error(request, "Please log in to access this page.")
         return redirect('login')
 
-    team = get_object_or_404(Team, id=team_id)
-    
-    # Determine sender type and validate access
-    if request.session.get('org_id'):
-        organization = get_object_or_404(Organizations, id=request.session['org_id'])
-        if team.organization != organization:
-            messages.error(request, "You don't have access to this team.")
-            return redirect('team_list')
-        sender_type = 'organization'
-        sender_id = organization.id
-    else:
-        staff = get_object_or_404(Staff, id=request.session['staff_id'])
+    organization = get_object_or_404(Organizations, id=org_id)
+    team = get_object_or_404(Team, id=team_id, organization=organization)
+
+    if role == 'staff':
+        staff_id = request.session.get('staff_id')
+        if not staff_id:
+            messages.error(request, "Staff information not found. Please log in again.")
+            return redirect('login')
+
+        staff = get_object_or_404(Staff, id=staff_id)
         if staff not in team.members.all():
             messages.error(request, "You are not a member of this team.")
             return redirect('team_list')
+
+        sender_id = staff_id
         sender_type = 'staff'
-        sender_id = staff.id
+    elif role == 'organization':
+        sender_id = org_id
+        sender_type = 'organization'
+    else:
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('login')
 
-    # Handle message posting
-    if request.method == 'POST':
-        content = request.POST.get('message')
-        if content:
-            message = TeamMessage.objects.create(
-                team=team,
-                content=content,
-                sender_type=sender_type
-            )
-            if sender_type == 'staff':
-                message.sender_id = sender_id
-            else:
-                message.organization_id = sender_id
-            message.save()
-            return JsonResponse({'status': 'success'})
-
-    # Get messages with proper ordering and sender information
-    messages = TeamMessage.objects.filter(team=team).select_related('sender', 'organization').order_by('created_at')
+    team_messages = TeamMessage.objects.filter(team=team)
 
     context = {
         'team': team,
-        'team_messages': messages,
-        'sender_type': sender_type,
+        'team_messages': team_messages,
         'sender_id': sender_id,
+        'sender_type': sender_type,
     }
     return render(request, 'Organizations/team_communication.html', context)
 
@@ -2982,3 +2931,191 @@ def deactivate_account(request):
     logout(request)
     messages.success(request, 'Your account has been deactivated.')
     return redirect('login')
+
+
+@organization_login_required
+def create_team(request):
+    org_id = request.session.get('org_id')
+    organization = get_object_or_404(Organizations, id=org_id)
+
+    if request.method == 'POST':
+        form = TeamForm(request.POST, organization=organization)
+        if form.is_valid():
+            # Check if any selected member is already in a team
+            selected_members = form.cleaned_data['members']
+            existing_team_members = []
+            
+            for member in selected_members:
+                existing_team = TeamDashboard.objects.filter(staff=member).first()
+                if existing_team:
+                    existing_team_members.append({
+                        'name': member.get_full_name(),
+                        'team': existing_team.team.name
+                    })
+
+            # If any member is already in a team, show error and redirect to team list
+            if existing_team_members:
+                for member in existing_team_members:
+                    messages.warning(
+                        request,
+                        f"{member['name']} is already a member of team '{member['team']}'.",
+                        extra_tags='dismissible'
+                    )
+                return redirect('team_list')
+
+            # If we get here, no members are in existing teams
+            team = form.save(commit=False)
+            team.organization = organization
+            team.save()
+            form.save_m2m()
+
+            # Create team dashboards for all members
+            success_count = 0
+            for member in team.members.all():
+                try:
+                    password = generate_password()
+                    TeamDashboard.objects.create(
+                        team=team,
+                        staff=member,
+                        username=member.email,
+                        password=make_password(password)
+                    )
+                    # Send email with credentials
+                    send_mail(
+                        'Team Dashboard Credentials',
+                        f'Your team dashboard username: {member.email}\nPassword: {password}',
+                        settings.DEFAULT_FROM_EMAIL,
+                        [member.email],
+                        fail_silently=False,
+                    )
+                    success_count += 1
+                except Exception as e:
+                    messages.error(
+                        request,
+                        f"Failed to create dashboard for {member.get_full_name()}: {str(e)}",
+                        extra_tags='dismissible'
+                    )
+
+            if success_count > 0:
+                messages.success(request, f'Team created successfully with {success_count} member(s).')
+            return redirect('team_list')
+    else:
+        form = TeamForm(organization=organization)
+
+    context = {
+        'form': form,
+        'organization': organization,
+    }
+    return render(request, 'Organizations/create_team.html', context)
+
+def generate_password():
+    """Generate a random password for team dashboard"""
+    length = 12
+    characters = string.ascii_letters + string.digits + string.punctuation
+    while True:
+        password = ''.join(random.choice(characters) for i in range(length))
+        # Check if password has at least one number and one special character
+        if (any(c.isdigit() for c in password) and 
+            any(c in string.punctuation for c in password) and
+            any(c.isupper() for c in password) and
+            any(c.islower() for c in password)):
+            return password
+
+@organization_login_required
+def edit_team(request, team_id):
+    org_id = request.session.get('org_id')
+    organization = get_object_or_404(Organizations, id=org_id)
+    team = get_object_or_404(Team, id=team_id, organization=organization)
+    
+    if request.method == 'POST':
+        form = TeamForm(request.POST, instance=team, organization=organization)
+        if form.is_valid():
+            # Get the original members before updating
+            original_members = set(team.members.all())
+            
+            # Save the team with new data
+            team = form.save()
+            
+            # Get the new members after updating
+            new_members = set(team.members.all())
+            
+            # Handle removed members
+            removed_members = original_members - new_members
+            for member in removed_members:
+                TeamDashboard.objects.filter(team=team, staff=member).delete()
+            
+            # Handle new members
+            added_members = new_members - original_members
+            for member in added_members:
+                try:
+                    # Check if member already has a TeamDashboard
+                    existing_dashboard = TeamDashboard.objects.filter(username=member.email).first()
+                    if existing_dashboard:
+                        messages.warning(
+                            request,
+                            f"{member.get_full_name()} is already a member of team '{existing_dashboard.team.name}'.",
+                            extra_tags='dismissible'
+                        )
+                        team.members.remove(member)
+                        continue
+
+                    password = generate_password()
+                    TeamDashboard.objects.create(
+                        team=team,
+                        staff=member,
+                        username=member.email,
+                        password=make_password(password)
+                    )
+                    # Send email with credentials
+                    send_mail(
+                        'Team Dashboard Credentials',
+                        f'Your team dashboard username: {member.email}\nPassword: {password}',
+                        settings.DEFAULT_FROM_EMAIL,
+                        [member.email],
+                        fail_silently=False,
+                    )
+                except Exception as e:
+                    messages.error(
+                        request,
+                        f"Failed to add {member.get_full_name()}: {str(e)}",
+                        extra_tags='dismissible'
+                    )
+                    team.members.remove(member)
+            
+            messages.success(request, 'Team updated successfully.')
+            return redirect('team_list')
+    else:
+        form = TeamForm(instance=team, organization=organization)
+    
+    return render(request, 'Organizations/edit_team.html', {
+        'form': form,
+        'team': team,
+        'organization': organization
+    })
+
+@organization_login_required
+def toggle_team_status(request, team_id):
+    if request.method == 'POST':
+        org_id = request.session.get('org_id')
+        organization = get_object_or_404(Organizations, id=org_id)
+        team = get_object_or_404(Team, id=team_id, organization=organization)
+        
+        # Add is_active field to Team model if not exists
+        team.is_active = not team.is_active
+        team.save()
+        
+        status = "enabled" if team.is_active else "disabled"
+        messages.success(request, f'Team {team.name} has been {status}.')
+        
+        # Return JSON response for AJAX requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'status': 'success',
+                'is_active': team.is_active,
+                'message': f'Team {team.name} has been {status}.'
+            })
+            
+        return redirect('team_list')
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+
