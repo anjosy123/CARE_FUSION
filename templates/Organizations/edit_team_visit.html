@@ -1,0 +1,356 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Team Visit</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f5f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .topbar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 15px 0;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .logo img {
+            height: 40px;
+            object-fit: contain;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            gap: 2rem;
+        }
+
+        .nav-menu > li {
+            position: relative;
+        }
+
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-menu .dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 200px;
+            display: none;
+            z-index: 1000;
+            margin-top: 0.5rem;
+        }
+
+        .nav-menu li:hover .dropdown {
+            display: block;
+        }
+
+        .nav-menu .dropdown li {
+            list-style: none;
+        }
+
+        .nav-menu .dropdown a {
+            color: #333;
+            padding: 0.75rem 1rem;
+            display: block;
+            transition: background-color 0.3s;
+        }
+
+        .nav-menu .dropdown a:hover {
+            background-color: #f8f9fa;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .main-content {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #344767;
+        }
+
+        .form-select, .form-control {
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            padding: 0.625rem;
+        }
+
+        .form-select:focus, .form-control:focus {
+            border-color: #1e3c72;
+            box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.25);
+        }
+
+        .btn-primary {
+            background: #1e3c72;
+            border: none;
+            padding: 0.625rem 1.5rem;
+            border-radius: 8px;
+        }
+
+        .btn-primary:hover {
+            background: #2a5298;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            border: none;
+            padding: 0.625rem 1.5rem;
+            border-radius: 8px;
+        }
+
+        .alert {
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="{% url 'palliatives_dashboard' %}">
+                    <img src="{% static 'img/logo.png' %}" alt="Logo">
+                </a>
+            </div>
+            
+            <ul class="nav-menu">
+                <li><a href="{% url 'service_list' %}">Services</a></li>
+                <li>
+                    <a href="#">Service Requests <i class="fas fa-chevron-down"></i></a>
+                    <ul class="dropdown">
+                        <li><a href="{% url 'pending_requests' %}">Pending Requests</a></li>
+                        <li><a href="{% url 'approved_rejected_requests' %}">Approved/Rejected Requests</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#">Staff Corner <i class="fas fa-chevron-down"></i></a>
+                    <ul class="dropdown">
+                        <li><a href="{% url 'staff_list' %}">Manage Staff</a></li>
+                        <li><a href="{% url 'patient_assignment_list' %}">Patient Assignments</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#">Team Management <i class="fas fa-chevron-down"></i></a>
+                    <ul class="dropdown">
+                        <li><a href="{% url 'team_list' %}">Manage Teams</a></li>
+                        <li><a href="{% url 'team_visit_list' %}">Team Visits</a></li>
+                        <li><a href="{% url 'team_visit_calendar' %}">Team Visit Calendar</a></li>
+                    </ul>
+                </li>
+            </ul>
+            
+            {% if request.session.org_name %}
+            <div class="user-info">
+                <span>Welcome {{request.session.org_name}}</span>
+                <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="main-content">
+        <h2 class="mb-4">Edit Team Visit</h2>
+
+        {% if messages %}
+        <div class="messages mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div id="customErrorMessages" class="mb-4" style="display: none;">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <span id="errorMessageText"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+
+        <form method="post" action="{% url 'edit_team_visit' visit_id %}">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label class="form-label">Team</label>
+                <input type="text" class="form-control" value="{{ team_visit.team.name }}" readonly>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Patient</label>
+                <input type="text" class="form-control" value="{{ team_visit.patient.get_full_name }}" readonly>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Visit Date</label>
+                <input type="date" 
+                       name="scheduled_date" 
+                       class="form-control" 
+                       required
+                       min="{{ today|date:'Y-m-d' }}"
+                       value="{{ team_visit.scheduled_date|date:'Y-m-d' }}">
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Start Time</label>
+                        <input type="time" 
+                               name="start_time" 
+                               class="form-control" 
+                               required
+                               value="{{ team_visit.start_time|time:'H:i' }}"
+                               onchange="updateEndTimeMin(this.value)">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">End Time</label>
+                        <input type="time" 
+                               name="end_time" 
+                               class="form-control" 
+                               required
+                               id="end_time"
+                               value="{{ team_visit.end_time|time:'H:i' }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Visit Purpose</label>
+                <textarea name="purpose" class="form-control" rows="3" required>{{ team_visit.purpose }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select" required>
+                    <option value="SCHEDULED" {% if team_visit.status == 'SCHEDULED' %}selected{% endif %}>Scheduled</option>
+                    <option value="COMPLETED" {% if team_visit.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                    <option value="CANCELLED" {% if team_visit.status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <a href="{% url 'team_visit_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateInput = document.querySelector('input[name="scheduled_date"]');
+            const startTimeInput = document.querySelector('input[name="start_time"]');
+            const endTimeInput = document.querySelector('input[name="end_time"]');
+            const errorDiv = document.getElementById('customErrorMessages');
+            const errorText = document.getElementById('errorMessageText');
+
+            function showError(message) {
+                errorText.textContent = message;
+                errorDiv.style.display = 'block';
+                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                    const alertElement = errorDiv.querySelector('.alert');
+                    if (alertElement) {
+                        const closeButton = alertElement.querySelector('.btn-close');
+                        if (closeButton) closeButton.click();
+                    }
+                }, 5000);
+            }
+
+            function validateTimeRange(startTime, endTime) {
+                const start = new Date(`2000-01-01T${startTime}`);
+                const end = new Date(`2000-01-01T${endTime}`);
+                const diff = (end - start) / (1000 * 60);
+                
+                if (diff <= 0) {
+                    showError('End time must be after start time.');
+                    return false;
+                }
+                if (diff < 30) {
+                    showError('Visit duration must be at least 30 minutes.');
+                    return false;
+                }
+                if (diff > 480) {
+                    showError('Visit duration cannot exceed 8 hours.');
+                    return false;
+                }
+                return true;
+            }
+
+            startTimeInput.addEventListener('change', function() {
+                if (endTimeInput.value && !validateTimeRange(this.value, endTimeInput.value)) {
+                    const [hours, minutes] = this.value.split(':');
+                    const endDate = new Date();
+                    endDate.setHours(parseInt(hours) + 1, parseInt(minutes), 0);
+                    endTimeInput.value = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
+                }
+            });
+
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function(e) {
+                if (!validateTimeRange(startTimeInput.value, endTimeInput.value)) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

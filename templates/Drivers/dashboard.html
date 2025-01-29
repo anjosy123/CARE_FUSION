@@ -1,0 +1,197 @@
+{% extends "Drivers/base_driver.html" %}
+
+{% block title %}Driver Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Status Toggle -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow mb-4">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="availabilityToggle" 
+                               {% if driver.is_available %}checked{% endif %}>
+                        <label class="form-check-label" for="availabilityToggle">
+                            Available for Rides
+                        </label>
+                    </div>
+                    <div class="driver-status {% if driver.is_available %}text-success{% else %}text-danger{% endif %}">
+                        Status: {% if driver.is_available %}Active{% else %}Offline{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Booking -->
+    {% if current_booking %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Current Ride</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Patient: {{ current_booking.patient.get_full_name }}</h6>
+                            <p><i class="fas fa-map-marker-alt text-danger"></i> Pickup: {{ current_booking.pickup_location }}</p>
+                            <p><i class="fas fa-map-marker-alt text-success"></i> Drop: {{ current_booking.drop_location }}</p>
+                            {% if current_booking.emergency_notes %}
+                            <div class="alert alert-warning">
+                                <strong><i class="fas fa-exclamation-triangle"></i> Emergency Notes:</strong><br>
+                                {{ current_booking.emergency_notes }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <div id="rideMap" style="height: 200px;"></div>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-center">
+                        {% if current_booking.status == 'DRIVER_ASSIGNED' %}
+                        <button class="btn btn-success" onclick="startRide('{{ current_booking.id }}')">
+                            <i class="fas fa-play"></i> Start Ride
+                        </button>
+                        {% elif current_booking.status == 'STARTED' %}
+                        <button class="btn btn-danger" onclick="completeRide('{{ current_booking.id }}')">
+                            <i class="fas fa-flag-checkered"></i> Complete Ride
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Today's Summary -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-money-bill-wave text-success fa-2x mb-2"></i>
+                    <h6 class="card-title">Today's Earnings</h6>
+                    <h3 class="text-success">₹{{ todays_earnings }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-route text-primary fa-2x mb-2"></i>
+                    <h6 class="card-title">Completed Rides</h6>
+                    <h3>{{ completed_bookings.count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-star text-warning fa-2x mb-2"></i>
+                    <h6 class="card-title">Average Rating</h6>
+                    <h3>{{ driver.rating }}/5.0</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Rides -->
+    <div class="card shadow">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-history"></i> Recent Rides</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Patient</th>
+                            <th>Route</th>
+                            <th>Amount</th>
+                            <th>Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in completed_bookings %}
+                        <tr>
+                            <td>{{ booking.end_time|time }}</td>
+                            <td>{{ booking.patient.get_full_name }}</td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ booking.pickup_location }} → {{ booking.drop_location }}
+                                </small>
+                            </td>
+                            <td>₹{{ booking.final_fare }}</td>
+                            <td>
+                                {% if booking.patient_rating %}
+                                    <span class="text-warning">★</span> {{ booking.patient_rating }}/5
+                                {% else %}
+                                    <span class="text-muted">Not rated</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No rides completed today</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% comment %} <a href="{% url 'password_reset' %}">Forgot Password?</a> {% endcomment %}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+    // Initialize map for current ride
+    {% if current_booking %}
+    const rideMap = L.map('rideMap');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(rideMap);
+    
+    const pickup = [{{ current_booking.pickup_latitude }}, {{ current_booking.pickup_longitude }}];
+    const drop = [{{ current_booking.drop_latitude }}, {{ current_booking.drop_longitude }}];
+    
+    L.marker(pickup).addTo(rideMap).bindPopup('Pickup');
+    L.marker(drop).addTo(rideMap).bindPopup('Drop');
+    
+    const bounds = L.latLngBounds([pickup, drop]);
+    rideMap.fitBounds(bounds);
+    {% endif %}
+
+    // Handle availability toggle
+    document.getElementById('availabilityToggle').addEventListener('change', async (e) => {
+        try {
+            const response = await fetch('{% url "toggle_driver_availability" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    is_available: e.target.checked
+                })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Status updated successfully', 'success');
+            } else {
+                e.target.checked = !e.target.checked;
+                showMessage('Failed to update status', 'error');
+            }
+        } catch (error) {
+            e.target.checked = !e.target.checked;
+            showMessage('An error occurred', 'error');
+        }
+    });
+</script>
+{% endblock %}

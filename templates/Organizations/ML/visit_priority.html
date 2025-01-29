@@ -1,0 +1,293 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visit Priority - CareFusion</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #1A76D1;
+            --secondary-color: #0056b3;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+
+        .priority-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .priority-chart {
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        .priority-card {
+            border-radius: 10px;
+            border: none;
+            transition: transform 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .priority-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .priority-high {
+            background: linear-gradient(45deg, #ff6b6b, #ff8787);
+            color: white;
+        }
+
+        .priority-medium {
+            background: linear-gradient(45deg, #ffd93d, #ffe066);
+        }
+
+        .priority-low {
+            background: linear-gradient(45deg, #69db7c, #8ce99a);
+            color: white;
+        }
+
+        .factor-badge {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 5px 10px;
+            margin: 2px;
+            font-size: 0.8rem;
+        }
+
+        .priority-filters {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .priority-score {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 8px 15px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .visit-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .priority-indicators {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .indicator {
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="{% static 'img/logo.png' %}" alt="CareFusion" height="40">
+            </a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="priority-container">
+            <h2 class="mb-4">Visit Priority Management</h2>
+
+            <!-- Priority Distribution Chart -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Priority Distribution</h5>
+                            <div class="priority-chart">
+                                <canvas id="priorityChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Risk Factor Analysis</h5>
+                            <div class="priority-chart">
+                                <canvas id="riskChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Priority Filters -->
+            <div class="priority-filters">
+                <div class="row">
+                    <div class="col-md-4">
+                        <select class="form-select" id="priorityFilter">
+                            <option value="all">All Priorities</option>
+                            <option value="high">High Priority</option>
+                            <option value="medium">Medium Priority</option>
+                            <option value="low">Low Priority</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" id="timeFilter">
+                            <option value="today">Today</option>
+                            <option value="tomorrow">Tomorrow</option>
+                            <option value="week">This Week</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-primary w-100" id="updatePriorities">
+                            <i class="fas fa-sync-alt me-2"></i>Update Priorities
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Priority Visit List -->
+            <div class="visit-list">
+                <!-- High Priority Visit -->
+                <div class="card priority-card priority-high mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">John Doe</h5>
+                            <div class="priority-score">9.5</div>
+                        </div>
+                        <p class="card-text mt-2">
+                            <i class="fas fa-clock me-2"></i>Today, 2:00 PM
+                            <br>
+                            <i class="fas fa-map-marker-alt me-2"></i>123 Main St
+                        </p>
+                        <div class="factor-badges mt-2">
+                            <span class="factor-badge">Critical Vitals</span>
+                            <span class="factor-badge">Pain Level: High</span>
+                            <span class="factor-badge">Medication Change</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medium Priority Visit -->
+                <div class="card priority-card priority-medium mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Jane Smith</h5>
+                            <div class="priority-score">6.8</div>
+                        </div>
+                        <p class="card-text mt-2">
+                            <i class="fas fa-clock me-2"></i>Today, 3:30 PM
+                            <br>
+                            <i class="fas fa-map-marker-alt me-2"></i>456 Oak Ave
+                        </p>
+                        <div class="factor-badges mt-2">
+                            <span class="factor-badge">Routine Check</span>
+                            <span class="factor-badge">Stable Condition</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Low Priority Visit -->
+                <div class="card priority-card priority-low mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Mike Johnson</h5>
+                            <div class="priority-score">4.2</div>
+                        </div>
+                        <p class="card-text mt-2">
+                            <i class="fas fa-clock me-2"></i>Today, 4:45 PM
+                            <br>
+                            <i class="fas fa-map-marker-alt me-2"></i>789 Pine St
+                        </p>
+                        <div class="factor-badges mt-2">
+                            <span class="factor-badge">Follow-up</span>
+                            <span class="factor-badge">Improving</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Priority Management Script -->
+    <script>
+        // Priority Distribution Chart
+        const priorityCtx = document.getElementById('priorityChart').getContext('2d');
+        new Chart(priorityCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['High Priority', 'Medium Priority', 'Low Priority'],
+                datasets: [{
+                    data: [30, 45, 25],
+                    backgroundColor: ['#ff6b6b', '#ffd93d', '#69db7c']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        // Risk Factor Chart
+        const riskCtx = document.getElementById('riskChart').getContext('2d');
+        new Chart(riskCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Vital Signs', 'Pain Level', 'Medication', 'Activity', 'Diet'],
+                datasets: [{
+                    label: 'Risk Factor Distribution',
+                    data: [8.5, 7.2, 6.8, 5.5, 4.9],
+                    backgroundColor: '#1A76D1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 10
+                    }
+                }
+            }
+        });
+
+        // Filter functionality
+        document.getElementById('priorityFilter').addEventListener('change', function() {
+            // Add AJAX call to filter visits by priority
+            console.log('Filtering by priority:', this.value);
+        });
+
+        document.getElementById('timeFilter').addEventListener('change', function() {
+            // Add AJAX call to filter visits by time
+            console.log('Filtering by time:', this.value);
+        });
+
+        document.getElementById('updatePriorities').addEventListener('click', function() {
+            // Add AJAX call to update priorities using ML model
+            console.log('Updating priorities...');
+        });
+    </script>
+</body>
+</html>

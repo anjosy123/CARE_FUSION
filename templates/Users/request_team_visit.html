@@ -1,84 +1,59 @@
-{% extends 'Users/patient_base.html' %}
-{% load static %}
-
-{% block title %}Request Team Visit - CareFusion{% endblock %}
-
-{% block nav_bar %}
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'patients_dashboard' %}">Home</a>
-</li>
-<li class="nav-item {% if active_page == 'health' %}active{% endif %}">
-  <a href="#">My Health <i class="icofont-rounded-down"></i></a>
-  <ul class="dropdown">
-    <li><a href="{% url 'patients_dashboard' %}?view=prescriptions">Prescriptions</a></li>
-    <li><a href="{% url 'patients_dashboard' %}?view=appointments">Appointments</a></li>
-    <li><a href="{% url 'patients_dashboard' %}?view=medical_history">Medical History</a></li>
-    <li><a href="{% url 'patient_visit_requests' %}">Team Visit Requests</a></li>
-    <li><a href="{% url 'available_appointments' %}">Book Appointment</a></li>
-  </ul>
-</li>
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'service_requests' %}">Requests</a>
-</li>
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'assigned_teams' %}">My Care Teams</a>
-</li>
-<!-- Notifications dropdown -->
-<li class="nav-item ms-auto">
-  <div class="dropdown">
-    <a class="nav-link dropdown-toggle" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-      <i class="fas fa-bell"></i>
-      <span class="badge bg-danger">{{ notifications|length }}</span>
-    </a>
-    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
-      {% for notification in notifications %}
-        <li><a class="dropdown-item" href="#">{{ notification.message }}</a></li>
-      {% empty %}
-        <li><a class="dropdown-item" href="#">No new notifications</a></li>
-      {% endfor %}
-      <li><hr class="dropdown-divider"></li>
-      <li><a class="dropdown-item" href="{% url 'notification_center' %}">View all notifications</a></li>
-    </ul>
-  </div>
-</li>
-<li class="nav-item">
-  {% if not request.session.username and not request.session.org_name %}
-  <li class="{% if active_page == 'user' %}active{% endif %}">
-    <a href="#">New Organization ? <i class="icofont-rounded-down"></i></a>
-    <ul class="dropdown">
-      <li><a href="{% url 'login' %}">Sign In</a></li>
-      <li><a href="{% url 'org_signup' %}">Sign Up</a></li>
-    </ul>
-  </li>
-  {% elif request.session.username %}
-  {% comment %} <li class="{% if active_page == 'user' %}active{% endif %}">
-    <a href="#">Welcome {{request.session.username}} <i class="icofont-rounded-down"></i></a>
-    <ul class="dropdown">
-      <li><a href="{% url 'logout' %}">Logout</a></li>
-    </ul>
-  </li> {% endcomment %}
-  {% elif request.session.org_name %}
-  {% comment %} <li class="{% if active_page == 'user' %}active{% endif %}">
-    <a href="#">Welcome {{request.session.org_name}} <i class="icofont-rounded-down"></i></a>
-    <ul class="dropdown">
-      <li><a href="{% url 'logout' %}">Logout</a></li>
-    </ul>
-  </li> {% endcomment %}
-  {% endif %}
-</li>
-{% endblock %}
+{% extends 'Users/patients_dashboard.html' %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Request Team Visit for {{ team.name }}</h2>
-    <form method="post">
-        {% csrf_token %}
-        <div class="form-group">
-            <label for="reason">Reason for Visit:</label>
-            <textarea class="form-control" id="reason" name="reason" rows="3" required></textarea>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Request Team Visit</h3>
         </div>
-        <button type="submit" class="btn btn-primary">Submit Request</button>
-        <a href="{% url 'team_detail' team.id %}" class="btn btn-secondary">Cancel</a>
-    </form>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="team" class="form-label">Select Team</label>
+                    <select class="form-select" id="team" name="team" required>
+                        <option value="">Choose a team...</option>
+                        {% for team in assigned_teams %}
+                            <option value="{{ team.id }}">{{ team.name }} - {{ team.organization.org_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="preferred_date" class="form-label">Preferred Date</label>
+                    <input type="date" class="form-control" id="preferred_date" name="preferred_date" required 
+                           min="{{ min_date|date:'Y-m-d' }}" max="{{ max_date|date:'Y-m-d' }}">
+                </div>
+                <div class="mb-3">
+                    <label for="preferred_time" class="form-label">Preferred Time</label>
+                    <select class="form-select" id="preferred_time" name="preferred_time" required>
+                        <option value="">Choose a time slot...</option>
+                        <option value="morning">Morning (9 AM - 12 PM)</option>
+                        <option value="afternoon">Afternoon (2 PM - 5 PM)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="reason" class="form-label">Reason for Visit</label>
+                    <textarea class="form-control" id="reason" name="reason" rows="3" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Additional Notes (Optional)</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                </div>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{% url 'upcoming_team_visits' %}" class="btn btn-secondary me-md-2">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}

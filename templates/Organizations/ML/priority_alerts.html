@@ -1,0 +1,190 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Priority Alerts - CareFusion</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1A76D1;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --success-color: #28a745;
+        }
+
+        .alerts-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .alert-card {
+            border-radius: 10px;
+            margin-bottom: 15px;
+            transition: transform 0.3s ease;
+        }
+
+        .alert-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .alert-high {
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .alert-medium {
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .alert-low {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .alert-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+
+        .alert-high .alert-icon {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--danger-color);
+        }
+
+        .alert-medium .alert-icon {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: var(--warning-color);
+        }
+
+        .alert-low .alert-icon {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--success-color);
+        }
+
+        .alert-actions {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="{% static 'img/logo.png' %}" alt="CareFusion" height="40">
+            </a>
+            <!-- Add navigation items -->
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="alerts-container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Priority Alerts</h2>
+                <div class="alert-filters">
+                    <select class="form-select">
+                        <option value="all">All Priorities</option>
+                        <option value="high">High Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="low">Low Priority</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Alert Cards -->
+            <div class="alert-list">
+                <!-- High Priority Alert -->
+                <div class="card alert-card alert-high">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="alert-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="card-title">Critical Risk Level Detected</h5>
+                            <p class="card-text">Patient ID: 12345 - Significant increase in vital signs</p>
+                            <small class="text-muted">2 minutes ago</small>
+                        </div>
+                        <div class="alert-actions">
+                            <button class="btn btn-outline-primary btn-sm">View Details</button>
+                            <button class="btn btn-primary btn-sm">Take Action</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medium Priority Alert -->
+                <div class="card alert-card alert-medium">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="alert-icon">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="card-title">Medication Schedule Alert</h5>
+                            <p class="card-text">Patient ID: 12346 - Upcoming medication change required</p>
+                            <small class="text-muted">15 minutes ago</small>
+                        </div>
+                        <div class="alert-actions">
+                            <button class="btn btn-outline-primary btn-sm">View Details</button>
+                            <button class="btn btn-primary btn-sm">Take Action</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Low Priority Alert -->
+                <div class="card alert-card alert-low">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="alert-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="card-title">Follow-up Reminder</h5>
+                            <p class="card-text">Patient ID: 12347 - Routine check-up scheduled</p>
+                            <small class="text-muted">1 hour ago</small>
+                        </div>
+                        <div class="alert-actions">
+                            <button class="btn btn-outline-primary btn-sm">View Details</button>
+                            <button class="btn btn-primary btn-sm">Take Action</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Alert Management Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Filter alerts based on priority
+            const filterSelect = document.querySelector('.alert-filters select');
+            const alertList = document.querySelector('.alert-list');
+            
+            filterSelect.addEventListener('change', function() {
+                const priority = this.value;
+                const alerts = alertList.querySelectorAll('.alert-card');
+                
+                alerts.forEach(alert => {
+                    if (priority === 'all') {
+                        alert.style.display = 'block';
+                    } else {
+                        alert.style.display = alert.classList.contains(`alert-${priority}`) ? 'block' : 'none';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

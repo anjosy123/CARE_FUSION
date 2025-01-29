@@ -1,0 +1,56 @@
+{% extends 'Users/patients_dashboard.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Upcoming Team Visits</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Team Name</th>
+                            <th>Organization</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Purpose</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for visit in team_visits %}
+                            <tr>
+                                <td>{{ visit.team.name }}</td>
+                                <td>{{ visit.team.organization.org_name }}</td>
+                                <td>{{ visit.scheduled_date }}</td>
+                                <td>{{ visit.start_time }} - {{ visit.end_time }}</td>
+                                <td>{{ visit.purpose }}</td>
+                                <td>
+                                    <span class="badge {% if visit.status == 'SCHEDULED' %}bg-primary{% elif visit.status == 'COMPLETED' %}bg-success{% elif visit.status == 'CANCELLED' %}bg-danger{% endif %}">
+                                        {{ visit.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">No upcoming team visits scheduled.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

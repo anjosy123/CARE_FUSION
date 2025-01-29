@@ -3,10 +3,8 @@ from django.db import models
 from django.contrib.auth.models import User,AbstractUser
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils.crypto import get_random_string
-# from django.db.models import Max
 import uuid
-# from django.conf import settings
-# from datetime import timedelta
+from datetime import datetime
 
 class User(AbstractUser):
     is_email_verified = models.BooleanField(default=False)
@@ -48,17 +46,17 @@ class User(AbstractUser):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, org_email, org_name, org_address, org_phone, org_password=None):
-        user = self.create_user(
-            org_email,
-            org_name,
-            org_address,
-            org_phone,
-            org_password=org_password,
-        )
-        user.is_admin = True
-        user.save(using=self._db)
-        return user
+    # def create_superuser(self, org_email, org_name, org_address, org_phone, org_password=None):
+    #     user = self.create_user(
+    #         org_email,
+    #         org_name,
+    #         org_address,
+    #         org_phone,
+    #         org_password=org_password,
+    #     )
+    #     user.is_admin = True
+    #     user.save(using=self._db)
+    #     return user
 
 class Contact(models.Model):
     name = models.CharField(max_length=30)
@@ -86,26 +84,6 @@ class Organizations(models.Model):
     def check_password(self, raw_password):
         return check_password(raw_password, self.org_password)
     
-    # groups = models.ManyToManyField(
-    #     'auth.Group',
-    #     related_name='organization_set',  # Add related_name to avoid conflict
-    #     blank=True,
-    #     help_text='The groups this user belongs to.',
-    #     verbose_name='groups',
-    # )
-    # user_permissions = models.ManyToManyField(
-    #     'auth.Permission',
-    #     related_name='organization_set',  # Add related_name to avoid conflict
-    #     blank=True,
-    #     help_text='Specific permissions for this user.',
-    #     verbose_name='user permissions',
-    # )
-
-    # objects = OrganizationManager()
-
-    # USERNAME_FIELD = 'org_email'
-    # REQUIRED_FIELDS = ['org_email', 'org_name', 'org_address', 'org_phone']
-
     def __str__(self):
         return self.org_name
 
@@ -113,12 +91,18 @@ class ServiceRequest(models.Model):
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),
         ('APPROVED', 'Approved'),
-        ('REJECTED', 'Rejected'),
+        ('REJECTED', 'Rejected')
     ]
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
-    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='service_requests')
-    organization = models.ForeignKey('Organizations', on_delete=models.CASCADE, related_name='service_requests')
+    
+    patient = models.ForeignKey(User, on_delete=models.CASCADE)
+    organization = models.ForeignKey(
+        Organizations, 
+        on_delete=models.CASCADE,
+        related_name='service_requests'
+    )
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
     created_at = models.DateTimeField(default=timezone.now)
+    phone = models.CharField(max_length=10)
     doctor_referral = models.FileField(upload_to='referrals/', null=True, blank=True)
     additional_notes = models.TextField(blank=True)
     service = models.ForeignKey('Service', on_delete=models.SET_NULL, null=True, blank=True)
@@ -154,10 +138,20 @@ class Staff(AbstractUser):
         ('NURSE', 'Nurse'),
         ('VOLUNTEER', 'Volunteer'),
     )
+    
+    GENDER_CHOICES = (
+        ('M', 'Male'),
+        ('F', 'Female'),
+        ('O', 'Other'),
+    )
+    
     organization = models.ForeignKey('Organizations', on_delete=models.SET_NULL, null=True, blank=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
+    phone = models.CharField(max_length=15)  # Changed from phone_number to phone
+    address = models.TextField(blank=True)
+    qualifications = models.TextField(blank=True)
     temporary_password = models.CharField(max_length=128, null=True, blank=True)
-    phone_number = models.CharField(max_length=15, default='0000000000')
     designation = models.CharField(max_length=50, default='Unspecified')
     experience = models.PositiveIntegerField(default=0)
     email = models.EmailField(unique=True)
@@ -165,8 +159,6 @@ class Staff(AbstractUser):
     is_email_confirmed = models.BooleanField(default=False)
     confirmation_token = models.CharField(max_length=64, blank=True, null=True)
     must_change_password = models.BooleanField(default=True)
-
-    # Make username nullable temporarily
     username = models.CharField(max_length=150, unique=True, null=True, blank=True)
 
     def get_display_name(self):
@@ -278,6 +270,7 @@ class TeamVisit(models.Model):
     scheduled_date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
+    purpose = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=[
         ('SCHEDULED', 'Scheduled'),
         ('COMPLETED', 'Completed'),
@@ -340,6 +333,31 @@ class TeamVisit(models.Model):
         self.status = 'RESCHEDULED'
         self.save()
         return new_visit
+
+    def update_expired_status(self):
+        """Update status to CANCELLED if visit time has passed"""
+        current_datetime = timezone.now()
+        visit_datetime = timezone.make_aware(datetime.combine(self.scheduled_date, self.end_time))
+        
+        if (current_datetime > visit_datetime + timezone.timedelta(hours=2) and 
+            self.status == 'SCHEDULED'):
+            self.status = 'CANCELLED'
+            self.cancellation_reason = 'Automatically cancelled due to expired schedule'
+            self.save()
+            return True
+        return False
+
+    @classmethod
+    def update_all_expired_visits(cls):
+        """Update all expired scheduled visits"""
+        current_datetime = timezone.now()
+        expired_visits = cls.objects.filter(
+            status='SCHEDULED',
+            scheduled_date__lt=current_datetime.date()
+        )
+        
+        for visit in expired_visits:
+            visit.update_expired_status()
 
 class TeamVisitRequest(models.Model):
     STATUS_CHOICES = [
@@ -408,20 +426,17 @@ class VisitNote(models.Model):
         return f"Note by {self.staff} for visit on {self.team_visit.scheduled_date}"
 
 class TeamDashboard(models.Model):
-    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='dashboards')
-    staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='team_dashboards')
-    username = models.EmailField(unique=True)
-    password = models.CharField(max_length=128)
-    created_at = models.DateTimeField(default=timezone.now)  # Changed from auto_now_add
-    last_login = models.DateTimeField(null=True, blank=True)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE)
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE)
+    role = models.CharField(max_length=50)  # Role in the team
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['team', 'staff']
-        verbose_name = 'Team Dashboard'
-        verbose_name_plural = 'Team Dashboards'
-
+        unique_together = ('team', 'staff')  # Prevent duplicate assignments
+        
     def __str__(self):
-        return f"{self.staff.get_full_name()}'s dashboard for {self.team.name}"
+        return f"{self.staff.get_full_name()} - {self.team.name}"
 
 class NotificationPreferences(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='notification_preferences')
@@ -437,6 +452,256 @@ class PrivacySettings(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='privacy_settings')
     profile_visible = models.BooleanField(default=True)
 
+class TaxiDriver(models.Model):
+    VEHICLE_TYPES = [
+        ('SEDAN', 'Sedan'),
+        ('SUV', 'SUV'),
+        ('VAN', 'Van'),
+        ('AMBULANCE', 'Ambulance')
+    ]
+    
+    # Add user fields directly to TaxiDriver
+    email = models.EmailField(unique=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    password = models.CharField(max_length=128)  # For hashed password
+    organization = models.ForeignKey(Organizations, on_delete=models.CASCADE)
+    vehicle_number = models.CharField(max_length=20)
+    vehicle_type = models.CharField(max_length=20, choices=VEHICLE_TYPES)
+    license_number = models.CharField(max_length=50)
+    is_available = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
+    email_verified = models.BooleanField(default=False)
+    verification_token = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'taxi_drivers'
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.vehicle_number}"
+    
+    def is_on_leave(self, date=None):
+        from .utils import get_driver_leave_status
+        return get_driver_leave_status(self, date)
+    
+    def can_take_bookings(self):
+        from .utils import can_driver_take_bookings
+        return can_driver_take_bookings(self)
+    
+    def get_current_leave(self):
+        today = timezone.now().date()
+        return DriverLeave.objects.filter(
+            driver=self,
+            status='APPROVED',
+            start_date__lte=today,
+            end_date__gte=today
+        ).first()
+
+    
+
+class FareStage(models.Model):
+    organization = models.ForeignKey(Organizations, on_delete=models.CASCADE)
+    start_km = models.IntegerField()
+    end_km = models.IntegerField()
+    base_fare = models.DecimalField(max_digits=10, decimal_places=2)
+    per_km_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class TaxiBooking(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('DRIVER_ASSIGNED', 'Driver Assigned'),
+        ('STARTED', 'Started'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled')
+    ]
+    
+    patient = models.ForeignKey(User, on_delete=models.CASCADE)
+    organization = models.ForeignKey(Organizations, on_delete=models.CASCADE)
+    driver = models.ForeignKey(TaxiDriver, on_delete=models.SET_NULL, null=True)
+    pickup_location = models.TextField()
+    pickup_latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    pickup_longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    drop_location = models.TextField()
+    drop_latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    drop_longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    distance_km = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    booking_time = models.DateTimeField(auto_now_add=True)
+    start_time = models.DateTimeField(null=True)
+    end_time = models.DateTimeField(null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    estimated_fare = models.DecimalField(max_digits=10, decimal_places=2)
+    final_fare = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_id = models.CharField(max_length=100, null=True)
+    payment_status = models.CharField(max_length=20, default='PENDING')
+    emergency_notes = models.TextField(blank=True)
+    patient_rating = models.IntegerField(null=True)
+    patient_feedback = models.TextField(blank=True)
+
+    class Meta:
+        db_table = 'taxi_bookings'
+
+    def __str__(self):
+        return f"Booking #{self.id} - {self.patient.get_full_name()}"
+
+
+
+class DriverLeave(models.Model):
+    LEAVE_TYPES = [
+        ('SICK', 'Sick Leave'),
+        ('PERSONAL', 'Personal Leave'),
+        ('EMERGENCY', 'Emergency Leave')
+    ]
+    
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected')
+    ]
+    
+    driver = models.ForeignKey(TaxiDriver, on_delete=models.CASCADE)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    leave_type = models.CharField(max_length=20, choices=LEAVE_TYPES)
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    response_note = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'driver_leaves'
+        ordering = ['-created_at']
+        
+class DriverEarning(models.Model):
+    driver = models.ForeignKey(TaxiDriver, on_delete=models.CASCADE)
+    booking = models.OneToOneField(TaxiBooking, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    razorpay_transfer_id = models.CharField(max_length=100, null=True, blank=True)
+    transfer_status = models.CharField(max_length=20, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'driver_earnings'
+
+class TaxiComplaint(models.Model):
+    COMPLAINT_TYPES = [
+        ('BEHAVIOR', 'Driver Behavior'),
+        ('DELAY', 'Delay'),
+        ('CLEANLINESS', 'Vehicle Cleanliness'),
+        ('OTHER', 'Other')
+    ]
+    
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('RESOLVED', 'Resolved'),
+        ('REJECTED', 'Rejected')
+    ]
+    
+    booking = models.ForeignKey('TaxiBooking', on_delete=models.CASCADE)
+    complaint_type = models.CharField(max_length=20, choices=COMPLAINT_TYPES)
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    response = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'taxi_complaints'
+
+class PatientVisitRecord(models.Model):
+    patient = models.ForeignKey(User, on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE)
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE)
+    visit_date = models.DateTimeField()
+    
+    # Vital signs
+    blood_pressure = models.CharField(max_length=20, null=True, blank=True)
+    pulse_rate = models.IntegerField(null=True, blank=True)
+    temperature = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
+    respiratory_rate = models.IntegerField(null=True, blank=True)
+    oxygen_saturation = models.IntegerField(null=True, blank=True)  # New field
+    
+    # Pain assessment
+    pain_score = models.IntegerField(null=True, blank=True)
+    pain_location = models.CharField(max_length=255, null=True, blank=True)  # Increased from 100
+    pain_character = models.CharField(max_length=255, null=True, blank=True)  # Increased from 100
+    
+    # Medical conditions and symptoms
+    medical_conditions = models.TextField(null=True, blank=True)
+    symptoms = models.TextField(null=True, blank=True)
+    
+    # Medications and notes
+    medications = models.TextField(null=True, blank=True)
+    clinical_notes = models.TextField(null=True, blank=True)
+    
+    # Activity and Mobility (New section)
+    activity_level = models.IntegerField(choices=[
+        (1, 'Bedbound'),
+        (2, 'Wheelchair bound'),
+        (3, 'Walks with assistance'),
+        (4, 'Walks independently')
+    ], null=True, blank=True)
+    
+    # Nutrition Status (New section)
+    weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    appetite = models.IntegerField(choices=[
+        (1, 'Poor'),
+        (2, 'Fair'),
+        (3, 'Good')
+    ], null=True, blank=True)
+    
+    # Mental Status (New section)
+    consciousness_level = models.CharField(max_length=50, null=True, blank=True)
+    mood_status = models.IntegerField(choices=[
+        (1, 'Depressed'),
+        (2, 'Anxious'),
+        (3, 'Normal'),
+        (4, 'Elevated')
+    ], null=True, blank=True)
+    
+    # Risk Scores (New section for ML)
+    fall_risk_score = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    pressure_ulcer_risk = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    deterioration_risk = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    overall_health_score = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    
+    # Visit Priority (New field for ML)
+    visit_priority_score = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    next_visit_recommendation = models.IntegerField(null=True, blank=True)  # Days until next recommended visit
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-visit_date']
+
+    def __str__(self):
+        return f"Visit for {self.patient.get_full_name()} on {self.visit_date}"
+
+    def calculate_risk_scores(self):
+        """
+        Calculate risk scores using ML models
+        """
+        # This method will be implemented with ML logic
+        pass
+
+    def predict_next_visit(self):
+        """
+        Predict optimal next visit date using ML
+        """
+        # This method will be implemented with ML logic
+        pass
+
+    def get_visit_priority(self):
+        """
+        Calculate visit priority based on risk scores and other factors
+        """
+        # This method will be implemented with ML logic
+        pass
 
 
 

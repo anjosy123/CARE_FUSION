@@ -1,0 +1,219 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visit Report - {{ visit.patient.get_full_name }}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+        }
+        
+        .report-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-bottom: 2px solid #1e3c72;
+        }
+        
+        .report-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .vital-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .action-buttons {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .action-button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-4">
+        <!-- Report Header -->
+        <div class="report-header">
+            <h2>Team Visit Report</h2>
+            <p class="text-muted">Generated on {{ report_date|date:"F d, Y" }}</p>
+        </div>
+        
+        <!-- Patient Information -->
+        <div class="report-section">
+            <h4 class="mb-3">Patient Information</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Name:</strong> {{ visit.patient.get_full_name }}</p>
+                    <p><strong>Visit Date:</strong> {{ visit.scheduled_date|date:"F d, Y" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Team:</strong> {{ team.name }}</p>
+                    <p><strong>Staff Member:</strong> {{ staff.get_full_name }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Clinical Information -->
+        <div class="report-section">
+            <h4 class="mb-3">Clinical Information</h4>
+            
+            <!-- Vital Signs -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="vital-box">
+                        <h6>Blood Pressure</h6>
+                        <p class="mb-0">{{ visit_record.blood_pressure|default:"Not recorded" }}</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="vital-box">
+                        <h6>Pulse Rate</h6>
+                        <p class="mb-0">{{ visit_record.pulse_rate|default:"Not recorded" }} bpm</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="vital-box">
+                        <h6>Temperature</h6>
+                        <p class="mb-0">{{ visit_record.temperature|default:"Not recorded" }} °C</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="vital-box">
+                        <h6>Respiratory Rate</h6>
+                        <p class="mb-0">{{ visit_record.respiratory_rate|default:"Not recorded" }} /min</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pain Assessment -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="vital-box">
+                        <h6>Pain Score</h6>
+                        <p class="mb-0">{{ visit_record.pain_score|default:"Not recorded" }}/10</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="vital-box">
+                        <h6>Pain Location</h6>
+                        <p class="mb-0">{{ visit_record.pain_location|default:"Not specified" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medical Conditions -->
+            <div class="vital-box mb-4">
+                <h6>Medical Conditions</h6>
+                <p class="mb-0">{{ visit_record.medical_conditions|default:"None recorded" }}</p>
+            </div>
+
+            <!-- Symptoms -->
+            <div class="vital-box mb-4">
+                <h6>Current Symptoms</h6>
+                <p class="mb-0">{{ visit_record.symptoms|default:"None recorded" }}</p>
+            </div>
+
+            <!-- Medications -->
+            <div class="vital-box mb-4">
+                <h6>Medications</h6>
+                <p class="mb-0">{{ visit_record.medications|default:"None recorded" }}</p>
+            </div>
+
+            <!-- Clinical Notes -->
+            <div class="vital-box">
+                <h6>Clinical Notes</h6>
+                <p class="mb-0">{{ visit_record.clinical_notes|default:"No clinical notes recorded." }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons no-print">
+        <button onclick="window.print()" class="action-button btn btn-primary">
+            <i class="bi bi-printer"></i>
+        </button>
+        <button onclick="downloadPDF()" class="action-button btn btn-success">
+            <i class="bi bi-download"></i>
+        </button>
+        <button onclick="shareReport()" class="action-button btn btn-info">
+            <i class="bi bi-share"></i>
+        </button>
+    </div>
+    
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- html2pdf library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <script>
+        function downloadPDF() {
+            const element = document.body;
+            const buttons = document.querySelector('.action-buttons');
+            buttons.style.display = 'none';
+            
+            const opt = {
+                margin: 1,
+                filename: 'visit_report.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(element).save().then(() => {
+                buttons.style.display = 'block';
+            });
+        }
+        
+        function shareReport() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Visit Report',
+                    text: 'Team Visit Report for {{ visit.patient.get_full_name }}',
+                    url: window.location.href
+                })
+                .catch(error => console.log('Error sharing:', error));
+            } else {
+                alert('Sharing is not supported on this browser');
+            }
+        }
+    </script>
+</body>
+</html> 

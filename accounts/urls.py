@@ -5,6 +5,7 @@ from .views import (
     handlesignup, handlelogout, register_organization, org_logout, handle_service_request
 )
 from accounts.views import verify_email
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     # Social Auth
@@ -63,6 +64,9 @@ urlpatterns = [
     path('delete-service-request/<int:request_id>/', views.delete_service_request, name='delete_service_request'),
     path('approved-rejected-requests/', views.approved_rejected_requests, name='approved_rejected_requests'),
     path('pending-requests/', views.pending_requests, name='pending_requests'),
+    path('request/<int:request_id>/view/', views.view_request, name='view_request'),
+    path('request/<int:request_id>/approve/', views.approve_request, name='approve_request'),
+    path('request/<int:request_id>/reject/', views.reject_request, name='reject_request'),
 
     # Organizations Services
     path('services/', views.service_list, name='service_list'),
@@ -135,6 +139,7 @@ urlpatterns = [
     path('teams/create/', views.create_team, name='create_team'),
     path('teams/schedule-visit/', views.schedule_team_visit, name='schedule_team_visit'),
     path('teams/visits/', views.team_visit_list, name='team_visit_list'),
+    path('teams/calendar/', views.team_visit_calendar, name='team_visit_calendar'),
     
     # Team management
     path('team-visit-calendar/', views.team_visit_calendar, name='team_visit_calendar'),
@@ -142,7 +147,7 @@ urlpatterns = [
     path('get-available-slots/<int:team_id>/<str:date>/', views.get_available_slots, name='get_available_slots'),
     path('team-communication/<int:team_id>/', views.team_communication, name='team_communication'),
     path('visit-checklist-notes/<int:visit_id>/', views.visit_checklist_notes, name='visit_checklist_notes'),
-    path('team-dashboard/', views.team_dashboard, name='team_dashboard'),
+    path('team/dashboard/', views.team_dashboard, name='team_dashboard'),
     path('api/team-messages/<int:team_id>/', views.get_team_messages, name='get_team_messages'),
     path('team-dashboard/change-password/', views.team_dashboard_change_password, name='team_dashboard_change_password'),
     path('team/<int:team_id>/', views.team_detail, name='team_detail'),
@@ -151,7 +156,8 @@ urlpatterns = [
     path('notification-center/', views.notification_center, name='notification_center'),
     path('patient-profile/', views.patient_profile, name='patient_profile'),
     path('org-profile/', views.org_profile, name='org_profile'),
-    path('team/<int:team_id>/request-visit/', views.request_team_visit, name='request_team_visit'),
+    path('request-team-visit/', views.request_team_visit, name='request_team_visit'),
+    path('team/<int:team_id>/request-visit/', views.request_team_visit_specific, name='request_team_visit_specific'),
     path('my-visit-requests/', views.patient_visit_requests, name='patient_visit_requests'),
     path('patient-notifications/', views.patient_notifications, name='patient_notifications'),
     path('admin/edit-organization/<int:org_id>/', views.edit_organization, name='edit_organization'),
@@ -166,5 +172,52 @@ urlpatterns = [
     path('patient/deactivate-account/', views.deactivate_account, name='deactivate_account'),
     path('teams/<int:team_id>/edit/', views.edit_team, name='edit_team'),
     path('teams/<int:team_id>/toggle-status/', views.toggle_team_status, name='toggle_team_status'),
+    path('team-visit/<int:visit_id>/edit/', views.edit_team_visit, name='edit_team_visit'),
+    path('team-visit/<int:visit_id>/cancel/', views.cancel_team_visit, name='cancel_team_visit'),
+    path('toggle-staff-status/<int:staff_id>/', views.toggle_staff_status, name='toggle_staff_status'),
+
+    path('manage-taxi-drivers/', views.manage_taxi_drivers, name='manage_taxi_drivers'),
+    path('request-emergency-taxi/', views.request_emergency_taxi, name='request_emergency_taxi'),
+    path('approve-taxi-request/<int:booking_id>/', views.approve_taxi_request, name='approve_taxi_request'),
+    path('view-taxi-bookings/', views.view_taxi_bookings, name='view_taxi_bookings'),
+    path('taxi-payment-callback/', views.taxi_payment_callback, name='taxi_payment_callback'),
+    
+    # Add these to your urlpatterns
+    path('driver/dashboard/', views.driver_dashboard, name='driver_dashboard'),
+    path('driver/earnings/', views.driver_earnings, name='driver_earnings'),
+    path('driver/leave/', views.driver_leave, name='driver_leave'),
+    path('driver/toggle-availability/', views.toggle_driver_availability, name='toggle_driver_availability'),
+
+    # Add these to your urlpatterns
+    path('organization/leaves/', views.manage_leaves, name='manage_leaves'),
+    path('organization/handle-leave/', views.handle_leave_request, name='handle_leave_request'),
+    path('password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
+    path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
+    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
+    path('verify-driver/<str:token>/', views.verify_driver_email, name='verify_driver_email'),
+    path('driver/forgot-password/', views.driver_forgot_password, name='driver_forgot_password'),
+    path('driver/reset-password/<str:token>/', views.driver_reset_password, name='driver_reset_password'),
+    path('request-service/<int:org_id>/', views.request_service, name='request_service'),
+    path('upcoming-team-visits/', views.upcoming_team_visits, name='upcoming_team_visits'),
+    path('save-patient-data/', views.save_patient_data, name='save_patient_data'),
+    path('visit-report/<int:visit_id>/', views.visit_report, name='visit_report'),
+    
+     
+    
+    path('patient-risk-history/', views.patient_risk_history, name='patient_risk_history'),
+    path('priority-alerts/', views.priority_alerts, name='priority_alerts'),
+    path('risk-comparison/', views.risk_comparison, name='risk_comparison'),
+    path('risk-monitoring/', views.risk_monitoring, name='risk_monitoring'),
+    path('schedule-optimizer/', views.schedule_optimizer, name='schedule_optimizer'),
+    path('team-availability/', views.team_availability, name='team_availability'),
+    path('visit-priority/', views.visit_priority, name='visit_priority'),
+    
+    #ML-related URLs
+    path('ml/patient-risk/', views.patient_risk_history, name='patient_risk_history'),
+    path('ml/priority-alerts/', views.priority_alerts, name='priority_alerts'),
+    path('ml/risk-comparison/', views.risk_comparison, name='risk_comparison'),
+    path('ml/schedule-optimizer/', views.schedule_optimizer, name='schedule_optimizer'),
+    path('get-patient-details/<int:patient_id>/', views.get_patient_details, name='get_patient_details'),
 ]
 

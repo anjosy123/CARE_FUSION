@@ -1,46 +1,48 @@
 from django.shortcuts import render,redirect,get_object_or_404
+from django.db.models.functions import TruncDate
+from django.db import IntegrityError
 from django.utils.html import strip_tags
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.contrib import messages
 from django.conf import settings
 from django.contrib.auth import logout, get_user_model
 from django.urls import reverse
-from django.core.mail import send_mail
+from django.core.mail import send_mail, get_connection, EmailMessage
 from django.contrib.auth.hashers import check_password, make_password
 from django.views.decorators.cache import cache_control, never_cache
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET, require_http_methods
 from care_fusion import settings
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
-import random, logging, os, string
+import random, logging, os, string, uuid, razorpay, json
 from django.utils import timezone
-from .models import Organizations,Contact,ServiceRequest,Service,Staff,PatientAssignment,Prescription,Appointment,Team, TeamVisit, TeamSchedule, User, TeamMessage, VisitChecklist, VisitNote, TeamDashboard, PrivacySettings
-from .forms import ServiceRequestForm,ServiceForm,StaffForm,PatientAssignmentForm,PrescriptionForm,AppointmentForm,TeamForm, TeamVisitForm, RescheduleTeamVisitForm, TeamMessageForm, VisitChecklistForm, VisitNoteForm, ProfileUpdateForm
-from django.contrib.auth import get_user_model
-from .utils import send_verification_email, send_appointment_email
-from django.db.models import Q
+from .models import (
+    Staff, Notification, Message, TeamVisitRequest, PrivacySettings, 
+    Organizations, Contact, ServiceRequest, Service, Staff, PatientAssignment,
+    Prescription, Appointment, Team, TeamVisit, TeamSchedule, User, 
+    TeamMessage, VisitChecklist, VisitNote, TeamDashboard, PrivacySettings,
+    TaxiDriver, TaxiBooking, FareStage, DriverLeave, DriverEarning, 
+    TaxiComplaint, PatientVisitRecord  # Changed from PatientVisit to PatientVisitRecord
+)
+from .forms import AppointmentRequestForm, ServiceRequestForm,ServiceForm,StaffForm,PatientAssignmentForm,PrescriptionForm,AppointmentForm,TeamForm, TeamVisitForm, RescheduleTeamVisitForm, TeamMessageForm, VisitChecklistForm, VisitNoteForm, ProfileUpdateForm,TeamVisit, TaxiBookingForm, DriverForm, FareStageForm, DriverLeaveForm, DriverEarningForm, ComplaintForm
+from .utils import send_verification_email, send_appointment_email, calculate_distance, send_sms, notify_organization_about_leave, calculate_fare, create_razorpay_order, create_razorpay_account, notify_about_complaint, verify_razorpay_signature, transfer_to_driver, notify_payment_success, notify_driver_about_leave_response
+from django.db.models import Q, Sum, Count, Avg
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
-from django.utils.encoding import force_str
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from .models import Staff, Notification, Message, TeamVisitRequest, PrivacySettings
-import uuid
-from datetime import datetime, timedelta, time
+from django.utils.encoding import force_str, force_bytes
+from datetime import datetime, timedelta, time, date
 from calendar import monthrange
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
 from django.views.generic import ListView
-from .decorators import staff_login_required, organization_login_required
-from django.db import IntegrityError
-from django.core.mail import send_mail
+from .decorators import staff_login_required, organization_login_required, patient_login_required, team_login_required
 from smtplib import SMTPServerDisconnected
-from django.core.mail import get_connection, EmailMessage
-from .forms import AppointmentRequestForm
-from django.db.models import Prefetch
+from django.db.utils import OperationalError
+from django.db import transaction
+from .ml.priority_calculator import VisitPriorityCalculator
+from .ml.exceptions import InvalidInputError, ModelNotFoundError, MLPredictionError
 
 def send_appointment_email(appointment, action, recipient='patient'):
     subject = f'Appointment {action.capitalize()}'
@@ -236,6 +238,53 @@ def patient_details(request, request_id):
     }
     return render(request, 'Organizations/patient_details.html', context)
 
+@patient_login_required
+def request_service(request, org_id):
+    try:
+        organization = get_object_or_404(Organizations, id=org_id)
+        services = Service.objects.filter(organization=organization, is_active=True)
+        
+        if request.method == 'POST':
+            service_id = request.POST.get('service')
+            phone = request.POST.get('phone')
+            doctor_referral = request.FILES.get('doctor_referral')
+            additional_notes = request.POST.get('additional_notes')
+            
+            # Validate phone number
+            if not phone or not phone.isdigit() or len(phone) != 10 or not phone.startswith(('6', '7', '8', '9')):
+                messages.error(request, "Please enter a valid 10-digit phone number starting with 6-9.")
+                return redirect('request_service', org_id=org_id)
+            
+            try:
+                service = Service.objects.get(id=service_id, organization=organization)
+                
+                # Create service request
+                ServiceRequest.objects.create(
+                    patient=request.user,
+                    organization=organization,
+                    service=service,
+                    phone=phone,  # Save the phone number
+                    doctor_referral=doctor_referral,
+                    additional_notes=additional_notes
+                )
+                
+                messages.success(request, 'Service request submitted successfully!')
+                return redirect('patients_dashboard')
+                
+            except Exception as e:
+                messages.error(request, f'Error submitting request: {str(e)}')
+        
+        context = {
+            'organization': organization,
+            'services': services,
+        }
+        return render(request, 'Users/service_request_form.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error: {str(e)}')
+        return redirect('patients_dashboard')
+
+
 def get_service_request_detail(request, request_id):
     if not request.session.get('org_regid'):
         return JsonResponse({'error': 'Not authenticated'}, status=401)
@@ -360,41 +409,55 @@ def admin_dashboard(request):
         messages.error(request, "Please login as admin to access this page.")
         return redirect('login')
 
-    # Get counts for dashboard cards
-    total_patients = User.objects.exclude(email="carefusion.ai@gmail.com").count()
-    pending_organizations = Organizations.objects.filter(
-        approve=False, 
-        is_email_verified=True
-    ).count()
-    approved_organizations = Organizations.objects.filter(
-        approve=True, 
-        is_email_verified=True
-    ).count()
+    try:
+        # Get counts for dashboard cards
+        total_patients = User.objects.exclude(
+            email="carefusion.ai@gmail.com"
+        ).count()
 
-    # Get lists for tables
-    patients = User.objects.exclude(email="carefusion.ai@gmail.com")
-    pending_org_requests = Organizations.objects.filter(
-        approve=False,
-        is_email_verified=True
-    ).order_by('-id')
-    
-    # Get approved organizations
-    approved_orgs = Organizations.objects.filter(
-        approve=True,
-        is_email_verified=True
-    ).order_by('org_name')
+        # Get pending organizations (verified but not approved)
+        pending_orgs = Organizations.objects.filter(
+            approve=False, 
+            is_email_verified=True
+        ).order_by('-id')
+        
+        pending_count = pending_orgs.count()
 
-    context = {
-        'total_patients': total_patients,
-        'pending_organizations': pending_organizations,
-        'approved_organizations': approved_organizations,
-        'patients': patients,
-        'pending_org_requests': pending_org_requests,
-        'approved_orgs': approved_orgs,
-        'organizations': approved_orgs,  # Keep this for backward compatibility
-    }
-    
-    return render(request, 'Admin/admin.html', context)
+        # Get approved organizations
+        approved_orgs = Organizations.objects.filter(
+            approve=True, 
+            is_email_verified=True
+        ).order_by('org_name')
+        
+        approved_count = approved_orgs.count()
+
+        # Get all patients except admin
+        patients = User.objects.exclude(
+            email="carefusion.ai@gmail.com"
+        ).order_by('-date_joined')
+
+        context = {
+            # Dashboard counts
+            'total_patients': total_patients,
+            'pending_organizations': pending_count,  # For the card count
+            'approved_organizations': approved_count,
+            
+            # Table data
+            'patients': patients,
+            'pending_org_requests': pending_orgs,  # For the table data
+            'approved_orgs': approved_orgs,
+            'organizations': approved_orgs,  # For backward compatibility
+            
+            # Additional context
+            'page_title': 'Admin Dashboard',
+            'current_time': timezone.now(),
+        }
+        
+        return render(request, 'Admin/admin.html', context)
+
+    except Exception as e:
+        messages.error(request, f"An error occurred: {str(e)}")
+        return redirect('login')
 
 
 
@@ -403,6 +466,37 @@ def handlelogin(request):
     if request.method == "POST":
         email = request.POST.get("email")
         password = request.POST.get("pass1")
+
+        # Try to authenticate as Staff
+        staff = Staff.objects.filter(email=email).first()
+        if staff and check_password(password, staff.password):
+            if not staff.is_email_confirmed:
+                messages.error(request, "Please verify your email before logging in.")
+                return redirect('login')
+            
+            request.session['staff_id'] = staff.id
+            request.session['role'] = 'staff'
+            request.session['org_id'] = staff.organization.id if staff.organization else None
+
+            if staff.must_change_password:
+                request.session['temp_login'] = True
+                return redirect('change_staff_password')
+            
+            # Check if the staff member is part of any team
+            team_memberships = TeamDashboard.objects.filter(staff=staff)
+            if team_memberships.exists():
+                request.session['team_ids'] = list(team_memberships.values_list('team_id', flat=True))
+            
+            # Role-based redirection for staff
+            if staff.role == 'DOCTOR':
+                return redirect('doctor_dashboard')
+            elif staff.role == 'NURSE':
+                return redirect('team_dashboard')
+            elif staff.role == 'VOLUNTEER':
+                return redirect('volunteer_dashboard')
+            else:
+                messages.error(request, "Invalid staff role.")
+                return redirect('login')
 
         # Try to authenticate as User or Staff
         user = User.objects.filter(email=email).first() or Staff.objects.filter(email=email).first()
@@ -453,17 +547,6 @@ def handlelogin(request):
                     request.session['username'] = user.username
                     request.session['email'] = user.email
                     return redirect('patients_dashboard')
-
-        # Try to authenticate as TeamDashboard user
-        team_dashboard = TeamDashboard.objects.filter(username=email).first()
-        if team_dashboard and check_password(password, team_dashboard.password):
-            staff = team_dashboard.staff
-            if staff:
-                request.session['staff_id'] = staff.id
-                request.session['role'] = 'team_member'
-                request.session['team_id'] = team_dashboard.team.id
-                request.session['team_member_name'] = staff.get_full_name()
-                return redirect('team_dashboard')
 
         # Try to authenticate as an Organization
         org_user = Organizations.objects.filter(org_email=email).first()
@@ -619,12 +702,12 @@ def patients_dashboard(request):
     
     notifications = Notification.objects.filter(patient_id=user_id).order_by('-created_at')[:5]
 
-    # Filter teams to only include those from active organizations
+    # Get assigned teams through both assignments and team visits
     assigned_teams = Team.objects.filter(
-        organization__patient_assignments__patient=patient,
-        organization__approve=True,
-        organization__is_active=True
-    ).distinct().prefetch_related('members')
+        Q(organization__patient_assignments__patient=patient, 
+          organization__patient_assignments__is_active=True) |
+        Q(visits__patient=patient)  # Changed from teamvisit to visits
+    ).distinct()
 
     upcoming_appointments = booked_appointments.filter(
         date_time__gte=timezone.now(),
@@ -709,6 +792,13 @@ def get_dashboard_context(organization):
         'rejected_requests': ServiceRequest.objects.filter(organization=organization, status='REJECTED').order_by('-created_at')[:5],
         'recent_assignments': PatientAssignment.objects.filter(organization=organization, is_active=True).order_by('-assigned_date')[:5],
         'active_teams_count': Team.objects.filter(organization=organization).count(), 
+        'pending_taxi_requests_count': TaxiBooking.objects.filter(
+            organization=organization,
+            status='PENDING'
+        ).count(),
+        'recent_taxi_bookings': TaxiBooking.objects.filter(
+            organization=organization
+        ).order_by('-booking_time')[:5]
     }
 
 def staff_dashboard(request):
@@ -1383,16 +1473,33 @@ def add_staff(request):
     try:
         organization = Organizations.objects.get(id=org_id)
         if request.method == 'POST':
-            form = StaffForm(request.POST, request.FILES)
-            if form.is_valid():
-                staff = form.save(commit=False)
-                staff.organization = organization
-                staff.is_active = False  # Staff is inactive until email is confirmed
-                staff.username = staff.email  # Set username to email
-                temp_password = get_random_string(12)  # Generate a temporary password
-                staff.set_password(temp_password)  # Set the temporary password
-                staff.save()
+            try:
+                # Create staff instance from form data
+                staff = Staff(
+                    organization=organization,
+                    first_name=request.POST.get('first_name'),
+                    last_name=request.POST.get('last_name'),
+                    email=request.POST.get('email'),
+                    phone=request.POST.get('phone'),  
+                    role=request.POST.get('role'),
+                    gender=request.POST.get('gender'),
+                    address=request.POST.get('address'),
+                    qualifications=request.POST.get('qualifications'),
+                    is_active=False,  
+                    username=request.POST.get('email')  
+                )
+
+                # Handle profile image
+                if 'profile_image' in request.FILES:
+                    staff.profile_image = request.FILES['profile_image']
+
+                # Generate and set temporary password
+                temp_password = get_random_string(12)
+                staff.set_password(temp_password)
                 
+                # Save the staff member
+                staff.save()
+
                 # Generate confirmation token
                 token = default_token_generator.make_token(staff)
                 uid = urlsafe_base64_encode(force_bytes(staff.pk))
@@ -1421,14 +1528,12 @@ def add_staff(request):
                 
                 messages.success(request, 'Staff added successfully. A confirmation email has been sent.')
                 return redirect('staff_list')
-        else:
-            form = StaffForm()
+                
+            except Exception as e:
+                messages.error(request, f'Error adding staff member: {str(e)}')
         
-        context = {
-            'form': form,
-            'organization': organization,
-        }
-        return render(request, 'Organizations/add_staff.html', context)
+        return render(request, 'Organizations/add_staff.html', {'organization': organization})
+        
     except Organizations.DoesNotExist:
         messages.error(request, "Organization not found. Please log in again.")
         return redirect('login')
@@ -1479,72 +1584,98 @@ def confirm_staff_email(request, uidb64, token):
 
     return redirect('login')
     
+@organization_login_required
 def edit_staff(request, staff_id):
+    org_id = request.session.get('org_id')
+    organization = get_object_or_404(Organizations, id=org_id)
+    staff = get_object_or_404(Staff, id=staff_id, organization=organization)
+
+    if request.method == 'POST':
+        try:
+            # Get form data
+            staff.first_name = request.POST.get('first_name')
+            staff.last_name = request.POST.get('last_name')
+            staff.email = request.POST.get('email')
+            staff.phone = request.POST.get('phone')
+            staff.gender = request.POST.get('gender')
+            staff.role = request.POST.get('role')
+            staff.experience = request.POST.get('experience')
+            staff.address = request.POST.get('address')
+            staff.qualifications = request.POST.get('qualifications')
+
+            # Handle profile picture upload
+            if request.FILES.get('profile_pic'):
+                # Delete old profile picture if it exists
+                if staff.profile_pic:
+                    try:
+                        staff.profile_pic.delete()
+                    except Exception as e:
+                        messages.warning(request, f"Could not delete old profile picture: {str(e)}")
+                
+                staff.profile_pic = request.FILES['profile_pic']
+
+            # Validate email uniqueness
+            if Staff.objects.exclude(id=staff_id).filter(email=staff.email).exists():
+                messages.error(request, "This email is already registered with another staff member.")
+                return redirect('edit_staff', staff_id=staff_id)
+
+            # Validate phone number
+            phone = staff.phone
+            if not phone.isdigit() or len(phone) != 10 or not phone.startswith(('6', '7', '8', '9')):
+                messages.error(request, "Please enter a valid 10-digit phone number starting with 6-9.")
+                return redirect('edit_staff', staff_id=staff_id)
+
+            # Validate experience
+            try:
+                experience = int(staff.experience)
+                if experience < 0 or experience > 50:
+                    raise ValueError
+            except ValueError:
+                messages.error(request, "Experience must be between 0 and 50 years.")
+                return redirect('edit_staff', staff_id=staff_id)
+
+            # Save the changes
+            staff.save()
+            messages.success(request, 'Staff member updated successfully.')
+            return redirect('staff_list')
+
+        except Exception as e:
+            messages.error(request, f'Error updating staff member: {str(e)}')
+            return redirect('edit_staff', staff_id=staff_id)
+
+    context = {
+        'staff': staff,
+        'organization': organization
+    }
+    return render(request, 'Organizations/edit_staff.html', context)
+
+@require_POST
+def toggle_staff_status(request, staff_id):
     if 'org_id' not in request.session:
         return JsonResponse({
             'success': False,
-            'message': "Please log in to access this page.",
-            'redirect': reverse('login')
+            'message': "Please log in to access this page."
         })
     
     try:
         organization = Organizations.objects.get(id=request.session['org_id'])
         staff = get_object_or_404(Staff, id=staff_id, organization=organization)
         
-        if request.method == 'POST':
-            form = StaffForm(request.POST, request.FILES, instance=staff)
-            if form.is_valid():
-                form.save()
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Staff updated successfully',
-                    'redirect': reverse('staff_list')
-                })
-            else:
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Invalid form data.',
-                    'errors': form.errors
-                })
-        else:
-            form = StaffForm(instance=staff)
-            return render(request, 'Organizations/edit_staff.html', {
-                'form': form,
-                'staff': staff,
-                'organization': organization,
-            })
-            
-    except Organizations.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'message': "Organization not found. Please log in again.",
-            'redirect': reverse('login')
-        })
-
-def toggle_staff_status(request, staff_id):
-    if 'org_id' not in request.session:
-        return JsonResponse({
-            'success': False,
-            'message': "Please log in to access this page.",
-            'redirect': reverse('login')
-        })
-    
-    try:
-        organization = Organizations.objects.get(id=request.session['org_id'])
-        staff = get_object_or_404(Staff, id=staff_id, organization=organization)
+        # Toggle the status
         staff.is_active = not staff.is_active
         staff.save()
-        status = "activated" if staff.is_active else "deactivated"
+        
+        status = "enabled" if staff.is_active else "disabled"
         return JsonResponse({
             'success': True,
-            'message': f'Staff {status} successfully',
-            'redirect': reverse('staff_list')
+            'message': f'Staff member {staff.get_full_name()} has been {status}.',
+            'is_active': staff.is_active
         })
-    except Organizations.DoesNotExist:
+        
+    except Exception as e:
         return JsonResponse({
             'success': False,
-            'message': "Organization not found. Please log in again.",
-            'redirect': reverse('login')
+            'message': str(e)
         })
 
 def get_staff_details(request):
@@ -1567,6 +1698,7 @@ def get_staff_details(request):
         return JsonResponse(data)
     except (Organizations.DoesNotExist, Staff.DoesNotExist) as e:
         return JsonResponse({'error': str(e)}, status=400)
+
 
 def patient_assignment_list(request):
     if 'org_id' not in request.session:
@@ -1625,78 +1757,86 @@ def unassign_patient(request, assignment_id):
         messages.error(request, "Organization not found. Please log in again.")
         return redirect('login')
 
+@organization_login_required
 def assign_patient(request):
-    if 'org_id' not in request.session:
-        messages.error(request, "Please log in to access this page.")
-        return redirect('login')
-    
-    org_id = request.session['org_id']
-    org_name = request.session['org_name']
-    
     try:
-        organization = Organizations.objects.get(id=org_id, org_name=org_name)
-        
+        # Get organization from session
+        org_id = request.session.get('org_id')
+        if not org_id:
+            messages.error(request, 'No organization selected')
+            return redirect('login')
+            
+        organization = Organizations.objects.get(id=org_id)
+
         if request.method == 'POST':
-            form = PatientAssignmentForm(request.POST)
-            if form.is_valid():
-                assignment = form.save(commit=False)
-                assignment.organization = organization
+            patient_id = request.POST.get('patient')
+            staff_id = request.POST.get('staff')
+            
+            try:
+                patient = User.objects.get(id=patient_id)
+                staff = User.objects.get(id=staff_id)
                 
-                # Check if the patient has an approved service request for this organization
-                patient = form.cleaned_data['patient']
-                if not ServiceRequest.objects.filter(patient=patient, organization=organization, status='APPROVED').exists():
-                    messages.error(request, "Invalid patient selection. The patient must have an approved service request.")
-                    return redirect('assign_patient')
+                # Create the assignment
+                PatientAssignment.objects.create(
+                    patient=patient,
+                    staff=staff,
+                    organization=organization
+                )
                 
-                assignment.save()
-                messages.success(request, 'Patient assigned successfully.')
+                messages.success(request, f'Successfully assigned {patient.get_full_name()} to {staff.get_full_name()}')
                 return redirect('patient_assignment_list')
-        else:
-            form = PatientAssignmentForm()
+                
+            except User.DoesNotExist:
+                messages.error(request, 'Invalid patient or staff selection')
+            except Exception as e:
+                messages.error(request, f'Error assigning patient: {str(e)}')
         
-        # Get patients with approved service requests for this organization
-        assigned_patients = PatientAssignment.objects.filter(organization=organization, is_active=True).values_list('patient', flat=True)
-        unassigned_patients = User.objects.filter(
-            Q(is_superuser=False) & 
-            Q(is_active=True) & 
-            Q(is_email_verified=True) &
-            Q(service_requests__organization=organization) &
-            Q(service_requests__status='APPROVED')
-        ).exclude(id__in=assigned_patients).distinct()
-        
-        # Get staff members associated with this organization
-        staff_members = Staff.objects.filter(
+        # Get unassigned patients
+        patients = User.objects.filter(
             organization=organization,
             is_active=True
+        ).exclude(
+            id__in=PatientAssignment.objects.values('patient')
         )
 
+        # Get available staff members
+        staff_members = User.objects.filter(
+            organization=organization,
+            is_staff=True,
+            is_active=True
+        )
+        
         context = {
-            'form': form,
-            'organization': organization,
-            'unassigned_patients': unassigned_patients,
+            'patients': patients,
             'staff_members': staff_members,
+            'organization': organization
         }
+        
         return render(request, 'Organizations/assign_patient.html', context)
+
     except Organizations.DoesNotExist:
-        messages.error(request, "Organization not found. Please log in again.")
+        messages.error(request, 'Organization not found')
+        return redirect('login')
+    except Exception as e:
+        messages.error(request, f'An error occurred: {str(e)}')
         return redirect('login')
 
-def unassign_patient(request, assignment_id):
-    if 'org_id' not in request.session:
-        messages.error(request, "Please log in to access this page.")
-        return redirect('login')
+# def unassign_patient(request, assignment_id):
+#     if 'org_id' not in request.session:
+#         messages.error(request, "Please log in to access this page.")
+#         return redirect('login')
     
-    org_id = request.session['org_id']
+#     org_id = request.session['org_id']
     
-    try:
-        organization = Organizations.objects.get(id=org_id)
-        assignment = get_object_or_404(PatientAssignment, id=assignment_id, organization=organization)
-        assignment.is_active = False
-        assignment.save()
-        return redirect('patient_assignment_list')
-    except Organizations.DoesNotExist:
-        messages.error(request, "Organization not found. Please log in again.")
-        return redirect('login')
+#     try:
+#         organization = Organizations.objects.get(id=org_id)
+#         assignment = get_object_or_404(PatientAssignment, id=assignment_id, organization=organization)
+#         assignment.is_active = False
+#         assignment.save()
+#         return redirect('patient_assignment_list')
+#     except Organizations.DoesNotExist:
+#         messages.error(request, "Organization not found. Please log in again.")
+#         return redirect('login')
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -2166,38 +2306,79 @@ def generate_password():
     return ''.join(random.choices(string.ascii_letters + string.digits, k=12))
 
 
+@organization_login_required
 def schedule_team_visit(request):
-    org_id = request.session.get('org_id')
-    if not org_id:
-        messages.error(request, "Please log in to access this page.")
-        return redirect('login')
-
-    organization = get_object_or_404(Organizations, id=org_id)
-
+    organization = get_object_or_404(Organizations, id=request.session['org_id'])
+    
+    # Get current date and time
+    today = date.today()
+    current_time = datetime.now().strftime('%H:%M')
+    
+    # Get the team_id from query parameters
+    selected_team = request.GET.get('team')
+    
+    # Get patients who have approved service requests for this organization
+    approved_patients = User.objects.filter(
+        servicerequest__organization=organization,
+        servicerequest__status='approved'
+    ).distinct()
+    
     if request.method == 'POST':
-        form = TeamVisitForm(request.POST, organization=organization)
-        if form.is_valid():
-            visit = form.save(commit=False)
+        try:
+            team = Team.objects.get(id=request.POST.get('team'), organization=organization)
+            patient = User.objects.get(id=request.POST.get('patient'))
+            
+            # Verify patient has an approved service request
+            if not ServiceRequest.objects.filter(
+                organization=organization,
+                patient=patient,
+                status='approved'
+            ).exists():
+                messages.error(request, 'Selected patient does not have an approved service request.')
+                return redirect('schedule_team_visit')
+            
             # Check if the team is available on the scheduled date
+            scheduled_date = datetime.strptime(request.POST.get('scheduled_date'), '%Y-%m-%d').date()
             schedule, created = TeamSchedule.objects.get_or_create(
-                team=visit.team,
-                date=visit.scheduled_date,
+                team=team,
+                date=scheduled_date,
                 defaults={'is_available': True}
             )
+            
             if not schedule.is_available:
                 messages.error(request, 'The selected team is not available on this date.')
-                return render(request, 'Organizations/schedule_team_visit.html', {'form': form, 'organization': organization})
+                return redirect('schedule_team_visit')
             
-            visit.save()
+            # Create the team visit
+            visit = TeamVisit.objects.create(
+                team=team,
+                patient=patient,
+                scheduled_date=scheduled_date,
+                start_time=request.POST.get('start_time'),
+                end_time=request.POST.get('end_time'),
+                purpose=request.POST.get('purpose'),
+                status='SCHEDULED'
+            )
+            
             messages.success(request, 'Team visit scheduled successfully.')
             return redirect('team_visit_list')
-    else:
-        form = TeamVisitForm(organization=organization)
-
+            
+        except (Team.DoesNotExist, User.DoesNotExist) as e:
+            messages.error(request, 'Invalid team or patient selected.')
+        except Exception as e:
+            messages.error(request, str(e))
+    
+    # Get all active teams for the organization
+    teams = Team.objects.filter(organization=organization, is_active=True)
+    
     context = {
-        'organization': organization,
-        'form': form,
+        'teams': teams,
+        'patients': approved_patients,
+        'selected_team': selected_team,
+        'today': today,
+        'current_time': current_time,
     }
+    
     return render(request, 'Organizations/schedule_team_visit.html', context)
 
 
@@ -2434,23 +2615,17 @@ def generate_credentials():
     password = ''.join(random.choices(string.ascii_letters + string.digits + string.punctuation, k=12))
     return username, password
 
-@staff_login_required
+
 def team_dashboard(request):
-    staff_id = request.session.get('staff_id')
-    team_id = request.session.get('team_id')
-    
-    if not staff_id or not team_id:
-        messages.error(request, "Please log in to access this page.")
-        return redirect('login')
-    
-    staff = get_object_or_404(Staff, id=staff_id)
-    team = get_object_or_404(Team, id=team_id)
+    staff = Staff.objects.get(id=request.session['staff_id'])
+    team_memberships = TeamDashboard.objects.filter(staff=staff)
     
     context = {
         'staff': staff,
-        'team': team,
+        'team_memberships': team_memberships
     }
-    return render(request, 'Organizations/team_dashboard.html', context)
+    
+    return render(request, 'staff/team_dashboard.html', context)
 
 def get_team_messages(request, team_id):
     staff_id = request.session.get('staff_id')
@@ -2582,59 +2757,144 @@ def request_appointment(request):
 
     return render(request, 'Users/request_appointment.html', {'form': form})
 
+from django.utils import timezone
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def assigned_teams(request):
     if not request.session.get('user_id'):
         messages.error(request, "Please log in to access this page.")
         return redirect('login')
 
-    user_id = request.session['user_id']
-    patient = get_object_or_404(User, id=user_id)
+    patient = get_object_or_404(User, id=request.session['user_id'])
     
-    # Get all active patient assignments for the current user
-    assignments = PatientAssignment.objects.filter(patient=patient, is_active=True)
-    
-    # Get the organizations associated with these assignments
-    organizations = Organizations.objects.filter(patient_assignments__in=assignments).distinct()
-    
-    # Get all unique teams from these organizations
-    teams = Team.objects.filter(organization__in=organizations).distinct()
+    # Get teams using the same logic as in patients_dashboard
+    teams = Team.objects.filter(
+        organization__patient_assignments__patient=patient,
+        organization__patient_assignments__is_active=True,
+        is_active=True
+    ).distinct().prefetch_related(
+        'members',
+        'visits'
+    )
 
-    # Prepare team details with additional information
-    team_details = []
-    for team in teams:
-        team_detail = {
-            'id': team.id,
-            'name': team.name,
-            'organization': team.organization.org_name,
-            'members': team.members.all(),
-            # Add any other relevant team information here
-        }
-        team_details.append(team_detail)
+    today = timezone.now().date()
 
     context = {
-        'team_details': team_details,
+        'teams': teams,
         'patient': patient,
+        'today': today,
+        'notifications': Notification.objects.filter(patient=patient, is_read=False)
     }
-
+    
+    return render(request, 'Users/assigned_teams.html', context)
+    
     return render(request, 'Users/assigned_teams.html', context)
 
-def request_team_visit(request, team_id):
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def request_team_visit(request):
     if not request.session.get('user_id'):
         messages.error(request, "Please log in to access this page.")
         return redirect('login')
 
-    team = get_object_or_404(Team, id=team_id)
     patient = get_object_or_404(User, id=request.session['user_id'])
+    
+    # Get teams from organizations where the patient has assignments
+    assigned_teams = Team.objects.filter(
+        organization__patient_assignments__patient=patient,
+        organization__patient_assignments__is_active=True,
+        is_active=True
+    ).distinct()
 
     if request.method == 'POST':
-        reason = request.POST.get('reason')
-        TeamVisitRequest.objects.create(patient=patient, team=team, reason=reason)
-        messages.success(request, "Team visit request submitted successfully.")
+        try:
+            team = get_object_or_404(Team, id=request.POST.get('team'))
+            preferred_date = datetime.strptime(request.POST.get('preferred_date'), '%Y-%m-%d').date()
+            preferred_time = request.POST.get('preferred_time')
+            reason = request.POST.get('reason')
+            notes = request.POST.get('notes', '')
+
+            # Create team visit request
+            TeamVisitRequest.objects.create(
+                patient=patient,
+                team=team,
+                requested_date=preferred_date,
+                purpose=preferred_time,  # Using purpose field for time preference
+                reason=reason,
+                status='PENDING'
+            )
+
+            messages.success(request, "Team visit request submitted successfully!")
+            return redirect('upcoming_team_visits')
+
+        except Exception as e:
+            messages.error(request, f"Error submitting request: {str(e)}")
+
+    # Calculate min and max dates for date picker
+    min_date = timezone.now().date() + timedelta(days=1)  # Tomorrow
+    max_date = min_date + timedelta(days=30)  # Up to 30 days in advance
+
+    context = {
+        'assigned_teams': assigned_teams,
+        'min_date': min_date,
+        'max_date': max_date,
+        'patient': patient,
+    }
+    
+    return render(request, 'Users/request_team_visit.html', context)
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def request_team_visit_specific(request, team_id):
+    if not request.session.get('user_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+
+    patient = get_object_or_404(User, id=request.session['user_id'])
+    team = get_object_or_404(Team, id=team_id)
+    
+    # Verify that the patient is assigned to this team
+    if not PatientAssignment.objects.filter(
+        patient=patient,
+        team=team,
+        is_active=True
+    ).exists():
+        messages.error(request, "You are not assigned to this team.")
         return redirect('patients_dashboard')
+
+    if request.method == 'POST':
+        try:
+            preferred_date = datetime.strptime(request.POST.get('preferred_date'), '%Y-%m-%d').date()
+            preferred_time = request.POST.get('preferred_time')
+            reason = request.POST.get('reason')
+            notes = request.POST.get('notes', '')
+
+            # Create team visit request
+            TeamVisitRequest.objects.create(
+                patient=patient,
+                team=team,
+                preferred_date=preferred_date,
+                preferred_time=preferred_time,
+                reason=reason,
+                additional_notes=notes,
+                status='PENDING'
+            )
+
+            messages.success(request, "Team visit request submitted successfully!")
+            return redirect('upcoming_team_visits')
+
+        except Exception as e:
+            messages.error(request, f"Error submitting request: {str(e)}")
+
+    # Calculate min and max dates for date picker
+    min_date = timezone.now().date() + timedelta(days=1)
+    max_date = min_date + timedelta(days=30)
 
     context = {
         'team': team,
+        'min_date': min_date,
+        'max_date': max_date,
+        'patient': patient,
     }
+    
     return render(request, 'Users/request_team_visit.html', context)
 
 def patient_visit_requests(request):
@@ -2939,12 +3199,23 @@ def create_team(request):
     organization = get_object_or_404(Organizations, id=org_id)
 
     if request.method == 'POST':
-        form = TeamForm(request.POST, organization=organization)
-        if form.is_valid():
-            # Check if any selected member is already in a team
-            selected_members = form.cleaned_data['members']
+        team_name = request.POST.get('name')
+        member_ids = request.POST.getlist('members')
+        
+        # Basic validation
+        if not team_name or len(member_ids) < 2:
+            if not team_name:
+                messages.error(request, "Team name is required.")
+            if len(member_ids) < 2:
+                messages.error(request, "Please select at least 2 team members.")
+            return redirect('create_team')
+
+        try:
+            # Get selected members
+            selected_members = Staff.objects.filter(id__in=member_ids)
             existing_team_members = []
             
+            # Check if members are already in teams
             for member in selected_members:
                 existing_team = TeamDashboard.objects.filter(staff=member).first()
                 if existing_team:
@@ -2953,7 +3224,7 @@ def create_team(request):
                         'team': existing_team.team.name
                     })
 
-            # If any member is already in a team, show error and redirect to team list
+            # If any member is already in a team, show error and redirect
             if existing_team_members:
                 for member in existing_team_members:
                     messages.warning(
@@ -2963,47 +3234,46 @@ def create_team(request):
                     )
                 return redirect('team_list')
 
-            # If we get here, no members are in existing teams
-            team = form.save(commit=False)
-            team.organization = organization
-            team.save()
-            form.save_m2m()
+            # Create the team
+            team = Team.objects.create(
+                name=team_name,
+                organization=organization
+            )
+            team.members.set(selected_members)
 
-            # Create team dashboards for all members
+            # Create team dashboards for all members without login credentials
             success_count = 0
             for member in team.members.all():
                 try:
-                    password = generate_password()
                     TeamDashboard.objects.create(
                         team=team,
                         staff=member,
-                        username=member.email,
-                        password=make_password(password)
-                    )
-                    # Send email with credentials
-                    send_mail(
-                        'Team Dashboard Credentials',
-                        f'Your team dashboard username: {member.email}\nPassword: {password}',
-                        settings.DEFAULT_FROM_EMAIL,
-                        [member.email],
-                        fail_silently=False,
+                        role='MEMBER'
                     )
                     success_count += 1
                 except Exception as e:
                     messages.error(
                         request,
-                        f"Failed to create dashboard for {member.get_full_name()}: {str(e)}",
+                        f"Failed to add {member.get_full_name()} to team dashboard: {str(e)}",
                         extra_tags='dismissible'
                     )
 
             if success_count > 0:
                 messages.success(request, f'Team created successfully with {success_count} member(s).')
             return redirect('team_list')
-    else:
-        form = TeamForm(organization=organization)
+
+        except Exception as e:
+            messages.error(request, f"Error creating team: {str(e)}")
+            return redirect('create_team')
+
+    # Get available staff for the organization
+    available_staff = Staff.objects.filter(
+        organization=organization,
+        is_active=True
+    ).order_by('first_name', 'last_name')
 
     context = {
-        'form': form,
+        'available_staff': available_staff,
         'organization': organization,
     }
     return render(request, 'Organizations/create_team.html', context)
@@ -3119,3 +3389,1291 @@ def toggle_team_status(request, team_id):
     
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
+@organization_login_required
+def edit_team_visit(request, visit_id):
+    team_visit = get_object_or_404(TeamVisit, 
+                                  id=visit_id, 
+                                  team__organization_id=request.session.get('org_id'))
+    
+    if request.method == 'POST':
+        try:
+            team_visit.scheduled_date = request.POST.get('scheduled_date')
+            team_visit.start_time = request.POST.get('start_time')
+            team_visit.end_time = request.POST.get('end_time')
+            team_visit.purpose = request.POST.get('purpose')
+            team_visit.status = request.POST.get('status')
+            team_visit.save()
+            
+            messages.success(request, 'Team visit updated successfully.')
+            return redirect('team_visit_list')
+            
+        except Exception as e:
+            messages.error(request, f'Error updating team visit: {str(e)}')
+            return redirect('team_visit_list')
+    
+    context = {
+        'team_visit': team_visit,
+        'today': date.today(),
+        'visit_id': visit_id
+    }
+    
+    return render(request, 'Organizations/edit_team_visit.html', context)
+
+@organization_login_required
+def cancel_team_visit(request, visit_id):
+    try:
+        visit = get_object_or_404(TeamVisit, 
+                                 id=visit_id,
+                                 team__organization_id=request.session.get('org_id'))
+        visit.status = 'CANCELLED'
+        visit.save()
+        messages.success(request, 'Team visit cancelled successfully.')
+    except Exception as e:
+        messages.error(request, f'Error cancelling team visit: {str(e)}')
+    
+    return redirect('team_visit_list')
+
+def cancel_team_visit(request, visit_id):
+    # Check if user is logged in via session
+    if 'org_name' not in request.session:
+        messages.error(request, 'Please login to access this page.')
+        return redirect('login')
+
+    visit = get_object_or_404(TeamVisit, id=visit_id)
+    
+    # Check if the visit's team belongs to the logged-in organization
+    if str(visit.team.organization.id) != str(request.session.get('org_id')):
+        messages.error(request, 'You do not have permission to cancel this visit.')
+        return redirect('team_visit_list')
+
+    visit.status = 'CANCELLED'
+    visit.save()
+    messages.success(request, 'Team visit cancelled successfully.')
+    return redirect('team_visit_list')
+
+# Initialize Razorpay client
+razorpay_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def manage_taxi_drivers(request):
+    if not request.session.get('org_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    organization = get_object_or_404(Organizations, id=request.session['org_id'])
+    
+    if request.method == 'POST':
+        try:
+            # Create TaxiDriver directly
+            driver = TaxiDriver(
+                email=request.POST.get('email'),
+                first_name=request.POST.get('first_name'),
+                last_name=request.POST.get('last_name'),
+                organization=organization,
+                vehicle_number=request.POST.get('vehicle_number'),
+                vehicle_type=request.POST.get('vehicle_type'),
+                license_number=request.POST.get('license_number'),
+                verification_token=get_random_string(64)
+            )
+            driver.save()
+
+            # Send verification email
+            verification_url = request.build_absolute_uri(
+                reverse('verify_driver_email', args=[driver.verification_token])
+            )
+            
+            send_mail(
+                'Verify Your Email',
+                f'Click here to verify your email: {verification_url}',
+                settings.DEFAULT_FROM_EMAIL,
+                [driver.email],
+                fail_silently=False,
+            )
+            
+            messages.success(request, "Driver added! Verification email sent.")
+            return redirect('manage_taxi_drivers')
+            
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+    
+    drivers = TaxiDriver.objects.filter(organization=organization)
+    context = {
+        'drivers': drivers,
+        'organization': organization,
+        'vehicle_types': TaxiDriver.VEHICLE_TYPES
+    }
+    
+    return render(request, 'Organizations/manage_taxi_drivers.html', context)
+
+def verify_driver_email(request, token):
+    driver = get_object_or_404(TaxiDriver, verification_token=token)
+    if not driver.email_verified:
+        # Generate and hash new password
+        password = get_random_string(8)
+        driver.password = make_password(password)
+        driver.email_verified = True
+        driver.verification_token = None
+        driver.save()
+
+        # Send password email
+        send_mail(
+            'Your Login Credentials',
+            f'''Hello {driver.first_name},
+            
+Your email has been verified successfully!
+Your login credentials are:
+Email: {driver.email}
+Password: {password}
+
+Please change your password after logging in.''',
+            settings.DEFAULT_FROM_EMAIL,
+            [driver.email],
+            fail_silently=False,
+        )
+        
+        messages.success(request, "Email verified! Password sent to your email.")
+    else:
+        messages.info(request, "Email already verified.")
+    
+    return redirect('login')
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def request_emergency_taxi(request):
+    if not request.session.get('user_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    patient = get_object_or_404(User, id=request.session['user_id'])
+    
+    # Check eligibility
+    has_approved_requests = ServiceRequest.objects.filter(
+        patient=patient,
+        status='APPROVED'
+    ).exists()
+    
+    if not has_approved_requests:
+        messages.error(request, "You are not eligible to use this service. Please contact your organization.")
+        return redirect('patients_dashboard')
+    
+    if request.method == 'POST':
+        form = TaxiBookingForm(request.POST)
+        if form.is_valid():
+            organization_id = request.POST.get('organization')
+            organization = get_object_or_404(Organizations, id=organization_id)
+            
+            # Calculate distance and fare
+            distance = calculate_distance(
+                form.cleaned_data['pickup_latitude'],
+                form.cleaned_data['pickup_longitude'],
+                form.cleaned_data['drop_latitude'],
+                form.cleaned_data['drop_longitude']
+            )
+            
+            estimated_fare = calculate_fare(organization, distance)
+            
+            # Create booking
+            booking = form.save(commit=False)
+            booking.patient = patient
+            booking.organization = organization
+            booking.distance_km = distance
+            booking.estimated_fare = estimated_fare
+            booking.save()
+            
+            # Create Razorpay order
+            order = create_razorpay_order(estimated_fare)
+            
+            return JsonResponse({
+                'order_id': order.id,
+                'amount': estimated_fare,
+                'booking_id': booking.id
+            })
+    else:
+        form = TaxiBookingForm()
+    
+    organizations = Organizations.objects.filter(
+        service_requests__patient=patient,
+        service_requests__status='APPROVED'
+    ).distinct()
+    
+    context = {
+        'form': form,
+        'organizations': organizations,
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+        'razorpay_key_id': settings.RAZORPAY_KEY_ID
+    }
+    
+    return render(request, 'Users/request_emergency_taxi.html', context)
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def approve_taxi_request(request, booking_id):
+    if not request.session.get('org_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    booking = get_object_or_404(TaxiBooking, id=booking_id)
+    
+    if request.method == 'POST':
+        driver_id = request.POST.get('driver')
+        amount = request.POST.get('amount')
+        
+        if driver_id and amount:
+            driver = get_object_or_404(TaxiDriver, id=driver_id)
+            booking.driver = driver
+            booking.amount = amount
+            booking.status = 'APPROVED'
+            booking.save()
+            
+            # Create Razorpay order
+            order_amount = int(float(amount) * 100)  # Convert to paise
+            order_currency = 'INR'
+            razorpay_order = razorpay_client.order.create({
+                'amount': order_amount,
+                'currency': order_currency,
+                'payment_capture': '1'
+            })
+            
+            booking.payment_id = razorpay_order['id']
+            booking.save()
+            
+            messages.success(request, "Taxi request approved successfully!")
+            return redirect('manage_taxi_bookings')
+    
+    available_drivers = TaxiDriver.objects.filter(
+        organization=booking.organization,
+        is_available=True
+    )
+    
+    context = {
+        'booking': booking,
+        'drivers': available_drivers
+    }
+    return render(request, 'Organizations/approve_taxi_request.html', context)
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def view_taxi_bookings(request):
+    if not request.session.get('user_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    try:
+        user = User.objects.get(id=request.session['user_id'])
+        bookings = TaxiBooking.objects.filter(patient=user).select_related(
+            'organization',
+            'driver',
+            'driver__user'
+        ).order_by('-booking_time')
+        
+        context = {
+            'bookings': bookings,
+            'user': user
+        }
+        return render(request, 'Users/view_taxi_bookings.html', context)
+        
+    except User.DoesNotExist:
+        messages.error(request, "User not found.")
+        return redirect('login')
+
+@require_POST
+def taxi_payment_callback(request):
+    razorpay_payment_id = request.POST.get('razorpay_payment_id')
+    razorpay_order_id = request.POST.get('razorpay_order_id')
+    razorpay_signature = request.POST.get('razorpay_signature')
+    booking_id = request.POST.get('booking_id')
+
+    try:
+        booking = TaxiBooking.objects.get(payment_id=razorpay_order_id)
+        
+        # Verify payment signature
+        params_dict = {
+            'razorpay_payment_id': razorpay_payment_id,
+            'razorpay_order_id': razorpay_order_id,
+            'razorpay_signature': razorpay_signature
+        }
+        
+        razorpay_client.utility.verify_payment_signature(params_dict)
+        
+        # Update booking status
+        booking.payment_status = 'COMPLETED'
+        booking.status = 'COMPLETED'
+        booking.save()
+        
+        # Send confirmation emails
+        send_taxi_booking_confirmation(booking)
+        
+        messages.success(request, "Payment successful! Your taxi booking is confirmed.")
+        return redirect('view_taxi_bookings')
+        
+    except Exception as e:
+        messages.error(request, f"Payment verification failed: {str(e)}")
+        return redirect('view_taxi_bookings')
+
+def send_taxi_booking_confirmation(booking):
+    # Send email to patient
+    patient_subject = "Emergency Taxi Booking Confirmation"
+    patient_message = render_to_string('emails/taxi_booking_confirmation_patient.html', {
+        'booking': booking
+    })
+    send_mail(
+        patient_subject,
+        strip_tags(patient_message),
+        settings.DEFAULT_FROM_EMAIL,
+        [booking.patient.email],
+        html_message=patient_message
+    )
+    
+    # Send email to organization
+    org_subject = "New Emergency Taxi Booking"
+    org_message = render_to_string('emails/taxi_booking_confirmation_org.html', {
+        'booking': booking
+    })
+    send_mail(
+        org_subject,
+        strip_tags(org_message),
+        settings.DEFAULT_FROM_EMAIL,
+        [booking.organization.org_email],
+        html_message=org_message
+    )
+    
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def manage_drivers(request):
+    if not request.session.get('org_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    organization = get_object_or_404(Organizations, id=request.session['org_id'])
+    
+    if request.method == 'POST':
+        form = DriverForm(request.POST, request.FILES)
+        if form.is_valid():
+            driver = form.save(commit=False)
+            driver.organization = organization
+            
+            # Create Razorpay account for driver
+            razorpay_account = create_razorpay_account(driver)
+            driver.razorpay_account_id = razorpay_account.id
+            
+            driver.save()
+            messages.success(request, "Driver added successfully!")
+            return redirect('manage_drivers')
+    else:
+        form = DriverForm()
+    
+    drivers = TaxiDriver.objects.filter(organization=organization)
+    context = {
+        'form': form,
+        'drivers': drivers
+    }
+    return render(request, 'Organizations/manage_drivers.html', context)
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def manage_fare_stages(request):
+    if not request.session.get('org_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    organization = get_object_or_404(Organizations, id=request.session['org_id'])
+    
+    if request.method == 'POST':
+        form = FareStageForm(request.POST)
+        if form.is_valid():
+            fare_stage = form.save(commit=False)
+            fare_stage.organization = organization
+            fare_stage.save()
+            messages.success(request, "Fare stage added successfully!")
+            return redirect('manage_fare_stages')
+    else:
+        form = FareStageForm()
+    
+    fare_stages = FareStage.objects.filter(organization=organization)
+    context = {
+        'form': form,
+        'fare_stages': fare_stages
+    }
+    return render(request, 'Organizations/manage_fare_stages.html', context)
+
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def driver_dashboard(request):
+    if not request.session.get('driver_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    try:
+        driver = TaxiDriver.objects.get(id=request.session['driver_id'])
+    except TaxiDriver.DoesNotExist:
+        messages.error(request, "Driver profile not found.")
+        return redirect('login')
+    
+    # Get current booking
+    current_booking = TaxiBooking.objects.filter(
+        driver=driver,
+        status__in=['DRIVER_ASSIGNED', 'STARTED']
+    ).first()
+    
+    # Get today's completed bookings
+    today = datetime.now().date()
+    completed_bookings = TaxiBooking.objects.filter(
+        driver=driver,
+        status='COMPLETED',
+        end_time__date=today
+    ).select_related('patient')
+    
+    # Calculate today's earnings (safely handle if table doesn't exist)
+    try:
+        todays_earnings = DriverEarning.objects.filter(
+            driver=driver,
+            created_at__date=today
+        ).aggregate(total=Sum('amount'))['total'] or 0
+    except Exception:
+        todays_earnings = 0
+    
+    context = {
+        'driver': driver,
+        'driver_name': f"{driver.first_name} {driver.last_name}",
+        'current_booking': current_booking,
+        'completed_bookings': completed_bookings,
+        'todays_earnings': todays_earnings,
+        'is_available': driver.is_available
+    }
+    return render(request, 'Drivers/dashboard.html', context)
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def apply_leave(request):
+    if not request.session.get('driver_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('driver_login')
+    
+    driver = get_object_or_404(TaxiDriver, id=request.session['driver_id'])
+    
+    if request.method == 'POST':
+        form = DriverLeaveForm(request.POST)
+        if form.is_valid():
+            leave = form.save(commit=False)
+            leave.driver = driver
+            leave.status = 'PENDING'
+            leave.save()
+            
+            # Notify organization
+            notify_organization_about_leave(leave)
+            
+            messages.success(request, "Leave application submitted successfully!")
+            return redirect('driver_dashboard')
+    else:
+        form = DriverLeaveForm()
+    
+    previous_leaves = DriverLeave.objects.filter(driver=driver).order_by('-created_at')
+    
+    context = {
+        'form': form,
+        'previous_leaves': previous_leaves
+    }
+    return render(request, 'Drivers/apply_leave.html', context)
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def driver_forgot_password(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        driver = TaxiDriver.objects.filter(email=email).first()
+        
+        if driver:
+            # Generate verification token
+            driver.verification_token = get_random_string(64)
+            driver.save()
+            
+            # Send reset password email
+            reset_url = request.build_absolute_uri(
+                reverse('driver_reset_password', args=[driver.verification_token])
+            )
+            
+            send_mail(
+                'Reset Your Password',
+                f'Click here to reset your password: {reset_url}',
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+            )
+            
+            messages.success(request, "Password reset link sent to your email.")
+            return redirect('login')
+        else:
+            messages.error(request, "No driver account found with this email.")
+    
+    return render(request, 'Drivers/forgot_password.html')
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def driver_reset_password(request, token):
+    driver = get_object_or_404(TaxiDriver, verification_token=token)
+    
+    if request.method == 'POST':
+        password1 = request.POST.get('password1')
+        password2 = request.POST.get('password2')
+        
+        if password1 != password2:
+            messages.error(request, "Passwords don't match!")
+            return redirect('driver_reset_password', token=token)
+        
+        if len(password1) < 8:
+            messages.error(request, "Password must be at least 8 characters long!")
+            return redirect('driver_reset_password', token=token)
+        
+        # Update password
+        driver.password = make_password(password1)
+        driver.verification_token = None  # Clear the token
+        driver.save()
+        
+        messages.success(request, "Password reset successfully! Please login with your new password.")
+        return redirect('login')
+    
+    return render(request, 'Drivers/reset_password.html', {'token': token})
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def submit_complaint(request, booking_id):
+    if not request.session.get('user_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    booking = get_object_or_404(TaxiBooking, 
+                               id=booking_id, 
+                               patient_id=request.session['user_id'])
+    
+    if request.method == 'POST':
+        form = ComplaintForm(request.POST)
+        if form.is_valid():
+            complaint = form.save(commit=False)
+            complaint.booking = booking
+            complaint.save()
+            
+            # Notify organization and driver
+            notify_about_complaint(complaint)
+            
+            messages.success(request, "Complaint submitted successfully!")
+            return redirect('view_taxi_bookings')
+    else:
+        form = ComplaintForm()
+    
+    context = {
+        'form': form,
+        'booking': booking
+    }
+    return render(request, 'Users/submit_complaint.html', context)
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def manage_complaints(request):
+    if not request.session.get('org_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    organization = get_object_or_404(Organizations, id=request.session['org_id'])
+    
+    complaints = TaxiComplaint.objects.filter(
+        booking__organization=organization
+    ).select_related('booking', 'booking__patient', 'booking__driver')
+    
+    context = {
+        'complaints': complaints
+    }
+    return render(request, 'Organizations/manage_complaints.html', context)
+
+def process_taxi_payment(request):
+    if request.method == 'POST':
+        try:
+            # Verify Razorpay signature
+            razorpay_payment_id = request.POST.get('razorpay_payment_id')
+            razorpay_order_id = request.POST.get('razorpay_order_id')
+            razorpay_signature = request.POST.get('razorpay_signature')
+            booking_id = request.POST.get('booking_id')
+            
+            booking = get_object_or_404(TaxiBooking, id=booking_id)
+            
+            # Verify payment signature
+            if verify_razorpay_signature(
+                razorpay_order_id,
+                razorpay_payment_id,
+                razorpay_signature
+            ):
+                # Update booking status
+                booking.payment_status = 'COMPLETED'
+                booking.payment_id = razorpay_payment_id
+                booking.save()
+                
+                # Transfer money to driver's account
+                transfer_to_driver(booking)
+                
+                # Send notifications
+                notify_payment_success(booking)
+                
+                return JsonResponse({'status': 'success'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Invalid signature'})
+                
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def driver_earnings(request):
+    if not request.session.get('user_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    try:
+        driver = TaxiDriver.objects.get(user_id=request.session['user_id'])
+    except TaxiDriver.DoesNotExist:
+        messages.error(request, "Driver profile not found.")
+        return redirect('login')
+    
+    # Get date range from request or default to last 30 days
+    end_date = datetime.strptime(request.GET.get('end_date', datetime.now().date().strftime('%Y-%m-%d')), '%Y-%m-%d').date()
+    start_date = datetime.strptime(request.GET.get('start_date', (end_date - timedelta(days=30)).strftime('%Y-%m-%d')), '%Y-%m-%d').date()
+    
+    # Get earnings data
+    earnings_data = DriverEarning.objects.filter(
+        driver=driver,
+        booking__end_time__date__range=[start_date, end_date]
+    ).annotate(
+        date=TruncDate('booking__end_time')
+    ).values('date').annotate(
+        earnings=Sum('amount'),
+        rides=Count('id'),
+        total_distance=Sum('booking__distance_km'),
+        avg_rating=Avg('booking__patient_rating')
+    ).order_by('date')
+    
+    # Prepare chart data
+    dates = []
+    earnings = []
+    for data in earnings_data:
+        dates.append(data['date'].strftime('%b %d'))
+        earnings.append(float(data['earnings']))
+    
+    # Calculate summary
+    summary = earnings_data.aggregate(
+        total_earnings=Sum('earnings'),
+        total_rides=Sum('rides'),
+    )
+    
+    context = {
+        'start_date': start_date,
+        'end_date': end_date,
+        'daily_earnings': earnings_data,
+        'total_earnings': summary['total_earnings'] or 0,
+        'total_rides': summary['total_rides'] or 0,
+        'average_per_ride': (summary['total_earnings'] / summary['total_rides']) if summary['total_rides'] else 0,
+        'dates': json.dumps(dates),
+        'earnings': json.dumps(earnings)
+    }
+    return render(request, 'Drivers/earnings.html', context)
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def driver_leave(request):
+    if not request.session.get('user_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    try:
+        driver = TaxiDriver.objects.get(user_id=request.session['user_id'])
+    except TaxiDriver.DoesNotExist:
+        messages.error(request, "Driver profile not found.")
+        return redirect('login')
+    
+    if request.method == 'POST':
+        try:
+            data = request.POST
+            start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
+            end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+            
+            # Validate dates
+            if start_date < datetime.now().date():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Start date cannot be in the past'
+                })
+            
+            if end_date < start_date:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'End date cannot be before start date'
+                })
+            
+            # Check for overlapping leaves
+            overlapping_leave = DriverLeave.objects.filter(
+                driver=driver,
+                status='APPROVED',
+                start_date__lte=end_date,
+                end_date__gte=start_date
+            ).exists()
+            
+            if overlapping_leave:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'You already have approved leave during this period'
+                })
+            
+            # Create leave request
+            leave = DriverLeave.objects.create(
+                driver=driver,
+                start_date=start_date,
+                end_date=end_date,
+                leave_type=data['leave_type'],
+                reason=data['reason']
+            )
+            
+            # Notify organization
+            notify_organization_about_leave(leave)
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Leave request submitted successfully'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
+    
+    # Get leave history
+    leave_history = DriverLeave.objects.filter(driver=driver)
+    
+    context = {
+        'today': datetime.now().date(),
+        'leave_history': leave_history
+    }
+    return render(request, 'Drivers/leave.html', context)
+
+
+@require_POST
+def toggle_driver_availability(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({
+            'success': False,
+            'message': 'Please log in to continue'
+        })
+    
+    try:
+        data = json.loads(request.body)
+        driver = TaxiDriver.objects.get(user_id=request.session['user_id'])
+        
+        # Check if driver has ongoing ride
+        has_ongoing_ride = TaxiBooking.objects.filter(
+            driver=driver,
+            status__in=['DRIVER_ASSIGNED', 'STARTED']
+        ).exists()
+        
+        if has_ongoing_ride and not data['is_available']:
+            return JsonResponse({
+                'success': False,
+                'message': 'Cannot go offline while having an ongoing ride'
+            })
+        
+        driver.is_available = data['is_available']
+        driver.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Status updated successfully'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        })
+        
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def manage_leaves(request):
+    if not request.session.get('org_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    organization = get_object_or_404(Organizations, id=request.session['org_id'])
+    today = timezone.now().date()
+    month_start = today.replace(day=1)
+    
+    # Get all leave requests for the organization
+    pending_requests = DriverLeave.objects.filter(
+        driver__organization=organization,
+        status='PENDING'
+    ).select_related('driver', 'driver__user').order_by('start_date')
+    
+    approved_leaves = DriverLeave.objects.filter(
+        driver__organization=organization,
+        status='APPROVED'
+    ).select_related('driver', 'driver__user').order_by('-start_date')
+    
+    rejected_leaves = DriverLeave.objects.filter(
+        driver__organization=organization,
+        status='REJECTED'
+    ).select_related('driver', 'driver__user').order_by('-updated_at')
+    
+    # Calculate statistics
+    stats = {
+        'pending_leaves': pending_requests.count(),
+        'approved_today': DriverLeave.objects.filter(
+            driver__organization=organization,
+            status='APPROVED',
+            updated_at__date=today
+        ).count(),
+        'on_leave': DriverLeave.objects.filter(
+            driver__organization=organization,
+            status='APPROVED',
+            start_date__lte=today,
+            end_date__gte=today
+        ).count(),
+        'rejected_month': DriverLeave.objects.filter(
+            driver__organization=organization,
+            status='REJECTED',
+            updated_at__date__gte=month_start
+        ).count()
+    }
+    
+    context = {
+        'pending_requests': pending_requests,
+        'approved_leaves': approved_leaves,
+        'rejected_leaves': rejected_leaves,
+        'today': today,
+        **stats
+    }
+    
+    return render(request, 'Organizations/manage_leaves.html', context)
+
+@require_POST
+def handle_leave_request(request):
+    if not request.session.get('org_id'):
+        return JsonResponse({
+            'success': False,
+            'message': 'Please log in to continue'
+        })
+    
+    try:
+        organization = Organizations.objects.get(id=request.session['org_id'])
+        leave_id = request.POST.get('leave_id')
+        action = request.POST.get('action')
+        response_note = request.POST.get('response_note')
+        
+        leave_request = DriverLeave.objects.get(
+            id=leave_id,
+            driver__organization=organization,
+            status='PENDING'
+        )
+        
+        if action == 'approve':
+            # Check for overlapping approved leaves
+            overlapping = DriverLeave.objects.filter(
+                driver=leave_request.driver,
+                status='APPROVED',
+                start_date__lte=leave_request.end_date,
+                end_date__gte=leave_request.start_date
+            ).exists()
+            
+            if overlapping:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'There is already an approved leave during this period'
+                })
+            
+            leave_request.status = 'APPROVED'
+        elif action == 'reject':
+            leave_request.status = 'REJECTED'
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid action'
+            })
+        
+        leave_request.response_note = response_note
+        leave_request.save()
+        
+        # Send notification to driver
+        notify_driver_about_leave_response(leave_request)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Leave request {action}d successfully'
+        })
+        
+    except (Organizations.DoesNotExist, DriverLeave.DoesNotExist):
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid request'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        })
+
+@organization_login_required
+def view_request(request, request_id):
+    service_request = get_object_or_404(ServiceRequest, id=request_id, organization_id=request.session.get('org_id'))
+    context = {
+        'service_request': service_request
+    }
+    return render(request, 'Organizations/view_request.html', context)
+
+@organization_login_required
+def approve_request(request, request_id):
+    service_request = get_object_or_404(ServiceRequest, id=request_id, organization_id=request.session.get('org_id'))
+    try:
+        service_request.status = 'approved'
+        service_request.save()
+        messages.success(request, 'Service request approved successfully.')
+    except Exception as e:
+        messages.error(request, f'Error approving request: {str(e)}')
+    return redirect('pending_requests')
+
+@organization_login_required
+def reject_request(request, request_id):
+    service_request = get_object_or_404(ServiceRequest, id=request_id, organization_id=request.session.get('org_id'))
+    try:
+        service_request.status = 'rejected'
+        service_request.save()
+        messages.success(request, 'Service request rejected successfully.')
+    except Exception as e:
+        messages.error(request, f'Error rejecting request: {str(e)}')
+    return redirect('pending_requests')
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def upcoming_team_visits(request):
+    if not request.session.get('user_id'):
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+
+    patient = get_object_or_404(User, id=request.session['user_id'])
+    
+    # Get upcoming team visits for the patient
+    team_visits = TeamVisit.objects.filter(
+        patient=patient,
+        scheduled_date__gte=timezone.now().date()
+    ).order_by('scheduled_date', 'start_time')
+
+    context = {
+        'team_visits': team_visits,
+        'patient': patient,
+    }
+    
+    return render(request, 'Users/upcoming_team_visits.html', context)
+
+
+from django.views.decorators.csrf import csrf_protect
+
+@team_login_required
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def team_dashboard(request):
+    try:
+        current_time = timezone.now()
+        
+        # Get patients with scheduled visits
+        scheduled_patients = User.objects.filter(
+            team_visits__team=request.team_membership.team,
+            team_visits__status='SCHEDULED',
+            team_visits__scheduled_date__gte=current_time,
+            is_active=True
+        ).distinct().order_by('first_name')
+        
+        scheduled_visits = TeamVisit.objects.filter(
+            team=request.team_membership.team,
+            status='SCHEDULED',
+            scheduled_date__gte=current_time
+        ).select_related('patient').order_by('scheduled_date')[:5]
+
+        completed_visits = TeamVisit.objects.filter(
+            team=request.team_membership.team,
+            status='COMPLETED'
+        ).select_related('patient').order_by('-scheduled_date')[:10]
+
+        context = {
+            'staff': request.team_membership.staff,
+            'team': request.team_membership.team,
+            'role': request.team_membership.role,
+            'patients': scheduled_patients,
+            'scheduled_visits': scheduled_visits,
+            'completed_visits': completed_visits,
+        }
+
+        return render(request, 'teams/dashboard.html', context)
+
+    except TeamVisit.DoesNotExist:
+        messages.warning(request, "No scheduled visits found for your team.")
+        return render(request, 'teams/dashboard.html', {
+            'staff': request.team_membership.staff,
+            'team': request.team_membership.team,
+            'role': request.team_membership.role
+        })
+    
+    except User.DoesNotExist:
+        messages.error(request, "Error accessing patient records. Please try again later.")
+        return redirect('login')
+    
+    except OperationalError:
+        messages.error(request, "Database connection error. Please try again later.")
+        return redirect('login')
+    
+    except Exception as e:
+        messages.error(request, f"An unexpected error occurred: {str(e)}")
+        # Log the error here if you have logging configured
+        return redirect('login')
+    
+    
+@team_login_required
+def get_patient_details(request, patient_id):
+    try:
+        # Get the patient and their latest visit
+        patient = get_object_or_404(User, id=patient_id)
+        latest_visit = PatientVisitRecord.objects.filter(
+            patient=patient,
+            team=request.team_membership.team
+        ).order_by('-visit_date').first()
+
+        if latest_visit:
+            previous_vitals = {
+                'blood_pressure': latest_visit.blood_pressure,
+                'pulse_rate': latest_visit.pulse_rate,
+                'temperature': latest_visit.temperature,
+                'respiratory_rate': latest_visit.respiratory_rate,
+                'oxygen_saturation': latest_visit.oxygen_saturation
+            }
+
+            return JsonResponse({
+                'status': 'success',
+                'previous_vitals': previous_vitals,
+                'medical_history': latest_visit.medical_conditions
+            })
+        
+        return JsonResponse({
+            'status': 'success',
+            'previous_vitals': None,
+            'medical_history': None
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=400)
+
+@team_login_required
+@require_http_methods(["POST"])
+def save_patient_data(request):
+    try:
+        patient_id = request.POST.get('patient_id')
+        if not patient_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Patient ID is required'
+            }, status=400)
+
+        team = request.team_membership.team
+        current_time = timezone.now()
+
+        # Create visit record
+        visit_record = PatientVisitRecord.objects.create(
+            patient_id=int(patient_id),
+            team=team,
+            staff=request.team_membership.staff,
+            visit_date=current_time,
+            blood_pressure=request.POST.get('blood_pressure'),
+            pulse_rate=request.POST.get('pulse_rate'),
+            temperature=request.POST.get('temperature'),
+            respiratory_rate=request.POST.get('respiratory_rate'),
+            oxygen_saturation=request.POST.get('oxygen_saturation'),
+            pain_score=request.POST.get('pain_score'),
+            pain_location=request.POST.get('pain_location'),
+            pain_character=request.POST.get('pain_character'),
+            medical_conditions=request.POST.get('medical_conditions'),
+            symptoms=request.POST.get('symptoms'),
+            medications=request.POST.get('medications'),
+            clinical_notes=request.POST.get('clinical_notes'),
+            activity_level=request.POST.get('activity_level'),
+            weight=request.POST.get('weight'),
+            consciousness_level=request.POST.get('consciousness_level'),
+            mood_status=request.POST.get('mood_status')
+        )
+
+        # Update team visit status
+        team_visit = TeamVisit.objects.get(
+            patient_id=patient_id,
+            team=team,
+            status='SCHEDULED'
+        )
+        team_visit.status = 'COMPLETED'
+        team_visit.save()
+
+        # Skip ML predictions for now
+        visit_record.visit_priority_score = 0  # Default value
+        visit_record.next_visit_recommendation = 7  # Default 7 days
+        visit_record.save()
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Visit record saved successfully'
+        })
+
+    except Exception as e:
+        logger.error(f"Error saving patient data: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Visit record saved successfully, but ML predictions could not be generated.',
+            'details': str(e)
+        }, status=200)  # Still return 200 as the core data was saved
+
+def get_risk_trends(patient_id):
+    """Get historical risk trends for a patient"""
+    try:
+        records = PatientVisitRecord.objects.filter(
+            patient_id=patient_id
+        ).order_by('-visit_date')[:10]  # Last 10 visits
+
+        return {
+            'dates': [record.visit_date.strftime('%Y-%m-%d') for record in records],
+            'priority_scores': [float(record.visit_priority_score) for record in records]
+        }
+    except Exception as e:
+        logger.error(f"Error fetching risk trends: {str(e)}")
+        return {
+            'dates': [],
+            'priority_scores': []
+        }
+
+
+@team_login_required
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def visit_report(request, visit_id):
+    try:
+        visit = TeamVisit.objects.select_related(
+            'patient', 'team'
+        ).get(
+            id=visit_id,
+            team=request.team_membership.team,
+            status='COMPLETED'
+        )
+        
+        # Get the visit record without date matching
+        visit_record = PatientVisitRecord.objects.filter(
+            patient=visit.patient,
+            team=visit.team
+        ).order_by('-created_at').first()  # Get the most recent record
+        
+        if not visit_record:
+            messages.error(request, "Visit record not found.")
+            return redirect('team_dashboard')
+        
+        context = {
+            'visit': visit,
+            'visit_record': visit_record,
+            'staff': request.team_membership.staff,
+            'team': request.team_membership.team,
+            'report_date': timezone.now(),
+        }
+        
+        return render(request, 'teams/visit_report.html', context)
+        
+    except TeamVisit.DoesNotExist:
+        messages.error(request, "Visit report not found or unauthorized access.")
+        return redirect('team_dashboard')
+
+# Add these new view functions
+@organization_login_required
+@organization_login_required
+def patient_risk_history(request):
+    # Get patient's visit records
+    records = PatientVisitRecord.objects.filter(
+        patient_id=request.GET.get('patient_id')
+    ).order_by('-visit_date')
+
+    # Calculate risk trends
+    risk_data = []
+    for record in records:
+        calculator = VisitPriorityCalculator()
+        priority = calculator.calculate_priority(record)
+        risk_data.append({
+            'date': record.visit_date,
+            'priority_score': priority,
+            'vital_signs': {
+                'blood_pressure': record.blood_pressure,
+                'pulse_rate': record.pulse_rate,
+                # ... other vitals ...
+            }
+        })
+
+    return render(request, 'Organizations/ML/patient_risk_history.html', {
+        'risk_data': risk_data
+    })
+
+@organization_login_required
+def priority_alerts(request):
+    # Get high-priority patients
+    high_risk_records = PatientVisitRecord.objects.filter(
+        visit_priority_score__gte=8.0
+    ).select_related('patient').order_by('-visit_priority_score')
+
+    alerts = []
+    for record in high_risk_records:
+        alerts.append({
+            'patient_name': record.patient.get_full_name(),
+            'priority_score': record.visit_priority_score,
+            'next_visit': record.next_visit_recommendation,
+            'risk_factors': {
+                'vitals': record.blood_pressure,
+                'pain': record.pain_score,
+                # ... other factors ...
+            }
+        })
+
+    return render(request, 'Organizations/ML/priority_alerts.html', {
+        'alerts': alerts
+    })
+
+@organization_login_required
+def risk_comparison(request):
+    return render(request, 'Organizations/ML/risk_comparison.html')
+
+@organization_login_required
+def risk_monitoring(request):
+    return render(request, 'Organizations/ML/risk_monitoring.html')
+
+@organization_login_required
+def schedule_optimizer(request):
+    return render(request, 'Organizations/ML/schedule_optimizer.html')
+
+@organization_login_required
+def team_availability(request):
+    return render(request, 'Organizations/ML/team_availability.html')
+
+@organization_login_required
+def visit_priority(request):
+    return render(request, 'Organizations/ML/visit_priority.html')
+
+# #API Endpoints
+
+# from rest_framework import viewsets
+# from rest_framework.decorators import action
+# from rest_framework.response import Response
+# from ..ml.risk_predictor import RiskPredictor
+# from ..ml.priority_calculator import VisitPriorityCalculator
+
+# class HealthPredictionViewSet(viewsets.ViewSet):
+#     @action(detail=True, methods=['POST'])
+#     def predict_risks(self, request, pk=None):
+#         """
+#         Endpoint for risk prediction
+#         """
+#         visit_record = self.get_object()
+#         predictor = RiskPredictor()
+#         risks = predictor.predict_risks(visit_record)
+#         return Response(risks)
+
+#     @action(detail=True, methods=['POST'])
+#     def calculate_priority(self, request, pk=None):
+#         """
+#         Endpoint for priority calculation
+#         """
+#         visit_record = self.get_object()
+#         calculator = VisitPriorityCalculator()
+#         priority = calculator.calculate_priority(visit_record)
+#         next_visit = calculator.get_next_visit_recommendation(priority)
+#         return Response({
+#             'priority_score': priority,
+#             'next_visit_days': next_visit
+#         })

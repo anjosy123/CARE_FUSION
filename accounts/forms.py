@@ -1,12 +1,12 @@
 from django import forms
-from .models import Service, Team
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
-from .models import ServiceRequest,Service,Staff,PatientAssignment,Prescription,Appointment, Team, TeamVisit, TeamMessage, VisitChecklist, VisitNote
+from .models import ServiceRequest,Service,Staff,PatientAssignment,Prescription,Appointment, Team, TeamVisit, TeamMessage, VisitChecklist, VisitNote, TaxiDriver, TaxiBooking, FareStage, DriverLeave, DriverEarning, TaxiComplaint
 from django.core.exceptions import ValidationError
 from datetime import datetime
 import os
 import imghdr
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -21,7 +21,7 @@ class UserRegisterForm(UserCreationForm):
 class StaffForm(forms.ModelForm):
     class Meta:
         model = Staff
-        fields = ['first_name', 'last_name', 'email', 'phone_number', 'role', 'designation', 'experience', 'profile_pic']
+        fields = ['first_name', 'last_name', 'email', 'phone', 'role', 'designation', 'experience', 'profile_pic', 'gender', 'address', 'qualifications']
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -70,8 +70,8 @@ class StaffForm(forms.ModelForm):
 
         return profile_pic
 
-    def clean_phone_number(self):
-        phone = self.cleaned_data.get('phone_number')
+    def clean_phone(self):  # Changed from clean_phone_number to clean_phone
+        phone = self.cleaned_data.get('phone')  # Changed from phone_number to phone
         if not phone:
             raise ValidationError("Phone number is required.")
         
@@ -290,26 +290,179 @@ class TeamForm(forms.ModelForm):
             raise forms.ValidationError("A team must have at least 2 members.")
         return members
 
+from django import forms
+from django.utils import timezone
+from .models import TeamVisit, Team, User
+
 class TeamVisitForm(forms.ModelForm):
-    patient = forms.ModelChoiceField(queryset=User.objects.none())
+    # Custom patient field with proper label display
+    patient = forms.ModelChoiceField(
+        queryset=User.objects.none(),
+        empty_label="Select a Patient",
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'placeholder': 'Select Patient'
+        }),
+        label="Patient"
+    )
 
     class Meta:
         model = TeamVisit
-        fields = ['team', 'patient', 'scheduled_date', 'start_time', 'end_time', 'notes']
+        fields = ['team', 'patient', 'scheduled_date', 'start_time', 'end_time', 'notes', 'status']
         widgets = {
-            'scheduled_date': forms.DateInput(attrs={'type': 'date'}),
-            'start_time': forms.TimeInput(attrs={'type': 'time'}),
-            'end_time': forms.TimeInput(attrs={'type': 'time'}),
+            'team': forms.Select(attrs={
+                'class': 'form-control',
+                'placeholder': 'Select Team'
+            }),
+            'scheduled_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+            'start_time': forms.TimeInput(attrs={
+                'type': 'time',
+                'class': 'form-control'
+            }),
+            'end_time': forms.TimeInput(attrs={
+                'type': 'time',
+                'class': 'form-control'
+            }),
+            'notes': forms.Textarea(attrs={
+                'rows': 4,
+                'class': 'form-control',
+                'placeholder': 'Enter any additional notes here...'
+            }),
+            'status': forms.Select(attrs={
+                'class': 'form-control'
+            })
         }
 
     def __init__(self, *args, **kwargs):
         organization = kwargs.pop('organization', None)
-        super(TeamVisitForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
+        
+        # Make all fields required except notes
+        for field_name, field in self.fields.items():
+            if field_name not in ['notes']:
+                field.required = True
+        
+        # Add help texts and labels
+        field_helps = {
+            'team': 'Select the team that will conduct the visit',
+            'patient': 'Select the patient to be visited',
+            'scheduled_date': 'Select the date for the team visit',
+            'start_time': 'Select the start time of the visit',
+            'end_time': 'Select the end time of the visit',
+            'notes': 'Add any additional notes or instructions (optional)',
+            'status': 'Current status of the visit'
+        }
+
+        field_labels = {
+            'team': 'Select Team',
+            'patient': 'Select Patient',
+            'scheduled_date': 'Visit Date',
+            'start_time': 'Start Time',
+            'end_time': 'End Time',
+            'notes': 'Additional Notes',
+            'status': 'Visit Status'
+        }
+
+        # Apply help texts and labels
+        for field_name, help_text in field_helps.items():
+            self.fields[field_name].help_text = help_text
+        
+        for field_name, label in field_labels.items():
+            self.fields[field_name].label = label
+
+        # Filter querysets if organization is provided
         if organization:
-            self.fields['team'].queryset = Team.objects.filter(organization=organization)
-            # Get patients who have made service requests to this organization
-            patient_ids = ServiceRequest.objects.filter(organization=organization).values_list('patient', flat=True).distinct()
-            self.fields['patient'].queryset = User.objects.filter(id__in=patient_ids)
+            # Filter teams
+            self.fields['team'].queryset = Team.objects.filter(
+                organization=organization,
+                is_active=True
+            ).order_by('name')
+
+            # Get current date for filtering
+            current_date = timezone.now().date()
+            
+            # Get patients who already have scheduled visits
+            patients_with_visits = TeamVisit.objects.filter(
+                team__organization=organization,
+                scheduled_date__gte=current_date,
+                status__in=['SCHEDULED', 'IN_PROGRESS']
+            ).values_list('patient', flat=True)
+
+            # Filter and set the patient queryset
+            patient_queryset = User.objects.filter(
+                service_requests__organization=organization,
+                service_requests__status='APPROVED',
+                is_active=True
+            ).exclude(
+                id__in=patients_with_visits
+            ).exclude(
+                is_staff=True,
+                is_superuser=True
+            ).distinct().order_by('first_name', 'last_name')
+
+            self.fields['patient'].queryset = patient_queryset
+            self.fields['patient'].label_from_instance = lambda obj: (
+                f"{obj.first_name} {obj.last_name}"
+            )
+
+        # Set default status for new visits
+        if not self.instance.pk:
+            self.fields['status'].initial = 'SCHEDULED'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+        scheduled_date = cleaned_data.get('scheduled_date')
+        team = cleaned_data.get('team')
+        patient = cleaned_data.get('patient')
+
+        if start_time and end_time:
+            if start_time >= end_time:
+                raise forms.ValidationError({
+                    'end_time': "End time must be after start time"
+                })
+
+        if scheduled_date:
+            if scheduled_date < timezone.now().date():
+                raise forms.ValidationError({
+                    'scheduled_date': "Visit cannot be scheduled in the past"
+                })
+
+        # Check if patient already has a visit scheduled for this date
+        if patient and scheduled_date:
+            existing_visit = TeamVisit.objects.filter(
+                patient=patient,
+                scheduled_date=scheduled_date,
+                status__in=['SCHEDULED', 'IN_PROGRESS']
+            ).exclude(pk=self.instance.pk if self.instance else None).first()
+            
+            if existing_visit:
+                raise forms.ValidationError(
+                    f"Patient already has a visit scheduled with {existing_visit.team.name} "
+                    f"on {scheduled_date} from {existing_visit.start_time.strftime('%I:%M %p')} "
+                    f"to {existing_visit.end_time.strftime('%I:%M %p')}"
+                )
+
+        # Check for team availability
+        if team and scheduled_date and start_time and end_time:
+            overlapping_visits = TeamVisit.objects.filter(
+                team=team,
+                scheduled_date=scheduled_date,
+                status__in=['SCHEDULED', 'IN_PROGRESS']
+            ).exclude(pk=self.instance.pk if self.instance else None)
+
+            for visit in overlapping_visits:
+                if (start_time < visit.end_time and end_time > visit.start_time):
+                    raise forms.ValidationError(
+                        f"Team is already scheduled for another visit during this time slot "
+                        f"({visit.start_time.strftime('%I:%M %p')} - {visit.end_time.strftime('%I:%M %p')})"
+                    )
+
+        return cleaned_data
 
 class RescheduleTeamVisitForm(forms.Form):
     new_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
@@ -365,4 +518,64 @@ class ProfileUpdateForm(forms.ModelForm):
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
+        }
+
+class DriverForm(forms.ModelForm):
+    class Meta:
+        model = TaxiDriver
+        fields = [
+            'vehicle_number',
+            'vehicle_type',
+            'license_number',
+            'organization'
+        ]
+
+class TaxiBookingForm(forms.ModelForm):
+    class Meta:
+        model = TaxiBooking
+        fields = ['pickup_location', 'drop_location', 'emergency_notes']
+        widgets = {
+            'emergency_notes': forms.Textarea(attrs={'rows': 3}),
+            'pickup_location': forms.Textarea(attrs={'rows': 2}),
+            'drop_location': forms.Textarea(attrs={'rows': 2}),
+        }
+
+class FareStageForm(forms.ModelForm):
+    class Meta:
+        model = FareStage
+        fields = ['start_km', 'base_fare', 'per_km_rate']
+        widgets = {
+            'start_km': forms.NumberInput(attrs={'class': 'form-control'}),
+            'base_fare': forms.NumberInput(attrs={'class': 'form-control'}),
+            'per_km_rate': forms.NumberInput(attrs={'class': 'form-control'})
+        }
+        
+class DriverLeaveForm(forms.ModelForm):
+    class Meta:
+        model = DriverLeave
+        fields = ['start_date', 'end_date', 'leave_type', 'reason']
+        widgets = {
+            'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'leave_type': forms.Select(attrs={'class': 'form-control'}),
+            'reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
+        }
+        
+class DriverEarningForm(forms.ModelForm):
+    class Meta:
+        model = DriverEarning
+        fields = ['amount', 'booking']
+        widgets = {
+            'amount': forms.NumberInput(attrs={'class': 'form-control'}),
+            'booking': forms.Select(attrs={'class': 'form-control'})
+        }
+        
+class ComplaintForm(forms.ModelForm):
+    class Meta:
+        model = TaxiComplaint
+        fields = ['booking', 'complaint_type', 'description']
+        widgets = {
+            'booking': forms.Select(attrs={'class': 'form-control'}),
+            'complaint_type': forms.Select(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
         }

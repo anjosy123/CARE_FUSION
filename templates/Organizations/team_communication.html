@@ -1,235 +1,337 @@
-{% extends "base.html" %}
 {% load static %}
 
-{% block logo %}
-<div class="logo">
-  <a href="{% url 'palliatives_dashboard' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" style="object-fit: contain;"/></a>
-</div>
-{% endblock logo %}
-
-{% block content %}
-<div class="container-fluid mt-4">
-    <div class="row">
-        <!-- Team Info Sidebar -->
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Team Information</h5>
-                </div>
-                <div class="card-body">
-                    <h6>{{ team.name }}</h6>
-                    <hr>
-                    <h6>Team Members:</h6>
-                    <ul class="list-unstyled">
-                        {% for member in team.members.all %}
-                            <li>{{ member.get_full_name }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Chat Area -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Team Communication</h5>
-                    <div class="btn-group">
-                        <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            Filter Messages
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" data-filter="all">All Messages</a></li>
-                            <li><a class="dropdown-item" href="#" data-filter="PATIENT_UPDATE">Patient Updates</a></li>
-                            <li><a class="dropdown-item" href="#" data-filter="VISIT_REPORT">Visit Reports</a></li>
-                            <li><a class="dropdown-item" href="#" data-filter="EMERGENCY">Emergency</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div id="chat-messages" class="chat-container mb-3">
-                        {% for message in messages %}
-                            <div class="message-bubble {% if message.is_urgent %}urgent{% endif %}" 
-                                 data-category="{{ message.category }}">
-                                <div class="message-header">
-                                    <strong>{{ message.get_sender_name }}</strong>
-                                    <span class="badge bg-secondary">{{ message.get_category_display }}</span>
-                                    {% if message.is_urgent %}
-                                        <span class="badge bg-danger">Urgent</span>
-                                    {% endif %}
-                                </div>
-                                <div class="message-content">
-                                    {{ message.content }}
-                                </div>
-                                <div class="message-footer">
-                                    <small class="text-muted">{{ message.created_at|date:"M d, Y H:i" }}</small>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-
-                    <form id="message-form" class="mt-3">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <select class="form-select mb-2" id="message-category">
-                                <option value="GENERAL">General Communication</option>
-                                <option value="PATIENT_UPDATE">Patient Update</option>
-                                <option value="VISIT_REPORT">Visit Report</option>
-                                <option value="EMERGENCY">Emergency</option>
-                            </select>
-                            <textarea class="form-control mb-2" id="message-content" rows="3" 
-                                      placeholder="Type your message..."></textarea>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="is-urgent">
-                                <label class="form-check-label" for="is-urgent">
-                                    Mark as Urgent
-                                </label>
-                            </div>
-                            <button type="submit" class="btn btn-primary">Send Message</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Patient List Sidebar -->
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Team Patients</h5>
-                </div>
-                <div class="card-body">
-                    <div class="list-group">
-                        {% for patient in team_patients %}
-                            <a href="#" class="list-group-item list-group-item-action patient-select" 
-                               data-patient-id="{{ patient.id }}">
-                                {{ patient.get_full_name }}
-                            </a>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    const chatSocket = new WebSocket(
-        'ws://' + window.location.host + '/ws/team/{{ team.id }}/'
-    );
-
-    const messageForm = document.getElementById('message-form');
-    const chatMessages = document.getElementById('chat-messages');
-
-    chatSocket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        addMessage(data);
-    };
-
-    messageForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const messageContent = document.getElementById('message-content').value;
-        const messageCategory = document.getElementById('message-category').value;
-        const isUrgent = document.getElementById('is-urgent').checked;
-        const selectedPatient = document.querySelector('.patient-select.active');
-        
-        if (messageContent.trim()) {
-            chatSocket.send(JSON.stringify({
-                'message': messageContent,
-                'category': messageCategory,
-                'is_urgent': isUrgent,
-                'patient_id': selectedPatient ? selectedPatient.dataset.patientId : null,
-                'sender_type': '{{ sender_type }}',
-                'sender_id': '{{ sender_id }}'
-            }));
-            
-            messageForm.reset();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Communication - {{ team.name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-    });
 
-    function addMessage(data) {
-        const messageHTML = `
-            <div class="message-bubble ${data.is_urgent ? 'urgent' : ''}" data-category="${data.category}">
-                <div class="message-header">
-                    <strong>${data.sender_name}</strong>
-                    <span class="badge bg-secondary">${data.category}</span>
-                    ${data.is_urgent ? '<span class="badge bg-danger">Urgent</span>' : ''}
+        body {
+            background-color: #f5f7fb;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 1rem 2rem;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 40px;
+            object-fit: contain;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: opacity 0.3s;
+        }
+
+        .nav-menu a:hover {
+            opacity: 0.8;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+        }
+
+        .team-info {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .team-name {
+            font-size: 1.5rem;
+            color: #1e3c72;
+            margin-bottom: 1rem;
+        }
+
+        .team-members {
+            margin-top: 1rem;
+        }
+
+        .member-list {
+            list-style: none;
+        }
+
+        .member-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .member-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1e3c72;
+            font-weight: bold;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 200px);
+        }
+
+        .chat-header {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            max-width: 70%;
+        }
+
+        .message.sent {
+            margin-left: auto;
+        }
+
+        .message-content {
+            background: #f0f2f5;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .message.sent .message-content {
+            background: #1e3c72;
+            color: white;
+        }
+
+        .message-meta {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.3rem;
+        }
+
+        .chat-input {
+            padding: 1rem;
+            border-top: 1px solid #eee;
+        }
+
+        .message-form {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 0.8rem;
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
+            resize: none;
+            font-size: 0.9rem;
+        }
+
+        .send-button {
+            padding: 0.8rem 1.5rem;
+            background: #1e3c72;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .send-button:hover {
+            background: #2a5298;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-menu {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="{% url 'palliatives_dashboard' %}">
+                    <img src="{% static 'img/logo.png' %}" alt="Logo">
+                </a>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="{% url 'service_list' %}">Services</a></li>
+                    <li><a href="{% url 'pending_requests' %}">Service Requests</a></li>
+                    <li><a href="{% url 'staff_list' %}">Staff Corner</a></li>
+                    <li><a href="{% url 'team_list' %}">Team Management</a></li>
+                    {% if request.session.org_name %}
+                    <li><a href="{% url 'logout' %}">Logout</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <aside class="team-info">
+            <h2 class="team-name">{{ team.name }}</h2>
+            <div class="team-status">
+                Status: <span class="status-badge {% if team.is_active %}status-active{% else %}status-inactive{% endif %}">
+                    {{ team.is_active|yesno:"Active,Inactive" }}
+                </span>
+            </div>
+            <div class="team-members">
+                <h3>Team Members</h3>
+                <ul class="member-list">
+                    {% for member in team.members.all %}
+                    <li class="member-item">
+                        <div class="member-avatar">
+                            {{ member.first_name|first }}
+                        </div>
+                        <span>{{ member.get_full_name }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </aside>
+
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2>Team Communication</h2>
+                <a href="{% url 'team_list' %}" class="back-button">Back to Teams</a>
+            </div>
+
+            <div class="chat-messages" id="messageContainer">
+                {% for message in messages %}
+                <div class="message {% if message.sender == request.user %}sent{% endif %}">
+                    <div class="message-content">
+                        {{ message.content }}
+                    </div>
+                    <div class="message-meta">
+                        {{ message.sender.get_full_name }} - {{ message.timestamp|date:"M d, Y H:i" }}
+                    </div>
                 </div>
+                {% empty %}
+                <div class="no-messages">
+                    No messages yet. Start the conversation!
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="chat-input">
+                <form method="post" class="message-form">
+                    {% csrf_token %}
+                    <textarea name="content" class="message-input" placeholder="Type your message..." required></textarea>
+                    <button type="submit" class="send-button">Send</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Auto-scroll to bottom of messages
+        function scrollToBottom() {
+            const messageContainer = document.getElementById('messageContainer');
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+
+        // Scroll on page load
+        document.addEventListener('DOMContentLoaded', scrollToBottom);
+
+        // Optional: Real-time updates using WebSocket
+        const teamId = '{{ team.id }}';
+        const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+        const chatSocket = new WebSocket(
+            ws_scheme + '://' + window.location.host + '/ws/team/' + teamId + '/'
+        );
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            const messageContainer = document.getElementById('messageContainer');
+            
+            // Create new message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${data.is_self ? 'sent' : ''}`;
+            messageDiv.innerHTML = `
                 <div class="message-content">
                     ${data.message}
                 </div>
-                <div class="message-footer">
-                    <small class="text-muted">${new Date(data.timestamp).toLocaleString()}</small>
+                <div class="message-meta">
+                    ${data.sender} - ${data.timestamp}
                 </div>
-            </div>
-        `;
-        
-        chatMessages.insertAdjacentHTML('beforeend', messageHTML);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    // Filter messages
-    document.querySelectorAll('[data-filter]').forEach(filter => {
-        filter.addEventListener('click', function(e) {
-            e.preventDefault();
-            const category = this.dataset.filter;
+            `;
             
-            document.querySelectorAll('.message-bubble').forEach(message => {
-                if (category === 'all' || message.dataset.category === category) {
-                    message.style.display = 'block';
-                } else {
-                    message.style.display = 'none';
-                }
-            });
+            messageContainer.appendChild(messageDiv);
+            scrollToBottom();
+        };
+
+        // Handle form submission
+        document.querySelector('.message-form').addEventListener('submit', function(e) {
+            const messageInput = document.querySelector('.message-input');
+            if (!messageInput.value.trim()) {
+                e.preventDefault();
+            }
         });
-    });
-
-    // Patient selection
-    document.querySelectorAll('.patient-select').forEach(patient => {
-        patient.addEventListener('click', function(e) {
-            e.preventDefault();
-            document.querySelectorAll('.patient-select').forEach(p => p.classList.remove('active'));
-            this.classList.add('active');
-        });
-    });
-</script>
-
-<style>
-    .chat-container {
-        height: 400px;
-        overflow-y: auto;
-        padding: 1rem;
-    }
-
-    .message-bubble {
-        margin-bottom: 1rem;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        background-color: #f8f9fa;
-        border: 1px solid #dee2e6;
-    }
-
-    .message-bubble.urgent {
-        border-color: #dc3545;
-        background-color: #fff5f5;
-    }
-
-    .message-header {
-        margin-bottom: 0.5rem;
-    }
-
-    .message-content {
-        margin-bottom: 0.5rem;
-    }
-
-    .message-footer {
-        font-size: 0.8rem;
-    }
-
-    .patient-select.active {
-        background-color: #007bff;
-        color: white;
-    }
-</style>
-{% endblock %}
+    </script>
+</body>
+</html>

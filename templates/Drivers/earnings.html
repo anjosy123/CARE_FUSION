@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Driver Earnings{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Date Range Filter -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form id="dateRangeForm" class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="start_date" class="form-control" 
+                           value="{{ start_date|date:'Y-m-d' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="end_date" class="form-control" 
+                           value="{{ end_date|date:'Y-m-d' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary d-block">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Earnings Summary -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-money-bill-wave text-success fa-2x mb-2"></i>
+                    <h6 class="card-title">Total Earnings</h6>
+                    <h3 class="text-success">₹{{ total_earnings }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-route text-primary fa-2x mb-2"></i>
+                    <h6 class="card-title">Total Rides</h6>
+                    <h3>{{ total_rides }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-line text-info fa-2x mb-2"></i>
+                    <h6 class="card-title">Average Per Ride</h6>
+                    <h3>₹{{ average_per_ride|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Earnings Chart -->
+    <div class="card shadow mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Daily Earnings</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="earningsChart" height="300"></canvas>
+        </div>
+    </div>
+
+    <!-- Detailed Earnings Table -->
+    <div class="card shadow">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-list"></i> Earnings Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Rides</th>
+                            <th>Total Distance</th>
+                            <th>Earnings</th>
+                            <th>Average Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day in daily_earnings %}
+                        <tr>
+                            <td>{{ day.date|date:"M d, Y" }}</td>
+                            <td>{{ day.rides }}</td>
+                            <td>{{ day.total_distance|floatformat:1 }} km</td>
+                            <td>₹{{ day.earnings }}</td>
+                            <td>
+                                {% if day.avg_rating %}
+                                    <span class="text-warning">★</span> 
+                                    {{ day.avg_rating|floatformat:1 }}/5
+                                {% else %}
+                                    <span class="text-muted">No ratings</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No earnings data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize earnings chart
+    const ctx = document.getElementById('earningsChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ dates|safe }},
+            datasets: [{
+                label: 'Daily Earnings (₹)',
+                data: {{ earnings|safe }},
+                backgroundColor: 'rgba(26, 118, 209, 0.5)',
+                borderColor: 'rgba(26, 118, 209, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₹' + value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Handle date range form submission
+    document.getElementById('dateRangeForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const queryString = new URLSearchParams(formData).toString();
+        window.location.href = `{% url 'driver_earnings' %}?${queryString}`;
+    });
+</script>
+{% endblock %}

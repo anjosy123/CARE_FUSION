@@ -44,6 +44,14 @@ CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
 SECURE_REFERRER_POLICY = 'no-referrer-when-downgrade'
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
 
+
+# Razorpay Settings
+RAZORPAY_KEY_ID = 'rzp_test_SEPMIqCTwsW0qa'
+RAZORPAY_KEY_SECRET = 'u1snr22mg4kHaB2N5wWMmdup'
+
+
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -57,6 +65,7 @@ INSTALLED_APPS = [
     'accounts',
     'social_django',
     'channels',
+    'widget_tweaks',
 ]
 
 

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Manage Taxi Bookings{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Manage Taxi Bookings</h2>
+        <a href="{% url 'manage_taxi_drivers' %}" class="btn btn-primary">
+            <i class="bi bi-person-plus"></i> Manage Drivers
+        </a>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Booking ID</th>
+                            <th>Patient Name</th>
+                            <th>Pickup Location</th>
+                            <th>Drop Location</th>
+                            <th>Driver</th>
+                            <th>Status</th>
+                            <th>Amount</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in bookings %}
+                        <tr>
+                            <td>#{{ booking.id }}</td>
+                            <td>{{ booking.patient.get_full_name }}</td>
+                            <td>{{ booking.pickup_location }}</td>
+                            <td>{{ booking.drop_location }}</td>
+                            <td>{{ booking.driver.driver_name|default:"-" }}</td>
+                            <td>
+                                <span class="badge {% if booking.status == 'PENDING' %}bg-warning
+                                    {% elif booking.status == 'APPROVED' %}bg-success
+                                    {% elif booking.status == 'COMPLETED' %}bg-info
+                                    {% else %}bg-danger{% endif %}">
+                                    {{ booking.status }}
+                                </span>
+                            </td>
+                            <td>₹{{ booking.amount|default:"0" }}</td>
+                            <td>
+                                {% if booking.status == 'PENDING' %}
+                                <a href="{% url 'approve_taxi_request' booking.id %}" 
+                                   class="btn btn-sm btn-success">Approve</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">No taxi bookings found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

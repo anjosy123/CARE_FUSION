@@ -1,0 +1,1293 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Dashboard - CareFusion</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --light-color: #f8f9fc;
+            --dark-color: #5a5c69;
+            --primary-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            --success-gradient: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            --warning-gradient: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+            --danger-gradient: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            --info-gradient: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0f2f5;
+            padding-top: 56px;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 0.8rem 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .navbar-brand img {
+            height: 40px;
+            transition: transform 0.3s ease;
+        }
+
+        .navbar-brand:hover img {
+            transform: scale(1.05);
+        }
+
+        .navbar .container-fluid {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-nav {
+            margin-left: 2rem;
+            margin-right: auto;
+        }
+
+        .user-controls {
+            display: flex;
+            align-items: center;
+            margin-left: auto;
+            gap: 1rem;
+        }
+
+        .nav-item {
+            margin: 0 0.5rem;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: #ffffff !important;
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+
+        .nav-link i {
+            margin-right: 8px;
+            font-size: 1.1rem;
+        }
+
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            margin-top: 10px;
+            animation: dropdownFade 0.3s ease;
+        }
+
+        @keyframes dropdownFade {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-item {
+            padding: 0.7rem 1.2rem;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+            transform: translateX(5px);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem 1.2rem;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .user-profile:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .user-profile i {
+            font-size: 1.2rem;
+            color: #fff;
+            margin-right: 8px;
+        }
+
+        .staff-name {
+            color: #fff;
+            font-weight: 600;
+            margin: 0 8px;
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.9);
+            color: #1e3c72;
+            font-weight: 600;
+            padding: 0.4em 0.8em;
+        }
+
+        .btn-logout {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 0.5rem 1.2rem;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            background: #dc3545;
+            border-color: #dc3545;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220,53,69,0.2);
+        }
+
+        @media (max-width: 991.98px) {
+            .navbar-collapse {
+                background: #1e3c72;
+                margin-top: 1rem;
+                padding: 1rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            }
+
+            .nav-item {
+                margin: 0.5rem 0;
+            }
+
+            .user-controls {
+                width: 100%;
+                flex-direction: column;
+                gap: 0.5rem;
+                margin-top: 1rem;
+            }
+
+            .user-profile {
+                width: 100%;
+                justify-content: center;
+                margin: 0;
+            }
+
+            .btn-logout {
+                width: 100%;
+            }
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+            padding: 25px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .section-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .section-header {
+            color: #1e3c72;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eef2f7;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-header i {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.4em;
+        }
+
+        .vital-box {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .vital-box:hover {
+            transform: translateY(-3px);
+        }
+
+        .vital-label {
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .vital-label i {
+            color: #3498db;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #eef2f7;
+            border-radius: 10px;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 0.25rem rgba(52,152,219,0.15);
+            background: #ffffff;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .checkbox-item {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 12px 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .checkbox-item:hover {
+            transform: translateX(5px);
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .submit-btn {
+            background: var(--success-gradient);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(46,204,113,0.2);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(46,204,113,0.3);
+        }
+
+        .pain-scale {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+
+        .pain-value {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #3498db;
+            margin: 10px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* Add animation for pain value changes */
+        @keyframes painValueChange {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .pain-value.changing {
+            animation: painValueChange 0.3s ease;
+        }
+
+        .alert {
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+
+        .user-info {
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+            margin-right: 15px;
+        }
+
+        .visit-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            border-left: 4px solid #3498db;
+            transition: all 0.3s ease;
+        }
+
+        .visit-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .patient-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .patient-info i {
+            color: #3498db;
+            font-size: 1.2em;
+        }
+
+        .patient-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+
+        .visit-time {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .visit-time i {
+            color: #3498db;
+        }
+
+        .scheduled-visits {
+            padding: 10px 0;
+        }
+
+        .message-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1050;
+            max-width: 350px;
+        }
+
+        .message-alert {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-left: 4px solid;
+        }
+
+        .alert-warning {
+            border-left-color: var(--warning-color);
+        }
+
+        .alert-success {
+            border-left-color: var(--success-color);
+        }
+
+        .alert-danger {
+            border-left-color: var(--danger-color);
+        }
+
+        .risk-score-card {
+            padding: 15px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            text-align: center;
+        }
+
+        .risk-score-card .score {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .risk-score-card.high-risk {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+
+        .risk-score-card.medium-risk {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+        }
+
+        .risk-score-card.low-risk {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+        }
+
+        .recommendation {
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #1A76D1;
+            box-shadow: 0 0 0 0.2rem rgba(26, 118, 209, 0.25);
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .required-field::after {
+            content: "*";
+            color: red;
+            margin-left: 4px;
+        }
+
+        .invalid-feedback {
+            font-size: 0.85em;
+            color: #dc3545;
+        }
+
+        .patient-select-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .select2-container--default .select2-selection--single {
+            height: 38px;
+            border: 1px solid #ced4da;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 38px;
+        }
+
+        .form-floating {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .vital-sign-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #1A76D1;
+        }
+
+        .alert-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <div class="logo">
+                <a href="{% url 'team_dashboard' %}" class="navbar-brand d-flex align-items-center">
+                    <img src="{% static 'img/logo.png' %}" alt="Logo" height="40" class="me-2">
+                    {% comment %} <span class="brand-text">CareFusion</span> {% endcomment %}
+                </a>
+            </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        {% comment %} <a class="nav-link active" href="{% url 'team_dashboard' %}">
+                            <i class="bi bi-house-door-fill"></i> Dashboard
+                        </a> {% endcomment %}
+                    </li>
+                    {% comment %} <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="bi bi-calendar-check"></i> Appointments
+                        </a>
+                    </li> {% endcomment %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-file-text"></i> Reports
+                        </a>
+                        <ul class="dropdown-menu">
+                            {% if completed_visits %}
+                                {% for visit in completed_visits %}
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'visit_report' visit.id %}" data-report-link>
+                                            {{ visit.patient.get_full_name }} - {{ visit.scheduled_date|date:"d M Y" }}
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                                <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            {% comment %} <li>
+                                <a class="dropdown-item" href="{% url 'team_visit_list' %}">
+                                    <i class="bi bi-list"></i> View All Reports
+                                </a>
+                            </li> {% endcomment %}
+                        </ul>
+                    </li>
+                    {% comment %} <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="bi bi-people"></i> Team
+                        </a>
+                    </li> {% endcomment %}
+                </ul>
+                <div class="user-controls">
+                    <div class="user-profile">
+                        <i class="bi bi-person-circle"></i>
+                        <span class="staff-name">{{ staff.get_full_name }}</span>
+                        <span class="badge">{{ role }}</span>
+                    </div>
+                    <a href="{% url 'logout' %}" class="btn btn-logout">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <!-- Patient Selection -->
+        <div class="patient-select-container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <label class="form-label required-field">Select Scheduled Patient</label>
+                    <select id="patientSelect" class="form-select" required>
+                        <option value="">Choose a patient...</option>
+                        {% for patient in patients %}
+                            {% with visit=patient.team_visits.all|first %}
+                            <option value="{{ patient.id }}" data-visit-id="{{ visit.id }}">
+                                {{ patient.get_full_name }} - 
+                                Scheduled: {{ visit.scheduled_date|date:"d M Y" }}
+                            </option>
+                            {% endwith %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-outline-primary" id="refreshPatients">
+                            <i class="fas fa-sync-alt"></i> Refresh List
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Progress Bar -->
+        <div class="progress mb-3">
+            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+        </div>
+
+        <!-- Alert Container -->
+        <div class="alert-container"></div>
+
+        <!-- Scheduled Visits Card -->
+        <div class="section-card mb-4">
+            <h4 class="section-header">
+                <i class="bi bi-calendar-check"></i> Scheduled Visits
+            </h4>
+            <div class="scheduled-visits">
+                {% if scheduled_visits %}
+                    <div class="row">
+                        {% for visit in scheduled_visits %}
+                            <div class="col-md-4 mb-3">
+                                <div class="visit-card">
+                                    <div class="patient-info">
+                                        <i class="bi bi-person"></i>
+                                        <span class="patient-name">{{ visit.patient.get_full_name }}</span>
+                                    </div>
+                                    <div class="visit-time">
+                                        <i class="bi bi-clock"></i>
+                                        {{ visit.scheduled_date|date:"D, d M Y" }}
+                                        <br>
+                                        <small>{{ visit.start_time|time:"g:i A" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">No scheduled visits at the moment.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} animate__animated animate__fadeIn">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form id="patientDataForm" class="needs-validation" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="patient_id" id="selectedPatientId">
+            
+            <!-- Vital Signs Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>Vital Signs</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input type="text" 
+                                       name="blood_pressure" 
+                                       class="form-control" 
+                                       id="bloodPressure"
+                                       pattern="^\d{2,3}\/\d{2,3}$"
+                                       required>
+                                <label for="bloodPressure" class="required-field">Blood Pressure</label>
+                                <div class="invalid-feedback">
+                                    Please enter valid blood pressure (e.g., 120/80)
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input type="number" name="pulse_rate" class="form-control" id="pulseRate" required>
+                                <label for="pulseRate" class="required-field">Pulse Rate</label>
+                                <div class="invalid-feedback">
+                                    Please enter a valid pulse rate
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input type="number" name="temperature" class="form-control" id="temperature" step="0.1" required>
+                                <label for="temperature" class="required-field">Temperature (°C)</label>
+                                <div class="invalid-feedback">
+                                    Please enter a valid temperature
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-floating">
+                                <input type="number" name="respiratory_rate" class="form-control" id="respiratoryRate" required>
+                                <label for="respiratoryRate" class="required-field">Respiratory Rate</label>
+                                <div class="invalid-feedback">
+                                    Please enter a valid respiratory rate
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mt-3">
+                            <div class="form-floating">
+                                <input type="number" name="oxygen_saturation" class="form-control" id="oxygenSaturation" required>
+                                <label for="oxygenSaturation" class="required-field">Oxygen Saturation (%)</label>
+                                <div class="invalid-feedback">
+                                    Please enter a valid oxygen saturation
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pain Assessment -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Pain Assessment</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="number" name="pain_score" class="form-control" id="painScore" min="0" max="10" required>
+                                <label for="painScore" class="required-field">Pain Score (0-10)</label>
+                                <div class="invalid-feedback">
+                                    Please enter a valid pain score between 0 and 10
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="text" name="pain_location" class="form-control" id="painLocation" required>
+                                <label for="painLocation" class="required-field">Pain Location</label>
+                                <div class="invalid-feedback">
+                                    Please enter a valid pain location
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="text" name="pain_character" class="form-control" id="painCharacter" required>
+                                <label for="painCharacter" class="required-field">Pain Character</label>
+                                <div class="invalid-feedback">
+                                    Please enter a valid pain character
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medical Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-notes-medical me-2"></i>Medical Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <textarea name="medical_conditions" class="form-control" id="medicalConditions" rows="3" required></textarea>
+                                <label for="medicalConditions" class="required-field">Medical Conditions</label>
+                                <div class="invalid-feedback">
+                                    Please enter valid medical conditions
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <textarea name="symptoms" class="form-control" id="symptoms" rows="3" required></textarea>
+                                <label for="symptoms" class="required-field">Symptoms</label>
+                                <div class="invalid-feedback">
+                                    Please enter valid symptoms
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12 mt-3">
+                            <div class="form-floating">
+                                <textarea name="medications" class="form-control" id="medications" rows="3" required></textarea>
+                                <label for="medications" class="required-field">Medications</label>
+                                <div class="invalid-feedback">
+                                    Please enter valid medications
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity & Mobility -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-walking me-2"></i>Activity & Mobility</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select name="activity_level" class="form-select" id="activityLevel" required>
+                                    <option value="">Select Activity Level</option>
+                                    <option value="1">Bedbound</option>
+                                    <option value="2">Wheelchair bound</option>
+                                    <option value="3">Walks with assistance</option>
+                                    <option value="4">Walks independently</option>
+                                </select>
+                                <label for="activityLevel" class="required-field">Activity Level</label>
+                                <div class="invalid-feedback">
+                                    Please select a valid activity level
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="number" name="weight" class="form-control" id="weight" step="0.01" required>
+                                <label for="weight" class="required-field">Weight (kg)</label>
+                                <div class="invalid-feedback">
+                                    Please enter a valid weight
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mental Status -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-brain me-2"></i>Mental Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" name="consciousness_level" class="form-control" id="consciousnessLevel" required>
+                                <label for="consciousnessLevel" class="required-field">Consciousness Level</label>
+                                <div class="invalid-feedback">
+                                    Please enter a valid consciousness level
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select name="mood_status" class="form-select" id="moodStatus" required>
+                                    <option value="">Select Mood</option>
+                                    <option value="1">Depressed</option>
+                                    <option value="2">Anxious</option>
+                                    <option value="3">Normal</option>
+                                    <option value="4">Elevated</option>
+                                </select>
+                                <label for="moodStatus" class="required-field">Mood Status</label>
+                                <div class="invalid-feedback">
+                                    Please select a valid mood status
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clinical Notes -->
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-medical me-2"></i>Clinical Notes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-floating">
+                        <textarea name="clinical_notes" class="form-control" id="clinicalNotes" rows="4" required></textarea>
+                        <label for="clinicalNotes" class="required-field">Clinical Notes</label>
+                        <div class="invalid-feedback">
+                            Please enter valid clinical notes
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mb-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save me-2"></i>Save Visit Record
+                </button>
+            </div>
+        </form>
+
+        <!-- ML Predictions Display -->
+        <div id="mlPredictions" class="card mb-4 d-none">
+            <!-- ML predictions will be populated here -->
+        </div>
+    </div>
+
+    <div id="message-container" class="message-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        // Function to show dismissible message
+        function showMessage(message, type = 'warning') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show message-alert`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            // Add to message container
+            const messageContainer = document.getElementById('message-container');
+            messageContainer.appendChild(alertDiv);
+            
+            // Auto dismiss after 3 seconds
+            setTimeout(() => {
+                alertDiv.classList.remove('show');
+                setTimeout(() => alertDiv.remove(), 150);
+            }, 3000);
+        }
+
+        // Animation for pain value changes
+        const painScore = document.getElementById('painScore');
+        const painValue = document.getElementById('painScoreValue');
+
+        if(painScore && painValue) {
+            painScore.addEventListener('input', function() {
+                painValue.textContent = this.value;
+                painValue.classList.add('changing');
+                setTimeout(() => painValue.classList.remove('changing'), 300);
+            });
+        }
+
+        // Update the form submission handler
+        document.getElementById('patientDataForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const patientId = document.getElementById('selectedPatientId').value;
+            
+            if (!patientId) {
+                showMessage('Please select a patient first', 'error');
+                return;
+            }
+
+            const formData = new FormData(this);
+            formData.set('patient_id', patientId);  // Ensure patient_id is set
+
+            fetch('/save-patient-data/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showMessage('Visit record saved successfully', 'success');
+                    setTimeout(() => window.location.reload(), 2000);
+                } else {
+                    throw new Error(data.message || 'Error saving data');
+                }
+            })
+            .catch(error => {
+                showMessage(error.message, 'error');
+            });
+        });
+
+        // Patient Selection Handler
+        document.getElementById('patientSelect').addEventListener('change', function() {
+            const patientId = this.value;
+            // Update hidden input with selected patient ID
+            document.getElementById('selectedPatientId').value = patientId;
+        });
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Add this function to handle report links
+        document.querySelectorAll('[data-report-link]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                fetch(this.href)
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(data => {
+                                throw new Error(data.message);
+                            });
+                        }
+                        window.location.href = this.href;
+                    })
+                    .catch(error => {
+                        showMessage(error.message, 'warning');
+                    });
+            });
+        });
+
+        function submitPatientData(formData) {
+            $.ajax({
+                url: '/save-patient-data/',
+                method: 'POST',
+                data: formData,
+                success: function(response) {
+                    if (response.status === 'success') {
+                        // Show ML predictions
+                        updateRiskDisplay(response.risks);
+                        updatePriorityScore(response.priority);
+                    }
+                }
+            });
+        }
+
+        // Initialize risk trends chart
+        const ctx = document.getElementById('riskTrendsChart').getContext('2d');
+        let riskTrendsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Priority Score',
+                    data: [],
+                    borderColor: '#1A76D1'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 10
+                    }
+                }
+            }
+        });
+
+        // Function to update ML predictions display
+        function updateRiskDisplay(risks) {
+            // Update risk scores
+            document.getElementById('fallRiskScore').textContent = risks.fall_risk_score.toFixed(1);
+            document.getElementById('deteriorationRiskScore').textContent = risks.deterioration_risk.toFixed(1);
+            document.getElementById('healthScore').textContent = risks.overall_health_score.toFixed(1);
+
+            // Update card colors based on risk levels
+            updateRiskCardColor('fallRiskScore', risks.fall_risk_score);
+            updateRiskCardColor('deteriorationRiskScore', risks.deterioration_risk);
+            updateRiskCardColor('healthScore', risks.overall_health_score);
+        }
+
+        // Function to update priority score
+        function updatePriorityScore(priority) {
+            const priorityScore = document.getElementById('priorityScore');
+            const recommendation = document.getElementById('visitRecommendation');
+            
+            priorityScore.textContent = priority.score.toFixed(1);
+            
+            // Set recommendation text
+            if (priority.next_visit === 1) {
+                recommendation.textContent = "Recommended: Visit Tomorrow";
+            } else {
+                recommendation.textContent = `Recommended: Visit in ${priority.next_visit} days`;
+            }
+
+            // Update card color
+            updateRiskCardColor('priorityScore', priority.score);
+        }
+
+        // Function to update risk card colors
+        function updateRiskCardColor(elementId, score) {
+            const card = document.getElementById(elementId).closest('.risk-score-card');
+            card.classList.remove('high-risk', 'medium-risk', 'low-risk');
+            
+            if (score >= 8.0) {
+                card.classList.add('high-risk');
+            } else if (score >= 6.0) {
+                card.classList.add('medium-risk');
+            } else {
+                card.classList.add('low-risk');
+            }
+        }
+
+        // Function to update risk trends chart
+        function updateRiskTrends(trends) {
+            riskTrendsChart.data.labels = trends.dates;
+            riskTrendsChart.data.datasets[0].data = trends.priority_scores;
+            riskTrendsChart.update();
+        }
+
+        // Function to show alerts
+        function showAlert(type, message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.card'));
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        $(document).ready(function() {
+            // Initialize Select2
+            $('#patientSelect').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Search for a patient...',
+                allowClear: true
+            });
+
+            // Form validation and progress tracking
+            const form = document.getElementById('patientDataForm');
+            const progressBar = document.querySelector('.progress-bar');
+            
+            function updateProgress() {
+                const inputs = form.querySelectorAll('input:required, select:required, textarea:required');
+                const filledInputs = Array.from(inputs).filter(input => input.value.trim() !== '');
+                const progress = (filledInputs.length / inputs.length) * 100;
+                progressBar.style.width = `${progress}%`;
+            }
+
+            form.addEventListener('input', updateProgress);
+
+            // Show alerts
+            function showAlert(message, type = 'success') {
+                const alertHtml = `
+                    <div class="alert alert-${type} alert-dismissible fade show">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                $('.alert-container').append(alertHtml);
+                setTimeout(() => {
+                    $('.alert-container .alert:first-child').alert('close');
+                }, 5000);
+            }
+
+            // Patient selection handler
+            $('#patientSelect').on('change', function() {
+                const patientId = $(this).val();
+                $('#selectedPatientId').val(patientId);
+                if (patientId) {
+                    loadPatientData(patientId);
+                }
+            });
+
+            // Form submission with validation
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (!form.checkValidity()) {
+                    e.stopPropagation();
+                    showAlert('Please fill in all required fields', 'danger');
+                } else {
+                    submitForm();
+                }
+                form.classList.add('was-validated');
+            });
+
+            // Add your existing ML-related JavaScript here
+        });
+
+        // Add real-time validation
+        document.querySelectorAll('input[pattern]').forEach(input => {
+            input.addEventListener('input', function() {
+                if (this.checkValidity()) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            });
+        });
+
+        // Add this to your existing JavaScript
+        function handleFormSubmission(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            fetch('/save-patient-data/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'error') {
+                    if (data.code === 'SCHEDULE_EXPIRED') {
+                        // Show reschedule modal
+                        showRescheduleModal(data);
+                    } else {
+                        showAlert('error', data.message);
+                    }
+                } else {
+                    showAlert('success', 'Visit record saved successfully');
+                    // Handle successful save
+                    handleSuccessfulSave(data);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', 'An error occurred while saving the visit record');
+            });
+        }
+
+        // Add reschedule modal HTML
+        const rescheduleModalHtml = `
+        <div class="modal fade" id="rescheduleModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title">Schedule Expired</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>The scheduled visit for <span id="patientName"></span> has expired.</p>
+                        <p>Original schedule: <span id="originalSchedule"></span></p>
+                        <p>Would you like to reschedule this visit?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="rescheduleButton">
+                            Reschedule Visit
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+
+        // Add this to your document ready function
+        document.body.insertAdjacentHTML('beforeend', rescheduleModalHtml);
+
+        function showRescheduleModal(data) {
+            const modal = new bootstrap.Modal(document.getElementById('rescheduleModal'));
+            document.getElementById('patientName').textContent = data.patient_name;
+            document.getElementById('originalSchedule').textContent = data.scheduled_date;
+            
+            document.getElementById('rescheduleButton').onclick = function() {
+                window.location.href = data.reschedule_url;
+            };
+            
+            modal.show();
+        }
+
+        // Update your form submission handler
+        document.getElementById('patientDataForm').addEventListener('submit', handleFormSubmission);
+    </script>
+</body>
+</html>

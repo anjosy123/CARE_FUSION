@@ -1,239 +1,314 @@
-{% comment %} {% extends 'base.html' %} {% endcomment %}
 {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Care Teams - CareFusion</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --light-color: #f8f9fc;
+            --dark-color: #5a5c69;
+        }
 
-{% comment %} {% block title %}My Assigned Teams - CareFusion{% endblock %} {% endcomment %}
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--light-color);
+            padding-top: 56px;
+        }
 
-{% block content %}
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-    <div class="container-fluid">
-        <a href="{% url 'patients_dashboard' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px"  style="object-fit: contain;"/></a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item">
-                    {% comment %} <a class="nav-link" href="{% url 'patients_dashboard' %}"><i class="bi bi-house-door"></i> Home</a> {% endcomment %}
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="healthDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-heart-pulse"></i> Health
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="healthDropdown">
-                        <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=prescriptions"><i class="bi bi-capsule"></i> Prescriptions</a></li>
-                        <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=medical_history"><i class="bi bi-journal-medical"></i> Medical History</a></li>
-                    </ul>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="appointmentsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-calendar"></i> Appointments
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="appointmentsDropdown">
-                        <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=appointments"><i class="bi bi-calendar-check"></i> My Appointments</a></li>
-                    </ul>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="careDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-clipboard-heart"></i> Care
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="careDropdown">
-                        <li><a class="dropdown-item" href="{% url 'patient_visit_requests' %}"><i class="bi bi-clipboard-check"></i> Visit Requests</a></li>
-                        <li><a class="dropdown-item" href="{% url 'assigned_teams' %}"><i class="bi bi-people"></i> Assigned Teams</a></li>
-                    </ul>
-                </li>
-            </ul>
-            {% comment %} <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link position-relative" href="{% url 'patient_notifications' %}">
-                        <i class="bi bi-bell"></i>
-                        {% if notifications %}
-                            <span class="notification-badge">{{ notifications|length }}</span>
-                        {% endif %}
-                    </a>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle"></i> {{ request.session.username }}
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="{% url 'patient_profile' %}"><i class="bi bi-person"></i> Profile</a></li>
-                        <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
-                    </ul>
-                </li> {% endcomment %}
-            </ul>
+        .navbar {
+            background-color: var(--primary-color);
+        }
+
+        .navbar-brand, .nav-link {
+            color: #fff !important;
+        }
+
+        .nav-link:hover {
+            color: var(--light-color) !important;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            transform: translate(50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            background-color: var(--danger-color);
+            color: white;
+            padding: 0;
+            line-height: 1;
+        }
+
+        /* Team Card Styles */
+        .team-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .team-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .team-header {
+            background: linear-gradient(to right, var(--primary-color), #6487e7);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .team-content {
+            padding: 1.5rem;
+        }
+
+        .member-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .member-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #e3e6f0;
+            transition: background-color 0.2s ease;
+        }
+
+        .member-item:hover {
+            background-color: #f8f9fc;
+        }
+
+        .member-item i {
+            font-size: 1.5rem;
+            margin-right: 1rem;
+            color: var(--primary-color);
+        }
+
+        .team-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .team-tab {
+            background: none;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            color: var(--secondary-color);
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .team-tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .visit-item {
+            background: #f8f9fc;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .upcoming-badge {
+            background: var(--success-color);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid">
+            <a href="{% url 'patients_dashboard' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px"  style="object-fit: contain;"/></a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="healthDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-heart-pulse"></i> Health
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="healthDropdown">
+                            <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=prescriptions"><i class="bi bi-capsule"></i> Prescriptions</a></li>
+                            <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=medical_history"><i class="bi bi-journal-medical"></i> Medical History</a></li>
+                        </ul>
+                    </li>
+                    {% comment %} <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="appointmentsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-calendar"></i> Appointments
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="appointmentsDropdown">
+                            <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=appointments"><i class="bi bi-calendar-check"></i> My Appointments</a></li>
+                            <li><a class="dropdown-item" href="{% url 'request_appointment' %}"><i class="bi bi-calendar-plus"></i> Book Appointment</a></li>
+                        </ul>
+                    </li> {% endcomment %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="careDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-clipboard-heart"></i> Care
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="careDropdown">
+                            <li><a class="dropdown-item" href="{% url 'patient_service_requests' %}"><i class="bi bi-list-check"></i> Service Requests</a></li>
+                            <li><a class="dropdown-item" href="{% url 'patient_visit_requests' %}"><i class="bi bi-clipboard-check"></i> Visit Requests</a></li>
+                            <li><a class="dropdown-item" href="{% url 'request_team_visit' %}"><i class="bi bi-calendar-plus"></i> Request Team Visit</a></li>
+                            <li><a class="dropdown-item" href="{% url 'upcoming_team_visits' %}"><i class="bi bi-calendar-check"></i> Upcoming Team Visits</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'assigned_teams' %}"><i class="bi bi-people"></i> My Care Teams</a></li>
+                        </ul>
+                    </li>
+                    {% comment %} <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="taxiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-taxi-front"></i> Taxi Services
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="taxiDropdown">
+                            <li><a class="dropdown-item" href="{% url 'request_emergency_taxi' %}">Request Emergency Taxi</a></li>
+                            <li><a class="dropdown-item" href="{% url 'view_taxi_bookings' %}">My Taxi Bookings</a></li>
+                        </ul>
+                    </li> {% endcomment %}
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="{% url 'patient_notifications' %}">
+                            <i class="bi bi-bell"></i>
+                            {% if notifications %}
+                                <span class="notification-badge">{{ notifications|length }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i> {{ patient.get_full_name }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="{% url 'patient_profile' %}"><i class="bi bi-person"></i> Profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'patient_settings'%}"><i class="bi bi-gear"></i> Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
 
-<!-- Main Content -->
-<div class="container mt-5 pt-4">
-    <h2 class="mb-4">My Assigned Teams</h2>
-    {% if team_details %}
-        <div class="row">
-            {% for team in team_details %}
-                <div class="col-md-6 mb-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ team.name }}</h5>
-                            <h6 class="card-subtitle mb-2 text-muted">{{ team.organization }}</h6>
-                            <ul class="list-unstyled">
-                                <li><i class="bi bi-people-fill"></i> Team Members:</li>
-                                {% for member in team.members %}
-                                    <li class="ms-4"><i class="bi bi-person"></i> {{ member.get_full_name }} - {{ member.role }}</li>
-                                {% endfor %}
-                            </ul>
-                            <a href="{% url 'team_detail' team.id %}" class="btn btn-primary">
-                                <i class="bi bi-eye"></i> View Team Details
-                            </a>
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <h2 class="mb-4">My Care Teams</h2>
+        
+        {% if teams %}
+            <div class="row">
+                {% for team in teams %}
+                    <div class="col-12 col-lg-6">
+                        <div class="team-card">
+                            <div class="team-header">
+                                <h3>{{ team.name }}</h3>
+                                <small>{{ team.organization.org_name }}</small>
+                            </div>
+                            <div class="team-content">
+                                <div class="team-tabs">
+                                    <button class="team-tab active" onclick="showTab(this, 'members-{{ team.id }}')">
+                                        <i class="bi bi-people"></i> Team Members
+                                    </button>
+                                    <button class="team-tab" onclick="showTab(this, 'visits-{{ team.id }}')">
+                                        <i class="bi bi-calendar-check"></i> Visits
+                                    </button>
+                                </div>
+
+                                <div id="members-{{ team.id }}" class="tab-content">
+                                    <ul class="member-list">
+                                        {% for member in team.members.all %}
+                                            <li class="member-item">
+                                                <i class="bi bi-person-badge"></i>
+                                                <div>
+                                                    <strong>{{ member.get_full_name }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">{{ member.role }} - {{ member.designation }}</small>
+                                                </div>
+                                            </li>
+                                        {% empty %}
+                                            <li class="member-item text-muted">No team members assigned yet.</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+
+                                <div id="visits-{{ team.id }}" class="tab-content" style="display: none;">
+                                    {% for visit in team.visits.all %}
+                                        <div class="visit-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>{{ visit.scheduled_date|date:"F d, Y" }}</strong>
+                                                    {% if visit.scheduled_date|date:"Y-m-d" >= today|date:"Y-m-d" %}
+                                                        <span class="upcoming-badge">Upcoming</span>
+                                                    {% endif %}
+                                                </div>
+                                                <span class="badge bg-{{ visit.status|lower }}">{{ visit.status }}</span>
+                                            </div>
+                                            <div class="mt-2">
+                                                <i class="bi bi-clock"></i> {{ visit.start_time|time:"g:i A" }} - {{ visit.end_time|time:"g:i A" }}
+                                            </div>
+                                            {% if visit.notes %}
+                                                <div class="mt-2">
+                                                    <small class="text-muted">{{ visit.notes }}</small>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% empty %}
+                                        <p class="text-muted">No visits scheduled yet.</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="alert alert-info" role="alert">
-            <i class="bi bi-info-circle"></i> You are not currently assigned to any teams.
-        </div>
-    {% endif %}
-</div>
-{% endblock %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center mt-5">
+                <i class="bi bi-info-circle-fill text-primary" style="font-size: 3rem;"></i>
+                <h4 class="mt-3">No Teams Assigned</h4>
+                <p class="text-muted">You are not currently assigned to any care teams.</p>
+            </div>
+        {% endif %}
+    </div>
 
-{% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-<style>
-    :root {
-        --primary-color: #4e73df;
-        --secondary-color: #858796;
-        --success-color: #1cc88a;
-        --info-color: #36b9cc;
-        --warning-color: #f6c23e;
-        --danger-color: #e74a3b;
-        --light-color: #f8f9fc;
-        --dark-color: #5a5c69;
-    }
-
-    body {
-        font-family: 'Nunito', sans-serif;
-        background-color: var(--light-color);
-        padding-top: 56px;
-    }
-
-    .navbar {
-        background-color: var(--primary-color);
-    }
-
-    .navbar-brand, .nav-link {
-        color: #fff !important;
-    }
-
-    .nav-link:hover {
-        color: var(--light-color) !important;
-    }
-
-    .card {
-        border: none;
-        transition: all 0.3s ease;
-        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-    }
-
-    .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-
-    .card-title {
-        color: var(--primary-color);
-        font-weight: 600;
-    }
-
-    .card .list-unstyled li {
-        margin-bottom: 0.75rem;
-        color: var(--secondary-color);
-    }
-
-    .card .bi {
-        margin-right: 0.5rem;
-        color: var(--primary-color);
-    }
-
-    .btn {
-        padding: 0.375rem 0.75rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-    }
-
-    .btn i {
-        margin-right: 0.25rem;
-    }
-
-    .btn-primary {
-        background-color: var(--primary-color);
-        border-color: var(--primary-color);
-    }
-
-    .btn-primary:hover {
-        background-color: #2e59d9;
-        border-color: #2e59d9;
-    }
-
-    .alert {
-        border: none;
-        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-    }
-
-    .alert i {
-        margin-right: 0.5rem;
-    }
-
-    .notification-badge {
-        position: absolute;
-        top: 0;
-        right: 0;
-        transform: translate(50%, -50%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        font-size: 0.75rem;
-        background-color: var(--danger-color);
-        color: white;
-        padding: 0;
-        line-height: 1;
-    }
-
-    .dropdown-menu {
-        border: none;
-        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-    }
-
-    .dropdown-item {
-        padding: 0.5rem 1rem;
-        font-size: 0.85rem;
-    }
-
-    .dropdown-item i {
-        margin-right: 0.5rem;
-        font-size: 0.9rem;
-    }
-
-    .dropdown-item:hover {
-        background-color: var(--primary-color);
-        color: white;
-    }
-
-    .dropdown-divider {
-        margin: 0.5rem 0;
-        border-top: 1px solid #eaecf4;
-    }
-</style>
-{% endblock %}
-
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-{% endblock %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showTab(button, tabId) {
+            const card = button.closest('.team-card');
+            const tabs = card.getElementsByClassName('team-tab');
+            const contents = card.getElementsByClassName('tab-content');
+            
+            Array.from(tabs).forEach(tab => tab.classList.remove('active'));
+            Array.from(contents).forEach(content => content.style.display = 'none');
+            
+            button.classList.add('active');
+            document.getElementById(tabId).style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -156,7 +156,7 @@
                             <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=medical_history"><i class="bi bi-journal-medical"></i> Medical History</a></li>
                         </ul>
                     </li>
-                    <li class="nav-item dropdown">
+                    {% comment %} <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="appointmentsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-calendar"></i> Appointments
                         </a>
@@ -164,7 +164,7 @@
                             <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=appointments"><i class="bi bi-calendar-check"></i> My Appointments</a></li>
                             <li><a class="dropdown-item" href="{% url 'request_appointment' %}"><i class="bi bi-calendar-plus"></i> Book Appointment</a></li>
                         </ul>
-                    </li>
+                    </li> {% endcomment %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="careDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-clipboard-heart"></i> Care
@@ -172,9 +172,21 @@
                         <ul class="dropdown-menu" aria-labelledby="careDropdown">
                             <li><a class="dropdown-item" href="{% url 'patient_service_requests' %}"><i class="bi bi-list-check"></i> Service Requests</a></li>
                             <li><a class="dropdown-item" href="{% url 'patient_visit_requests' %}"><i class="bi bi-clipboard-check"></i> Visit Requests</a></li>
-                            <li><a class="dropdown-item" href="{% url 'assigned_teams' %}"><i class="bi bi-people"></i> Assigned Teams</a></li>
+                            <li><a class="dropdown-item" href="{% url 'request_team_visit' %}"><i class="bi bi-calendar-plus"></i> Request Team Visit</a></li>
+                            <li><a class="dropdown-item" href="{% url 'upcoming_team_visits' %}"><i class="bi bi-calendar-check"></i> Upcoming Team Visits</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'assigned_teams' %}"><i class="bi bi-people"></i> My Care Teams</a></li>
                         </ul>
                     </li>
+                    {% comment %} <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="taxiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-taxi-front"></i> Taxi Services
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="taxiDropdown">
+                            <li><a class="dropdown-item" href="{% url 'request_emergency_taxi' %}">Request Emergency Taxi</a></li>
+                            <li><a class="dropdown-item" href="{% url 'view_taxi_bookings' %}">My Taxi Bookings</a></li>
+                        </ul>
+                    </li> {% endcomment %}
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item">
@@ -280,6 +292,23 @@
                     </div>
                 </div>
             </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card dashboard-card taxi border-0 shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    Taxi Bookings</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ taxi_bookings_count }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-taxi-front fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{% url 'view_taxi_bookings' %}" class="stretched-link"></a>
+                </div>
+            </div>
         </div>
 
         <!-- Main Content Area -->
@@ -313,7 +342,7 @@
                                             <li><i class="bi bi-pin-map"></i> Pincode: {{ org.pincode }}</li>
                                         </ul>
                                         <p class="card-text"><small class="text-muted">Registration ID: {{ org.org_regid }}</small></p>
-                                        <button onclick="openServiceRequestModal('{{ org.id }}')" class="btn btn-primary">Request Service</button>
+                                        <a href="{% url 'request_service' org.id %}" class="btn btn-primary">Request Service</a>
                                     </div>
                                 </div>
                             </div>
@@ -330,67 +359,8 @@
         </div>
     </div>
     {% endblock content %}
-    <!-- Service Request Modal -->
-    <div class="modal fade" id="serviceRequestModal" tabindex="-1" aria-labelledby="serviceRequestModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="serviceRequestModalLabel">Service Request</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        <input type="hidden" name="organization_id" id="organizationId">
-                    
-                    <div class="mb-3">
-                        <label for="id_service" class="form-label">Select Service</label>
-                        {{ form.service }}
-                        {% if form.service.errors %}
-                            <div class="invalid-feedback">
-                                {{ form.service.errors|join:", " }}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="id_doctor_referral" class="form-label">Doctor's Referral Letter</label>
-                        {{ form.doctor_referral }}
-                        {% if form.doctor_referral.errors %}
-                            <div class="invalid-feedback">
-                                {{ form.doctor_referral.errors|join:", " }}
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="id_additional_notes" class="form-label">Additional Notes</label>
-                        {{ form.additional_notes }}
-                        {% if form.additional_notes.errors %}
-                            <div class="invalid-feedback">
-                                {{ form.additional_notes.errors|join:", " }}
-                            </div>
-                        {% endif %}
-                    </div>
-                        <div class="text-center">
-                            <button type="submit" class="btn btn-primary">Submit Request</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        function openServiceRequestModal(orgId) {
-            document.getElementById('organizationId').value = orgId;
-            const modal = new bootstrap.Modal(document.getElementById('serviceRequestModal'));
-            modal.show();
-        }
-
-        // Add any charts or additional JavaScript functionality here
-    </script>
 </body>
 </html>

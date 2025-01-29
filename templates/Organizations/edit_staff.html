@@ -1,79 +1,357 @@
-{% extends 'base.html' %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Staff Member</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f5f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-{% block title %}Edit Staff{% endblock %}
+        .topbar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 15px 0;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
 
-{% block topbar %}
-<div class="topbar">
-  <div class="container">
-    <div class="row">
-      <div class="col-12">
-        <div class="topbar-inner d-flex justify-content-between align-items-center">
-          <!-- logo -->
-          <div class="logo">
-            <a href="{% url 'palliatives_dashboard' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" style="object-fit: contain;"/></a>
-          </div>
-          
-          <!-- Navigation Links -->
-          <ul class="top-link">
-            {% comment %} <li><a href="{% url 'palliatives_dashboard' %}">Home</a></li> {% endcomment %}
-            <li><a href="{% url 'service_list' %}">Services</a></li>
-            <li class="{% if active_page == 'service_requests' %}active{% endif %}">
-                <a href="#">Service Requests <i class="icofont-rounded-down"></i></a>
-                <ul class="dropdown">
-                    <li><a href="{% url 'pending_requests' %}">Pending Requests</a></li>
-                    <li><a href="{% url 'approved_rejected_requests' %}">Approved/Rejected Requests</a></li>
-                </ul>
-            </li>
-            <li class="{% if active_page == 'staff_corner' %}active{% endif %}">
-                <a href="#">Staff Corner <i class="icofont-rounded-down"></i></a>
-                <ul class="dropdown">
-                    <li><a href="{% url 'staff_list' %}">Manage Staff</a></li>
-                    <li><a href="{% url 'patient_assignment_list' %}">Patient Assignments</a></li>
-                </ul>
-            </li>
-            <li class="{% if active_page == 'team_management' %}active{% endif %}">
-                <a href="#">Team Management <i class="icofont-rounded-down"></i></a>
-                <ul class="dropdown">
-                    <li><a href="{% url 'team_list' %}">Manage Teams</a></li>
-                    <li><a href="{% url 'team_visit_list' %}">Team Visits</a></li>
-                    <li><a href="{% url 'team_visit_calendar' %}">Team Visit Calendar</a></li>
-                </ul>
-            </li>
-          </ul>
-          
-          <!-- User Login section from base template -->
-          <ul class="top-link user-login">
-            {% if request.session.org_name %}
-            <li class="{% if active_page == 'user' %}active{% endif %}">
-              <a href="#" class="login-link">
-                <i class="fas fa-building"></i>
-                Welcome {{request.session.org_name}}
-                <i class="fas fa-chevron-down"></i>
-              </a>
-              <ul class="dropdown">
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .logo img {
+            height: 40px;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-menu a:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .main-content {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+
+        .page-title {
+            color: #2c3e50;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            padding: 0.625rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: #1e3c72;
+            box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.25);
+        }
+
+        .profile-pic-preview {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin-bottom: 1rem;
+            border: 3px solid #1e3c72;
+        }
+
+        .custom-file-upload {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .custom-file-upload:hover {
+            background: #e9ecef;
+        }
+
+        .btn-primary {
+            background: #1e3c72;
+            border: none;
+            padding: 0.625rem 1.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: #2a5298;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            border: none;
+            padding: 0.625rem 1.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .required::after {
+            content: "*";
+            color: #dc3545;
+            margin-left: 4px;
+        }
+
+        .alert {
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <div class="topbar">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="{% url 'palliatives_dashboard' %}">
+                    <img src="{% static 'img/logo.png' %}" alt="Logo">
+                </a>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="{% url 'palliatives_dashboard' %}"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li><a href="{% url 'staff_list' %}"><i class="fas fa-users"></i> Staff</a></li>
+                <li><a href="{% url 'team_list' %}"><i class="fas fa-user-friends"></i> Teams</a></li>
+                <li><a href="{% url 'service_list' %}"><i class="fas fa-hand-holding-medical"></i> Services</a></li>
+                {% if request.session.org_name %}
                 <li>
-                  <a href="{% url 'logout' %}">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                  </a>
+                    <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
                 </li>
-              </ul>
-            </li>
-            {% endif %}
-          </ul>
+                {% endif %}
+            </ul>
         </div>
-      </div>
     </div>
-  </div>
-</div>
-{% endblock topbar %}
 
-{% block content %}
-<div class="container mt-4">
-    <h2>Edit Staff Member</h2>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-primary">Update Staff</button>
-    </form>
-</div>
-{% endblock %}
+    <div class="main-content">
+        <h2 class="page-title">Edit Staff Member</h2>
+
+        {% if messages %}
+        <div class="messages mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" id="editStaffForm">
+            {% csrf_token %}
+            
+            <div class="row">
+                <!-- Personal Information -->
+                <div class="col-md-6">
+                    <h5 class="mb-3">Personal Information</h5>
+                    
+                    <div class="form-group">
+                        <label class="form-label required" for="first_name">First Name</label>
+                        <input type="text" class="form-control" id="first_name" name="first_name" 
+                               value="{{ staff.first_name }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required" for="last_name">Last Name</label>
+                        <input type="text" class="form-control" id="last_name" name="last_name" 
+                               value="{{ staff.last_name }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required" for="email">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               value="{{ staff.email }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required" for="phone">Phone Number</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" 
+                               value="{{ staff.phone }}" required pattern="[0-9]{10}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required" for="gender">Gender</label>
+                        <select class="form-control" id="gender" name="gender" required>
+                            <option value="M" {% if staff.gender == 'M' %}selected{% endif %}>Male</option>
+                            <option value="F" {% if staff.gender == 'F' %}selected{% endif %}>Female</option>
+                            <option value="O" {% if staff.gender == 'O' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Professional Information -->
+                <div class="col-md-6">
+                    <h5 class="mb-3">Professional Information</h5>
+
+                    <div class="form-group">
+                        <label class="form-label required" for="role">Role</label>
+                        <select class="form-control" id="role" name="role" required>
+                            <option value="DOCTOR" {% if staff.role == 'DOCTOR' %}selected{% endif %}>Doctor</option>
+                            <option value="NURSE" {% if staff.role == 'NURSE' %}selected{% endif %}>Nurse</option>
+                            <option value="VOLUNTEER" {% if staff.role == 'VOLUNTEER' %}selected{% endif %}>Volunteer</option>
+                            <option value="SOCIAL_WORKER" {% if staff.role == 'SOCIAL_WORKER' %}selected{% endif %}>Social Worker</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required" for="experience">Experience (Years)</label>
+                        <input type="number" class="form-control" id="experience" name="experience" 
+                               value="{{ staff.experience }}" required min="0" max="50">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="address">Address</label>
+                        <textarea class="form-control" id="address" name="address" rows="3">{{ staff.address }}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="qualifications">Qualifications</label>
+                        <textarea class="form-control" id="qualifications" name="qualifications" rows="3">{{ staff.qualifications }}</textarea>
+                    </div>
+
+                    <div class="form-group text-center">
+                        <label class="form-label">Profile Picture</label>
+                        {% if staff.profile_pic %}
+                        <img src="{{ staff.profile_pic.url }}" alt="Profile Picture" class="profile-pic-preview d-block mx-auto">
+                        {% endif %}
+                        <label class="custom-file-upload">
+                            <input type="file" name="profile_pic" accept="image/*" style="display: none;" 
+                                   onchange="previewImage(this)">
+                            <i class="fas fa-upload"></i> Choose New Image
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 text-center">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <a href="{% url 'staff_list' %}" class="btn btn-secondary ms-2">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Image preview functionality
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.querySelector('.profile-pic-preview');
+                    if (preview) {
+                        preview.src = e.target.result;
+                    } else {
+                        const newPreview = document.createElement('img');
+                        newPreview.src = e.target.result;
+                        newPreview.className = 'profile-pic-preview d-block mx-auto';
+                        input.parentElement.insertBefore(newPreview, input);
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Form validation
+        document.getElementById('editStaffForm').addEventListener('submit', function(e) {
+            const phone = document.getElementById('phone').value;
+            const email = document.getElementById('email').value;
+            const experience = document.getElementById('experience').value;
+
+            // Phone validation
+            if (!/^[6-9]\d{9}$/.test(phone)) {
+                e.preventDefault();
+                alert('Please enter a valid 10-digit phone number starting with 6-9');
+                return;
+            }
+
+            // Email validation
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                e.preventDefault();
+                alert('Please enter a valid email address');
+                return;
+            }
+
+            // Experience validation
+            if (experience < 0 || experience > 50) {
+                e.preventDefault();
+                alert('Experience must be between 0 and 50 years');
+                return;
+            }
+        });
+
+        // Auto-hide alerts after 5 seconds
+        setTimeout(function() {
+            document.querySelectorAll('.alert').forEach(function(alert) {
+                const closeButton = alert.querySelector('.btn-close');
+                if (closeButton) closeButton.click();
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

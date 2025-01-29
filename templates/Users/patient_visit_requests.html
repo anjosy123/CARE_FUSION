@@ -1,4 +1,4 @@
-{% comment %} {% extends 'base.html' %} {% endcomment %}
+{% comment %} {% extends 'Users/patient_base.html' %} {% endcomment %}
 {% load static %}
 
 {% comment %} {% block title %}Visit Requests - CareFusion{% endblock %} {% endcomment %}
@@ -26,14 +26,14 @@
                         <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=medical_history"><i class="bi bi-journal-medical"></i> Medical History</a></li>
                     </ul>
                 </li>
-                <li class="nav-item dropdown">
+                {% comment %} <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="appointmentsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-calendar"></i> Appointments
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="appointmentsDropdown">
                         <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=appointments"><i class="bi bi-calendar-check"></i> My Appointments</a></li>
                     </ul>
-                </li>
+                </li> {% endcomment %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="careDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-clipboard-heart"></i> Care

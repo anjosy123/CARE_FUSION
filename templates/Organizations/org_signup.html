@@ -1,299 +1,360 @@
-{% extends "base.html" %}
-{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organization Sign Up - CareFusion</title>
+    {% load static %}
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+        }
 
-{% block title %}Organization Sign Up - CareFusion{% endblock %}
+        body {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+                            url('https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=2000');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
 
-{% block extra_css %}
-<style>
-  .error-message {
-    color: #dc3545;
-    font-size: 0.875em;
-    margin-top: 5px;
-    display: none;
-  }
-  .error-message.show {
-    display: block;
-  }
-  .signup-form {
-    background-color: #fff;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-    max-width: 600px;
-    margin: auto;
-  }
-  .signup-form h4 {
-    margin-bottom: 30px;
-    color: #333;
-  }
-  .form-group {
-    margin-bottom: 1.5rem;
-  }
-  .form-control.is-invalid {
-    border-color: #dc3545;
-  }
-  .form-control.is-valid {
-    border-color: #198754;
-  }
-  .password-requirements {
-    font-size: 0.8em;
-    color: #666;
-    margin-top: 5px;
-  }
-</style>
-{% endblock %}
+        .navbar {
+            background-color: rgba(44, 62, 80, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+        }
 
-{% block content %}
-<!-- Breadcrumbs -->
-<div class="breadcrumbs overlay">
-  <div class="container">
-    <div class="bread-inner">
-      <div class="row">
-        <div class="col-12">
-          <h2>Organization Sign Up</h2>
-          <ul class="bread-list">
-            <li><a href="{% url 'index' %}">Home</a></li>
-            <li><i class="icofont-simple-right"></i></li>
-            <li class="active">Organization Sign Up</li>
-          </ul>
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .navbar-brand img {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .signup-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin: 40px auto;
+            max-width: 800px;
+        }
+
+        .signup-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .signup-header h2 {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .form-control {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #eef2f7;
+            border-radius: 10px;
+            padding: 12px 20px;
+            margin-bottom: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+        }
+
+        .form-label {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .btn-signup {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-signup:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .error-message {
+            color: var(--accent-color);
+            font-size: 0.875em;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .password-requirements {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .footer-links {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .footer-links a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <img src="{% static 'img/logoo.png' %}" alt="CareFusion Logo" height="40">
+                CareFusion
+            </a>
         </div>
-      </div>
-    </div>
-  </div>
-</div>
+    </nav>
 
-<!-- Sign-up Form Section -->
-<section class="contact-us section">
-  <div class="container">
-    <div class="inner">
-      <div class="row justify-content-center">
-        <div class="col-lg-6 col-md-8 col-12">
-          <div class="signup-form">
-            <h4 class="text-center">Organization Sign Up</h4>
-            
+    <!-- Signup Section -->
+    <div class="container">
+        <div class="signup-container">
+            <div class="signup-header">
+                <h2>Organization Registration</h2>
+                <p>Join our healthcare network</p>
+            </div>
+
             {% if messages %}
             <div class="alert alert-info alert-dismissible fade show" role="alert">
-              {% for message in messages %}
-                {{ message }}
-              {% endfor %}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                {% for message in messages %}
+                    {{ message }}
+                {% endfor %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
             {% endif %}
 
             <form id="signupForm" action="{% url 'org_signup' %}" method="post" novalidate>
-              {% csrf_token %}
-
-              <div class="form-group">
-                <label for="org_email">Email</label>
-                <input type="email" class="form-control" id="org_email" name="org_email" required />
-                <div class="error-message" id="emailError"></div>
-              </div>
-
-              <div class="form-group">
-                <label for="org_name">Organization Name</label>
-                <input type="text" class="form-control" id="org_name" name="org_name" required />
-                <div class="error-message" id="nameError"></div>
-              </div>
-
-              <div class="form-group">
-                <label for="org_regid">Registration Number</label>
-                <input type="text" 
-                       class="form-control" 
-                       id="org_regid" 
-                       name="org_regid" 
-                       maxlength="7" 
-                       placeholder="Enter 7 digit registration number"
-                       required />
-                <div class="error-message" id="regidError"></div>
-              </div>
-
-              <div class="form-group">
-                <label for="org_address">Address</label>
-                <input type="text" class="form-control" id="org_address" name="org_address" required />
-                <div class="error-message" id="addressError"></div>
-              </div>
-
-              <div class="form-group">
-                <label for="org_phone">Phone Number</label>
-                <input type="tel" class="form-control" id="org_phone" name="org_phone" 
-                       maxlength="10" placeholder="10 digit mobile number" required />
-                <div class="error-message" id="phoneError"></div>
-              </div>
-
-              <div class="form-group">
-                <label for="org_pincode">Pincode</label>
-                <input type="text" class="form-control" id="org_pincode" name="org_pincode" 
-                       maxlength="6" placeholder="6 digit pincode" required />
-                <div class="error-message" id="pincodeError"></div>
-              </div>
-
-              <div class="form-group">
-                <label for="passw1">Password</label>
-                <input type="password" class="form-control" id="passw1" name="org_pass1" required />
-                <div class="password-requirements">
-                  Password must contain at least 8 characters, including uppercase, number, and special character
+                {% csrf_token %}
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="org_name" class="form-label">Organization Name</label>
+                        <input type="text" class="form-control" id="org_name" name="org_name" required>
+                        <div class="error-message" id="nameError"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="org_regid" class="form-label">Registration Number</label>
+                        <input type="text" class="form-control" id="org_regid" name="org_regid" 
+                               maxlength="7" placeholder="Enter 7 digit registration number" required>
+                        <div class="error-message" id="regidError"></div>
+                    </div>
                 </div>
-                <div class="error-message" id="passwordError"></div>
-              </div>
 
-              <div class="form-group">
-                <label for="passw2">Confirm Password</label>
-                <input type="password" class="form-control" id="passw2" name="org_pass2" required />
-                <div class="error-message" id="confirmPasswordError"></div>
-              </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="org_email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="org_email" name="org_email" required>
+                        <div class="error-message" id="emailError"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="org_phone" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="org_phone" name="org_phone" 
+                               maxlength="10" placeholder="10 digit mobile number" required>
+                        <div class="error-message" id="phoneError"></div>
+                    </div>
+                </div>
 
-              <div class="form-group">
-                <button type="submit" class="btn btn-primary w-100">Sign Up</button>
-              </div>
+                <div class="form-group mb-3">
+                    <label for="org_address" class="form-label">Address</label>
+                    <input type="text" class="form-control" id="org_address" name="org_address" required>
+                    <div class="error-message" id="addressError"></div>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="org_pincode" class="form-label">Pincode</label>
+                    <input type="text" class="form-control" id="org_pincode" name="org_pincode" 
+                           maxlength="6" placeholder="6 digit pincode" required>
+                    <div class="error-message" id="pincodeError"></div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="passw1" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="passw1" name="org_pass1" required>
+                        <div class="password-requirements">
+                            Password must contain at least 8 characters, including uppercase, number, and special character
+                        </div>
+                        <div class="error-message" id="passwordError"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="passw2" class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="passw2" name="org_pass2" required>
+                        <div class="error-message" id="confirmPasswordError"></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-signup">
+                    <i class="bi bi-building me-2"></i>Register Organization
+                </button>
             </form>
-          </div>
+
+            <div class="footer-links">
+                <p>Already registered? <a href="{% url 'login' %}">Login</a></p>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
-</section>
-{% endblock content %}
 
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const form = document.getElementById('signupForm');
-  const emailField = document.getElementById('org_email');
-  const phoneField = document.getElementById('org_phone');
-  const pincodeField = document.getElementById('org_pincode');
-  const passwordField1 = document.getElementById('passw1');
-  const passwordField2 = document.getElementById('passw2');
-  const regIdField = document.getElementById('org_regid');
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  const emailError = document.getElementById('emailError');
-  const phoneError = document.getElementById('phoneError');
-  const pincodeError = document.getElementById('pincodeError');
-  const passwordError = document.getElementById('passwordError');
-  const confirmPasswordError = document.getElementById('confirmPasswordError');
-  const regIdError = document.getElementById('regidError');
+    <!-- Validation Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('signupForm');
+            const emailField = document.getElementById('org_email');
+            const phoneField = document.getElementById('org_phone');
+            const pincodeField = document.getElementById('org_pincode');
+            const passwordField1 = document.getElementById('passw1');
+            const passwordField2 = document.getElementById('passw2');
+            const regIdField = document.getElementById('org_regid');
 
-  // Email validation
-  emailField.addEventListener('input', function() {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(this.value)) {
-      showError(this, emailError, 'Please enter a valid email address');
-    } else {
-      hideError(this, emailError);
-    }
-  });
+            function showError(input, errorDiv, message) {
+                input.classList.add('is-invalid');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+            }
 
-  // Phone validation
-  phoneField.addEventListener('input', function() {
-    const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(this.value)) {
-      showError(this, phoneError, 'Enter valid 10-digit number starting with 6, 7, 8, or 9');
-    } else {
-      hideError(this, phoneError);
-    }
-  });
+            function hideError(input, errorDiv) {
+                input.classList.remove('is-invalid');
+                input.classList.add('is-valid');
+                errorDiv.style.display = 'none';
+            }
 
-  // Pincode validation
-  pincodeField.addEventListener('input', function() {
-    const pincode = this.value;
-    const pincodeNum = parseInt(pincode);
-    
-    if (!/^\d{6}$/.test(pincode)) {
-      showError(this, pincodeError, 'Pincode must be exactly 6 digits');
-    } else if (/^(\d)\1{5}$/.test(pincode)) {
-      showError(this, pincodeError, 'All digits cannot be same');
-    } else if (pincodeNum < 670001 || pincodeNum > 686514) {
-      showError(this, pincodeError, 'Pincode must be between 670001 and 686514');
-    } else {
-      hideError(this, pincodeError);
-    }
-  });
+            emailField.addEventListener('input', function() {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                const errorDiv = document.getElementById('emailError');
+                if (!emailRegex.test(this.value)) {
+                    showError(this, errorDiv, 'Please enter a valid email address');
+                } else {
+                    hideError(this, errorDiv);
+                }
+            });
 
-  // Password validation
-  passwordField1.addEventListener('input', function() {
-    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(this.value)) {
-      showError(this, passwordError, 'Password must meet all requirements');
-    } else {
-      hideError(this, passwordError);
-    }
-  });
+            phoneField.addEventListener('input', function() {
+                const phoneRegex = /^[6-9]\d{9}$/;
+                const errorDiv = document.getElementById('phoneError');
+                if (!phoneRegex.test(this.value)) {
+                    showError(this, errorDiv, 'Enter valid 10-digit number starting with 6, 7, 8, or 9');
+                } else {
+                    hideError(this, errorDiv);
+                }
+            });
 
-  // Confirm password validation
-  passwordField2.addEventListener('input', function() {
-    if (this.value !== passwordField1.value) {
-      showError(this, confirmPasswordError, 'Passwords do not match');
-    } else {
-      hideError(this, confirmPasswordError);
-    }
-  });
+            pincodeField.addEventListener('input', function() {
+                const errorDiv = document.getElementById('pincodeError');
+                const pincode = this.value;
+                const pincodeNum = parseInt(pincode);
+                
+                if (!/^\d{6}$/.test(pincode)) {
+                    showError(this, errorDiv, 'Pincode must be exactly 6 digits');
+                } else if (/^(\d)\1{5}$/.test(pincode)) {
+                    showError(this, errorDiv, 'All digits cannot be same');
+                } else if (pincodeNum < 670001 || pincodeNum > 686514) {
+                    showError(this, errorDiv, 'Pincode must be between 670001 and 686514');
+                } else {
+                    hideError(this, errorDiv);
+                }
+            });
 
-  // Registration number validation
-  regIdField.addEventListener('input', function() {
-    const regId = this.value;
-    // Allow only numbers
-    this.value = this.value.replace(/[^0-9]/g, '');
-    
-    if (!regId) {
-      showError(this, regIdError, 'Registration number is required');
-    } else if (!/^\d{7}$/.test(regId)) {
-      showError(this, regIdError, 'Registration number must be exactly 7 digits');
-    } else {
-      hideError(this, regIdError);
-    }
-  });
+            function validatePassword() {
+                const password = passwordField1.value;
+                const confirmPassword = passwordField2.value;
+                const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+                const errorDiv1 = document.getElementById('passwordError');
+                const errorDiv2 = document.getElementById('confirmPasswordError');
 
-  function showError(field, errorElement, message) {
-    field.classList.add('is-invalid');
-    field.classList.remove('is-valid');
-    errorElement.textContent = message;
-    errorElement.classList.add('show');
-  }
+                if (!passwordRegex.test(password)) {
+                    showError(passwordField1, errorDiv1, 'Password must meet all requirements');
+                } else {
+                    hideError(passwordField1, errorDiv1);
+                }
 
-  function hideError(field, errorElement) {
-    field.classList.remove('is-invalid');
-    field.classList.add('is-valid');
-    errorElement.classList.remove('show');
-  }
+                if (password !== confirmPassword) {
+                    showError(passwordField2, errorDiv2, 'Passwords do not match');
+                } else {
+                    hideError(passwordField2, errorDiv2);
+                }
+            }
 
-  // Form submission
-  form.addEventListener('submit', function(event) {
-    let hasError = false;
+            passwordField1.addEventListener('input', validatePassword);
+            passwordField2.addEventListener('input', validatePassword);
 
-    // Validate all fields before submission
-    if (!emailField.value || emailField.classList.contains('is-invalid')) {
-      showError(emailField, emailError, 'Please enter a valid email');
-      hasError = true;
-    }
+            form.addEventListener('submit', function(event) {
+                // Perform final validation before submit
+                const inputs = form.querySelectorAll('input');
+                let hasError = false;
 
-    if (!phoneField.value || phoneField.classList.contains('is-invalid')) {
-      showError(phoneField, phoneError, 'Please enter a valid phone number');
-      hasError = true;
-    }
+                inputs.forEach(input => {
+                    if (input.classList.contains('is-invalid')) {
+                        hasError = true;
+                    }
+                });
 
-    if (!pincodeField.value || pincodeField.classList.contains('is-invalid')) {
-      showError(pincodeField, pincodeError, 'Please enter a valid pincode');
-      hasError = true;
-    }
-
-    if (!passwordField1.value || passwordField1.classList.contains('is-invalid')) {
-      showError(passwordField1, passwordError, 'Please enter a valid password');
-      hasError = true;
-    }
-
-    if (passwordField1.value !== passwordField2.value) {
-      showError(passwordField2, confirmPasswordError, 'Passwords do not match');
-      hasError = true;
-    }
-
-    if (!regIdField.value || regIdField.classList.contains('is-invalid')) {
-      showError(regIdField, regIdError, 'Please enter a valid 7-digit registration number');
-      hasError = true;
-    }
-
-    if (hasError) {
-      event.preventDefault();
-    }
-  });
-});
-</script>
-{% endblock extra_js %}
+                if (hasError) {
+                    event.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

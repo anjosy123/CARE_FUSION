@@ -74,8 +74,8 @@
         display: flex;
         justify-content: flex-start;
         align-items: center;
-        gap: 50px;
-        height: 40px;
+        {% comment %} gap: 50px;
+        height: 40px; {% endcomment %}
       }
 
       /* Logo Styles */
@@ -426,8 +426,12 @@
         <div class="topbar-inner d-flex justify-content-between align-items-center">
           <!-- logo -->
           {% block logo %}
-          <div class="logo">
-            <a href="{% url 'index' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" style="object-fit: contain;"/></a>
+          <div class="logo-container" style="width: 300px; height: 80px; padding: 10px;">
+            <a href="{% url 'palliatives_dashboard' %}" class="d-flex align-items-center h-100">
+                <img src="{% static 'img/logo.png' %}" 
+                     alt="Care Fusion Logo" 
+                     style="max-width: 100%; max-height: 100%; object-fit: contain;"/>
+            </a>
           </div>
           {% endblock logo %}
           
