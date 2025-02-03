@@ -26,7 +26,7 @@ from .models import (
     Prescription, Appointment, Team, TeamVisit, TeamSchedule, User, 
     TeamMessage, VisitChecklist, VisitNote, TeamDashboard, PrivacySettings,
     TaxiDriver, TaxiBooking, FareStage, DriverLeave, DriverEarning, 
-    TaxiComplaint, PatientVisitRecord  # Changed from PatientVisit to PatientVisitRecord
+    TaxiComplaint, PatientVisitRecord, EmergencyContact  # Added EmergencyContact
 )
 from .forms import AppointmentRequestForm, ServiceRequestForm,ServiceForm,StaffForm,PatientAssignmentForm,PrescriptionForm,AppointmentForm,TeamForm, TeamVisitForm, RescheduleTeamVisitForm, TeamMessageForm, VisitChecklistForm, VisitNoteForm, ProfileUpdateForm,TeamVisit, TaxiBookingForm, DriverForm, FareStageForm, DriverLeaveForm, DriverEarningForm, ComplaintForm
 from .utils import send_verification_email, send_appointment_email, calculate_distance, send_sms, notify_organization_about_leave, calculate_fare, create_razorpay_order, create_razorpay_account, notify_about_complaint, verify_razorpay_signature, transfer_to_driver, notify_payment_success, notify_driver_about_leave_response
@@ -661,14 +661,15 @@ def patients_dashboard(request):
     patient = get_object_or_404(User, id=user_id)
     assignments = PatientAssignment.objects.filter(patient=patient, is_active=True).select_related('organization')
 
-    # Updated organization query to include only active and approved organizations
+    # Existing organization query
     query = request.GET.get('q', '')
     organizations = Organizations.objects.filter(
-        approve=True,          # Organization is approved
-        is_active=True,        # Organization is active
-        is_email_verified=True # Organization email is verified
+        approve=True,
+        is_active=True,
+        is_email_verified=True
     )
     
+    # Existing POST handling
     if request.method == 'POST':
         org_id = request.POST.get('organization_id')
         organization = get_object_or_404(Organizations, id=org_id)
@@ -681,20 +682,24 @@ def patients_dashboard(request):
             messages.success(request, 'Service request submitted successfully.')
             return redirect('patients_dashboard')
     else:
-        # Initialize an empty form
         form = ServiceRequestForm()
     
     if query:
         organizations = organizations.filter(org_name__icontains=query)
 
-    # Rest of the existing queries
+    # Existing queries
     service_requests = ServiceRequest.objects.filter(patient_id=user_id).order_by('-created_at')
     prescriptions = Prescription.objects.filter(patient_assignment__in=assignments).order_by('-start_date')
-    
     all_appointments = Appointment.objects.filter(patient_assignment__in=assignments).order_by('date_time')
     booked_appointments = all_appointments.filter(status='BOOKED')
     available_appointments = all_appointments.filter(status='AVAILABLE')
     
+    # New queries for enhanced functionality
+    emergency_contacts = EmergencyContact.objects.filter(patient=patient)
+    available_services = Service.objects.filter(organization__in=organizations)
+    team_visits = TeamVisit.objects.filter(patient=patient).order_by('scheduled_date')
+    
+    # Existing medical history
     medical_history = [
         {'organization': assignment.organization, 'history': assignment.medical_history}
         for assignment in assignments if assignment.medical_history
@@ -702,12 +707,16 @@ def patients_dashboard(request):
     
     notifications = Notification.objects.filter(patient_id=user_id).order_by('-created_at')[:5]
 
-    # Get assigned teams through both assignments and team visits
+    # Existing team queries
     assigned_teams = Team.objects.filter(
-        Q(organization__patient_assignments__patient=patient, 
-          organization__patient_assignments__is_active=True) |
-        Q(visits__patient=patient)  # Changed from teamvisit to visits
-    ).distinct()
+        organization__patient_assignments__patient=patient,
+        organization__approve=True,
+        organization__is_active=True
+    ).distinct().prefetch_related('members')
+
+    assigned_teams_count = Team.objects.filter(
+        visits__patient=patient
+    ).distinct().count()
 
     upcoming_appointments = booked_appointments.filter(
         date_time__gte=timezone.now(),
@@ -715,20 +724,23 @@ def patients_dashboard(request):
     )
 
     recent_visit_requests = TeamVisitRequest.objects.filter(patient=patient).order_by('-created_at')[:5]
-
-    # Add pending requests count
     pending_requests_count = ServiceRequest.objects.filter(
         patient_id=user_id,
         status='PENDING'
     ).count()
 
+    latest_service_request = ServiceRequest.objects.filter(
+        patient_id=user_id
+    ).select_related('organization').last()
+
     # Pagination
     page_number = request.GET.get('page', 1)
-    items_per_page = 10
-    paginator = Paginator(service_requests, items_per_page)
+    paginator = Paginator(service_requests, 10)
     service_requests_page = paginator.get_page(page_number)
 
+    # Enhanced context with new data
     context = {
+        # Existing context
         'patient': patient,
         'organizations': organizations,
         'query': query,
@@ -739,10 +751,20 @@ def patients_dashboard(request):
         'medical_history': medical_history,
         'notifications': notifications,
         'assigned_teams': assigned_teams,
+        'assigned_teams_count': assigned_teams_count,
         'upcoming_appointments': upcoming_appointments,
         'recent_visit_requests': recent_visit_requests,
-        'form': ServiceRequestForm(),
+        'form': form,
         'pending_requests_count': pending_requests_count,
+        'latest_service_request': latest_service_request,
+        
+        # New context for enhanced functionality
+        'emergency_contacts': emergency_contacts,
+        'available_services': available_services,
+        'team_visits': team_visits,
+        'total_appointments': all_appointments.count(),
+        'total_prescriptions': prescriptions.count(),
+        'active_services': service_requests.filter(status='APPROVED').count(),
     }
 
     return render(request, 'Users/patients_dashboard.html', context)
@@ -879,7 +901,7 @@ def reschedule_appointment(request, appointment_id):
         'appointment': appointment,
         'form': form,
     }
-    return render(request, 'staff/reschedule_appointment.html', context)
+    return render(request, 'staff/doctor/reschedule_appointment.html', context)
 
     
 def cancel_appointment(request, appointment_id):
@@ -1757,57 +1779,49 @@ def unassign_patient(request, assignment_id):
         messages.error(request, "Organization not found. Please log in again.")
         return redirect('login')
 
-@organization_login_required
 def assign_patient(request):
+    if 'org_id' not in request.session:
+        messages.error(request, "Please log in to access this page.")
+        return redirect('login')
+    
+    org_id = request.session['org_id']
     try:
-        # Get organization from session
-        org_id = request.session.get('org_id')
-        if not org_id:
-            messages.error(request, 'No organization selected')
-            return redirect('login')
-            
         organization = Organizations.objects.get(id=org_id)
-
+        
+        # Handle form submission
         if request.method == 'POST':
             patient_id = request.POST.get('patient')
             staff_id = request.POST.get('staff')
             
-            try:
-                patient = User.objects.get(id=patient_id)
-                staff = User.objects.get(id=staff_id)
-                
-                # Create the assignment
-                PatientAssignment.objects.create(
-                    patient=patient,
-                    staff=staff,
-                    organization=organization
-                )
-                
-                messages.success(request, f'Successfully assigned {patient.get_full_name()} to {staff.get_full_name()}')
-                return redirect('patient_assignment_list')
-                
-            except User.DoesNotExist:
-                messages.error(request, 'Invalid patient or staff selection')
-            except Exception as e:
-                messages.error(request, f'Error assigning patient: {str(e)}')
+            if patient_id and staff_id:
+                try:
+                    # Create patient assignment
+                    PatientAssignment.objects.create(
+                        patient_id=patient_id,
+                        staff_id=staff_id,
+                        organization=organization,
+                        is_active=True
+                    )
+                    messages.success(request, 'Patient successfully assigned to staff member.')
+                    return redirect('patient_assignment_list')
+                except Exception as e:
+                    messages.error(request, f'Error assigning patient: {str(e)}')
+            else:
+                messages.error(request, 'Please select both patient and staff member.')
         
-        # Get unassigned patients
-        patients = User.objects.filter(
+        # Get service requests for patients
+        service_requests = ServiceRequest.objects.filter(
+            organization=organization
+        ).select_related('patient').distinct()
+        
+        # Get staff members
+        staff_members = Staff.objects.filter(
             organization=organization,
-            is_active=True
-        ).exclude(
-            id__in=PatientAssignment.objects.values('patient')
-        )
-
-        # Get available staff members
-        staff_members = User.objects.filter(
-            organization=organization,
-            is_staff=True,
             is_active=True
         )
         
         context = {
-            'patients': patients,
+            'service_requests': service_requests,
             'staff_members': staff_members,
             'organization': organization
         }
@@ -1816,9 +1830,6 @@ def assign_patient(request):
 
     except Organizations.DoesNotExist:
         messages.error(request, 'Organization not found')
-        return redirect('login')
-    except Exception as e:
-        messages.error(request, f'An error occurred: {str(e)}')
         return redirect('login')
 
 # def unassign_patient(request, assignment_id):

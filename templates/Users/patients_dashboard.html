@@ -131,6 +131,185 @@
             background-color: #0056b3;
             border-color: #0056b3;
         }
+        .org-display {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+    
+        .org-display i {
+            margin-right: 8px;
+            color: #36b9cc;
+            font-size: 1.1rem;
+        }
+    
+        .org-label {
+            font-weight: 500;
+            margin-right: 6px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+    
+        .org-name {
+            font-weight: 600;
+            color: #fff;
+        }
+    
+        @media (max-width: 768px) {
+            .org-display {
+                font-size: 0.8rem;
+                padding: 4px 8px;
+            }
+            
+            .org-label {
+                display: none;
+            }
+        }
+
+        /* Dashboard Cards */
+        .dashboard-card {
+            transition: transform 0.3s ease;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+
+        /* Tabs Styling */
+        .nav-tabs .nav-link {
+            color: #000000 !important; /* Strong black color */
+            font-weight: 500;
+            opacity: 0.8;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #4e73df !important; /* Blue color for active tab */
+            font-weight: 600;
+            opacity: 1;
+        }
+
+        .nav-tabs .nav-link:hover {
+            color: #2e59d9 !important; /* Darker blue on hover */
+            opacity: 1;
+        }
+
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: none;
+            padding: 0;
+        }
+
+        /* Table Styling */
+        .table th {
+            font-weight: 600;
+            color: #4e73df;
+        }
+
+        .table td {
+            vertical-align: middle;
+        }
+
+        /* Modal Styling */
+        .modal-header {
+            background-color: #4e73df;
+            color: white;
+        }
+
+        .modal-title {
+            font-weight: 600;
+        }
+
+        /* Badge Styling */
+        .badge {
+            padding: 0.5em 0.8em;
+            font-weight: 500;
+        }
+
+        .badge.bg-pending { background-color: #f6c23e; }
+        .badge.bg-approved { background-color: #1cc88a; }
+        .badge.bg-rejected { background-color: #e74a3b; }
+
+        /* Card Styling */
+        .card {
+            border: none;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+        }
+
+        /* Emergency Contact Styling */
+        .contact-card {
+            padding: 1rem;
+            border-radius: 8px;
+            background-color: #f8f9fc;
+            margin-bottom: 1rem;
+        }
+
+        .contact-card h6 {
+            color: #4e73df;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .table-responsive {
+                font-size: 0.9rem;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+        }
+
+        /* Animation Effects */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Status Badge Styling */
+        .table .badge {
+            padding: 0.5em 0.8em;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .badge.bg-pending { background-color: #f6c23e !important; color: #000; }
+        .badge.bg-approved { background-color: #1cc88a !important; color: #fff; }
+        .badge.bg-rejected { background-color: #e74a3b !important; color: #fff; }
+        .badge.bg-scheduled { background-color: #4e73df !important; color: #fff; }
+        .badge.bg-completed { background-color: #36b9cc !important; color: #fff; }
+
+        /* Action Buttons Styling */
+        .table .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            margin: 0 2px;
+        }
+
+        .table .btn-warning {
+            background-color: #f6c23e;
+            border-color: #f6c23e;
+            color: #000;
+        }
+
+        .table .btn-danger {
+            background-color: #e74a3b;
+            border-color: #e74a3b;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -188,6 +367,20 @@
                         </ul>
                     </li> {% endcomment %}
                 </ul>
+                
+                <!-- Add Organization Name -->
+                <div class="ms-auto me-3">
+                    {% with latest_request=request.user.servicerequest_set.last %}
+                        {% if latest_request %}
+                            <div class="org-display">
+                                <i class="bi bi-hospital"></i>
+                                <span class="org-label">Palliative Care Organization:</span>
+                                <span class="org-name">{{ latest_request.organization.org_name }}</span>
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+                
                 <ul class="navbar-nav">
                     <li class="nav-item">
                         <a class="nav-link position-relative" href="{% url 'patient_notifications' %}">
@@ -292,75 +485,557 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Add Quick Action Cards -->
+        <div class="row">
+            <!-- Quick Actions -->
             <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card dashboard-card taxi border-0 shadow h-100 py-2">
+                <div class="card border-left-primary shadow h-100 py-2">
                     <div class="card-body">
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                    Taxi Bookings</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ taxi_bookings_count }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="bi bi-taxi-front fa-2x text-gray-300"></i>
+                                <button class="btn btn-link text-primary p-0" data-bs-toggle="modal" data-bs-target="#requestServiceModal">
+                                    <i class="bi bi-plus-circle"></i> Request New Service
+                                </button>
                             </div>
                         </div>
                     </div>
-                    <a href="{% url 'view_taxi_bookings' %}" class="stretched-link"></a>
+                </div>
+            </div>
+
+            <!-- Schedule Visit -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <button class="btn btn-link text-success p-0" data-bs-toggle="modal" data-bs-target="#scheduleVisitModal">
+                                    <i class="bi bi-calendar-plus"></i> Request Team Visit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Contact -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-danger shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <button class="btn btn-link text-danger p-0" data-bs-toggle="modal" data-bs-target="#emergencyContactModal">
+                                    <i class="bi bi-telephone"></i> Emergency Contact
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medical History -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <button class="btn btn-link text-info p-0" data-bs-toggle="modal" data-bs-target="#medicalHistoryModal">
+                                    <i class="bi bi-journal-medical"></i> View Medical History
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Main Content Area -->
-        <div class="card mb-4">
+        <!-- Main Content Tabs -->
+        <div class="card shadow mb-4">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="dashboardTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="prescriptions-tab" data-bs-toggle="tab" href="#prescriptions" role="tab">
+                            <i class="bi bi-capsule"></i> Prescriptions
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="teamVisits-tab" data-bs-toggle="tab" href="#teamVisits" role="tab">
+                            <i class="bi bi-calendar-check"></i> Team Visits
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="careTeams-tab" data-bs-toggle="tab" href="#careTeams" role="tab">
+                            <i class="bi bi-people"></i> Care Teams
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="services-tab" data-bs-toggle="tab" href="#services" role="tab">
+                            <i class="bi bi-gear"></i> Services
+                        </a>
+                    </li>
+                </ul>
+            </div>
             <div class="card-body">
-                {% if request.GET.view == 'prescriptions' %}
-                    {% include 'Users/dashboard_prescriptions.html' %}
-                {% elif request.GET.view == 'appointments' %}
-                    {% include 'Users/dashboard_appointments.html' %}
-                {% elif request.GET.view == 'medical_history' %}
-                    {% include 'Users/dashboard_medical_history.html' %}
-                {% else %}
-                    <h3>Palliative Care Organizations</h3>
-                    <form method="get" action="{% url 'patients_dashboard' %}" class="mb-4">
-                        <div class="input-group">
-                            <input type="text" class="form-control" placeholder="Search organizations" name="q" value="{{ query }}">
-                            <button class="btn btn-primary" type="submit">Search</button>
+                <div class="tab-content">
+                    <!-- Prescriptions Tab -->
+                    <div class="tab-pane fade show active" id="prescriptions">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Medication</th>
+                                        <th>Dosage</th>
+                                        <th>Schedule</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for prescription in prescriptions %}
+                                    <tr>
+                                        <td>{{ prescription.medication }}</td>
+                                        <td>{{ prescription.dosage }}</td>
+                                        <td>{{ prescription.schedule }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ prescription.status|lower }}">
+                                                {{ prescription.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary" onclick="requestRefill({{ prescription.id }})">
+                                                Request Refill
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                    </form>
+                    </div>
 
-                    <div class="row row-cols-1 row-cols-md-2 g-4">
-                        {% for org in organizations %}
-                            <div class="col">
-                                <div class="card h-100">
+                    <!-- Team Visits Tab -->
+                    <div class="tab-pane fade" id="teamVisits">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5>Upcoming Team Visits</h5>
+                            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#scheduleVisitModal">
+                                <i class="bi bi-plus-circle"></i> Request New Team Visit
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Team</th>
+                                        <th>Purpose</th>
+                                        <th>Status</th>
+                                        {% comment %} <th>Actions</th> {% endcomment %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for visit in team_visits %}
+                                    <tr>
+                                        <td>{{ visit.scheduled_date|date:"M d, Y" }}</td>
+                                        <td>{{ visit.start_time|time:"H:i" }} - {{ visit.end_time|time:"H:i" }}</td>
+                                        <td>{{ visit.team.name }}</td>
+                                        <td>{{ visit.purpose }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ visit.status|lower }}">
+                                                {{ visit.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if visit.is_reschedulable %}
+                                            <button class="btn btn-sm btn-warning" onclick="rescheduleVisit({{ visit.id }})">
+                                                Reschedule
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" onclick="cancelVisit({{ visit.id }})">
+                                                Cancel
+                                            </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Care Teams Tab -->
+                    <div class="tab-pane fade" id="careTeams">
+                        <div class="row">
+                            {% for team in assigned_teams %}
+                            <div class="col-md-6 mb-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">{{ team.name }}</h6>
+                                    </div>
                                     <div class="card-body">
-                                        <h5 class="card-title">{{ org.org_name }}</h5>
+                                        <h6 class="card-subtitle mb-2 text-muted">Team Members</h6>
                                         <ul class="list-unstyled">
-                                            <li><i class="bi bi-geo-alt"></i> {{ org.org_address }}</li>
-                                            <li><i class="bi bi-telephone"></i> {{ org.org_phone }}</li>
-                                            <li><i class="bi bi-envelope"></i> {{ org.org_email }}</li>
-                                            <li><i class="bi bi-pin-map"></i> Pincode: {{ org.pincode }}</li>
+                                            {% for member in team.members.all %}
+                                            <li class="mb-2">
+                                                <i class="bi bi-person-circle"></i>
+                                                {{ member.get_full_name }} - {{ member.role }}
+                                            </li>
+                                            {% endfor %}
                                         </ul>
-                                        <p class="card-text"><small class="text-muted">Registration ID: {{ org.org_regid }}</small></p>
-                                        <a href="{% url 'request_service' org.id %}" class="btn btn-primary">Request Service</a>
+                                        <div class="mt-3">
+                                            <button class="btn btn-sm btn-primary" onclick="contactTeam({{ team.id }})">
+                                                <i class="bi bi-chat-dots"></i> Contact Team
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="viewTeamSchedule({{ team.id }})">
+                                                <i class="bi bi-calendar3"></i> View Schedule
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        {% empty %}
-                            <div class="col">
-                                <div class="alert alert-info" role="alert">
-                                    No organizations found matching your search criteria.
+                            {% empty %}
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i> No care teams assigned yet.
                                 </div>
                             </div>
-                        {% endfor %}
+                            {% endfor %}
+                        </div>
                     </div>
-                {% endif %}
+
+                    <!-- Services Tab -->
+                    <div class="tab-pane fade" id="services">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5>Active Services</h5>
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Service</th>
+                                                <th>Organization</th>
+                                                <th>Status</th>
+                                                <th>Started</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for request in service_requests %}
+                                            <tr>
+                                                <td>{{ request.service.name }}</td>
+                                                <td>{{ request.organization.org_name }}</td>
+                                                <td>
+                                                    <span class="badge bg-{{ request.status|lower }}">
+                                                        {{ request.status }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ request.created_at|date:"M d, Y" }}</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-info" onclick="viewServiceDetails({{ request.id }})">
+                                                        Details
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">Available Services</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="list-unstyled">
+                                            {% for service in available_services %}
+                                            <li class="mb-2">
+                                                <i class="bi bi-check-circle"></i>
+                                                {{ service.name }}
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#requestServiceModal">
+                                            Request New Service
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     {% endblock content %}
 
+    <!-- Add necessary modals -->
+    <!-- Request Service Modal -->
+    <div class="modal fade" id="requestServiceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Request New Service</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="serviceRequestForm">
+                        <div class="mb-3">
+                            <label class="form-label">Service Type</label>
+                            <select class="form-select" name="service_type" required>
+                                <option value="">Select Service...</option>
+                                {% for service in available_services %}
+                                <option value="{{ service.id }}">{{ service.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Additional Notes</label>
+                            <textarea class="form-control" name="notes" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Upload Doctor's Referral (if any)</label>
+                            <input type="file" class="form-control" name="referral">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="submitServiceRequest()">Submit Request</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Visit Modal -->
+    <div class="modal fade" id="scheduleVisitModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Schedule Team Visit</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="visitScheduleForm">
+                        <div class="mb-3">
+                            <label class="form-label">Preferred Date</label>
+                            <input type="date" class="form-control" name="visit_date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Preferred Time</label>
+                            <input type="time" class="form-control" name="visit_time" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Purpose of Visit</label>
+                            <textarea class="form-control" name="purpose" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="scheduleVisit()">Schedule</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Medical History Modal -->
+    <div class="modal fade" id="medicalHistoryModal">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Medical History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#conditions">Conditions</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#medications">Medications</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#vitals">Vitals History</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3">
+                        <div class="tab-pane fade show active" id="conditions">
+                            <!-- Medical conditions content -->
+                        </div>
+                        <div class="tab-pane fade" id="medications">
+                            <!-- Medications history -->
+                        </div>
+                        <div class="tab-pane fade" id="vitals">
+                            <!-- Vitals history -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emergency Contact Modal -->
+    <div class="modal fade" id="emergencyContactModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Emergency Contacts</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="emergency-contacts">
+                        {% for contact in emergency_contacts %}
+                        <div class="contact-card mb-3">
+                            <h6>{{ contact.name }}</h6>
+                            <p><i class="bi bi-telephone"></i> {{ contact.phone }}</p>
+                            <p><i class="bi bi-person"></i> {{ contact.relationship }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <hr>
+                    <div class="emergency-services">
+                        <h6>Emergency Services</h6>
+                        <p><i class="bi bi-telephone"></i> Ambulance: 108</p>
+                        <p><i class="bi bi-telephone"></i> Care Team: {{ care_team.emergency_contact }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    // Service Request Functions
+    function submitServiceRequest() {
+        const form = document.getElementById('serviceRequestForm');
+        const formData = new FormData(form);
+        
+        fetch('/submit-service-request/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showAlert('Service request submitted successfully', 'success');
+                $('#requestServiceModal').modal('hide');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert(data.message, 'error');
+            }
+        })
+        .catch(error => showAlert('Error submitting request', 'error'));
+    }
+
+    // Team Visit Functions
+    function scheduleVisit() {
+        const form = document.getElementById('visitScheduleForm');
+        const formData = new FormData(form);
+        
+        fetch('/schedule-team-visit/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showAlert('Visit scheduled successfully', 'success');
+                $('#scheduleVisitModal').modal('hide');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert(data.message, 'error');
+            }
+        })
+        .catch(error => showAlert('Error scheduling visit', 'error'));
+    }
+
+    function rescheduleVisit(visitId) {
+        // Populate reschedule modal with visit details
+        fetch(`/get-visit-details/${visitId}/`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('rescheduleDate').value = data.scheduled_date;
+                document.getElementById('rescheduleTime').value = data.start_time;
+                $('#rescheduleVisitModal').modal('show');
+            });
+    }
+
+    function cancelVisit(visitId) {
+        if (confirm('Are you sure you want to cancel this visit?')) {
+            fetch(`/cancel-team-visit/${visitId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showAlert('Visit cancelled successfully', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            });
+        }
+    }
+
+    // Prescription Functions
+    function requestRefill(prescriptionId) {
+        fetch(`/request-prescription-refill/${prescriptionId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showAlert('Refill request submitted successfully', 'success');
+            } else {
+                showAlert(data.message, 'error');
+            }
+        });
+    }
+
+    // Utility Functions
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.container').firstChild);
+        setTimeout(() => alertDiv.remove(), 3000);
+    }
+
+    // Initialize tooltips and popovers
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var triggerTabList = [].slice.call(document.querySelectorAll('#dashboardTabs a'))
+        triggerTabList.forEach(function(triggerEl) {
+            var tabTrigger = new bootstrap.Tab(triggerEl)
+            triggerEl.addEventListener('click', function(event) {
+                event.preventDefault()
+                tabTrigger.show()
+            })
+        })
+    });
+    </script>
 </body>
 </html>

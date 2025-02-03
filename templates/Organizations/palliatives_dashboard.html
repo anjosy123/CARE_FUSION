@@ -331,7 +331,7 @@
                 <li>
                     <a href="#">Prediction Analysis <i class="fas fa-chevron-down"></i></a>
                     <ul class="dropdown">
-                        <li><a href="{% url 'risk_monitoring' %}">
+                        {% comment %} <li><a href="{% url 'risk_monitoring' %}">
                             <i class="fas fa-chart-line"></i> Risk Monitoring
                         </a></li>
                         <li><a href="{% url 'patient_risk_history' %}">
@@ -339,7 +339,7 @@
                         </a></li>
                         <li><a href="{% url 'risk_comparison' %}">
                             <i class="fas fa-balance-scale"></i> Risk Comparison
-                        </a></li>
+                        </a></li> {% endcomment %}
                         <li><a href="{% url 'schedule_optimizer' %}">
                             <i class="fas fa-calendar-check"></i> Schedule Optimizer
                         </a></li>

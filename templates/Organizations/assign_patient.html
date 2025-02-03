@@ -177,14 +177,15 @@
                 <form method="post" class="needs-validation" novalidate>
                     {% csrf_token %}
                     
-                    <div class="form-group">
+                    <!-- Patient Dropdown -->
+                    <div class="mb-4">
                         <label for="patient" class="form-label">Select Patient</label>
                         <select name="patient" id="patient" class="form-select" required>
                             <option value="">--Select a patient--</option>
-                            {% for patient in patients %}
-                            <option value="{{ patient.id }}">
-                                {{ patient.first_name }} {{ patient.last_name }}
-                            </option>
+                            {% for patient in service_requests %}
+                                <option value="{{ patient.patient.id }}">
+                                    {{ patient.patient.first_name }} {{ patient.patient.last_name }} - {{ patient.patient.email }}
+                                </option>
                             {% endfor %}
                         </select>
                         <div class="invalid-feedback">
@@ -192,14 +193,15 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
+                    <!-- Staff Dropdown -->
+                    <div class="mb-4">
                         <label for="staff" class="form-label">Assign to Staff Member</label>
                         <select name="staff" id="staff" class="form-select" required>
                             <option value="">--Select a staff member--</option>
                             {% for staff in staff_members %}
-                            <option value="{{ staff.id }}">
-                                {{ staff.first_name }} {{ staff.last_name }}
-                            </option>
+                                <option value="{{ staff.id }}">
+                                    {{ staff.first_name }} {{ staff.last_name }} - {{ staff.role }}
+                                </option>
                             {% endfor %}
                         </select>
                         <div class="invalid-feedback">

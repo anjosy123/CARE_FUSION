@@ -129,7 +129,7 @@ urlpatterns = [
     # path('reschedule-appointment/<int:appointment_id>/', views.reschedule_appointment, name='reschedule_appointment'),
     # path('cancel-appointment/<int:appointment_id>/', views.cancel_appointment, name='cancel_appointment'),
     path('staff/dashboard/', views.staff_dashboard, name='staff_dashboard'),
-    path('staff/reschedule-appointment/<int:appointment_id>/', views.reschedule_appointment, name='reschedule_appointment'),
+    path('staff/doctor/reschedule-appointment/<int:appointment_id>/', views.reschedule_appointment, name='reschedule_appointment'),
     path('staff/cancel-appointment/<int:appointment_id>/', views.cancel_appointment, name='cancel_appointment'),
     # path('staff/schedule-appointment/<int:assignment_id>/', views.schedule_appointment, name='schedule_appointment'),
     
