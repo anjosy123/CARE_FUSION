@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Medical Equipment for Rent</h2>
+    <p class="text-muted">Available equipment from {{ organization.org_name }}</p>
+
+    <div class="row mt-4">
+        {% for item in equipment %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                {% if item.image %}
+                <img src="{{ item.image.url }}" class="card-img-top" alt="{{ item.name }}">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ item.name }}</h5>
+                    <p class="card-text">{{ item.description }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-0"><strong>Rental:</strong> ₹{{ item.rental_price_per_day }}/day</p>
+                            <p class="mb-0"><small>Security Deposit: ₹{{ item.security_deposit }}</small></p>
+                        </div>
+                        <button onclick="initiateRental({{ item.id }})" class="btn btn-primary btn-sm">
+                            <i class="fas fa-shopping-cart me-1"></i> Rent Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                No equipment available for rent at the moment.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Rental Modal -->
+<div class="modal fade" id="rentalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rent Equipment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="rentalForm">
+                    <div class="mb-3">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control" name="start_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-control" name="end_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Delivery Address</label>
+                        <textarea class="form-control" name="delivery_address" required></textarea>
+                    </div>
+                    <div class="rental-summary mt-3 d-none">
+                        <h6>Rental Summary</h6>
+                        <p class="mb-1">Duration: <span id="rentalDuration"></span> days</p>
+                        <p class="mb-1">Rental Amount: ₹<span id="rentalAmount"></span></p>
+                        <p class="mb-1">Security Deposit: ₹<span id="securityDeposit"></span></p>
+                        <p class="mb-0"><strong>Total Amount: ₹<span id="totalAmount"></span></strong></p>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="proceedToPayment()">Proceed to Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add this modal to the template -->
+<div class="modal fade" id="rentalRequestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Request Equipment Rental</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>You are about to request:</p>
+                <div class="mb-3">
+                    <strong>Equipment:</strong> <span id="equipmentName"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Daily Rate:</strong> ₹<span id="rentalRate"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Security Deposit:</strong> ₹<span id="securityDeposit"></span>
+                </div>
+                <div class="alert alert-info">
+                    <small>
+                        <i class="fas fa-info-circle"></i> 
+                        Your request will be reviewed by the organization. You'll be notified once it's approved.
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitRentalRequest()">
+                    <i class="fas fa-paper-plane"></i> Send Request
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+let currentEquipment = null;
+let selectedEquipmentId = null;
+
+function initiateRental(equipmentId) {
+    if (!confirm('Are you sure you want to request this equipment?')) {
+        return;
+    }
+
+    fetch(`/initiate-rental-request/${equipmentId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Rental request sent successfully! You will be notified once approved.');
+            window.location.href = '{% url "patient_rentals" %}#active';
+        } else {
+            alert(data.error || 'Failed to send rental request');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while submitting your request');
+    });
+}
+
+function calculateRental() {
+    const startDate = new Date($('input[name="start_date"]').val());
+    const endDate = new Date($('input[name="end_date"]').val());
+    
+    if (startDate && endDate && startDate <= endDate) {
+        const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        const rentalAmount = days * currentEquipment.rental_price_per_day;
+        
+        $('#rentalDuration').text(days);
+        $('#rentalAmount').text(rentalAmount);
+        $('#securityDeposit').text(currentEquipment.security_deposit);
+        $('#totalAmount').text(rentalAmount + currentEquipment.security_deposit);
+        
+        $('.rental-summary').removeClass('d-none');
+    }
+}
+
+function proceedToPayment() {
+    const formData = new FormData($('#rentalForm')[0]);
+    formData.append('equipment_id', currentEquipment);
+    
+    fetch(`/initiate-rental/${currentEquipment}/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const options = {
+                key: data.key,
+                amount: data.amount,
+                currency: "INR",
+                name: "CareFusion",
+                description: "Equipment Rental Payment",
+                order_id: data.order_id,
+                handler: function(response) {
+                    confirmPayment(response);
+                },
+                prefill: {
+                    name: "{{ request.user.get_full_name }}",
+                    email: "{{ request.user.email }}",
+                },
+                theme: {
+                    color: "#4e73df"
+                }
+            };
+            
+            const rzp = new Razorpay(options);
+            rzp.open();
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function confirmPayment(response) {
+    fetch('/confirm-rental-payment/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(response)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '/rental-confirmation/';
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Add event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    $('input[name="start_date"], input[name="end_date"]').on('change', calculateRental);
+});
+
+function submitRentalRequest() {
+    if (!selectedEquipmentId) return;
+    
+    fetch(`/initiate-rental-request/${selectedEquipmentId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '{% url "patient_rentals" %}';
+        } else {
+            alert(data.error || 'Failed to send rental request');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while submitting your request');
+    });
+}
+</script>
+{% endblock %} 

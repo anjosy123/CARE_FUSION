@@ -1,4 +1,5 @@
 {% load static %}
+{% load widget_tweaks %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -310,6 +311,116 @@
             border-color: #e74a3b;
             color: #fff;
         }
+
+        /* Modal Styles */
+        .team-members-modal {
+            pointer-events: none;
+        }
+        
+        .team-members-modal .modal-dialog {
+            pointer-events: all;
+        }
+        
+        .modal-backdrop {
+            pointer-events: all;
+        }
+        
+        .member-card {
+            border-radius: 10px;
+            border: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: none;
+        }
+        
+        .member-card:hover {
+            transform: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .view-team-btn {
+            min-width: 100px;
+        }
+        
+        .member-avatar {
+            width: 48px;
+            height: 48px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .member-details {
+            font-size: 0.9rem;
+        }
+        
+        .member-details i {
+            width: 20px;
+            margin-right: 8px;
+        }
+        
+        /* Prevent modal content from shifting */
+        .modal-open {
+            padding-right: 0 !important;
+        }
+        
+        .modal {
+            padding-right: 0 !important;
+        }
+
+        .modal-dialog {
+            margin: 1.75rem auto;
+        }
+
+        @media (max-width: 768px) {
+            .modal-dialog {
+                margin: 1rem;
+            }
+        }
+
+        /* Add these to your existing styles */
+        .modal-header {
+            border-radius: 6px 6px 0 0;
+        }
+
+        .list-group-item {
+            border-left: none;
+            border-right: none;
+            padding: 15px;
+            transition: background-color 0.2s;
+        }
+
+        .list-group-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .list-group-item:first-child {
+            border-top: none;
+        }
+
+        .list-group-item:last-child {
+            border-bottom: none;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            font-weight: 500;
+            font-size: 0.8rem;
+        }
+
+        .modal-content {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .text-muted {
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -366,6 +477,14 @@
                             <li><a class="dropdown-item" href="{% url 'view_taxi_bookings' %}">My Taxi Bookings</a></li>
                         </ul>
                     </li> {% endcomment %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'patient_rentals' %}">
+                            <i class="fas fa-wheelchair"></i> Equipment Rentals
+                            {% if active_rentals.exists %}
+                                <span class="badge bg-danger">{{ active_rentals.count }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
                 </ul>
                 
                 <!-- Add Organization Name -->
@@ -618,9 +737,9 @@
                     <div class="tab-pane fade" id="teamVisits">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5>Upcoming Team Visits</h5>
-                            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#scheduleVisitModal">
+                            {% comment %} <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#scheduleVisitModal">
                                 <i class="bi bi-plus-circle"></i> Request New Team Visit
-                            </button>
+                            </button> {% endcomment %}
                         </div>
                         <div class="table-responsive">
                             <table class="table">
@@ -664,42 +783,76 @@
                     </div>
 
                     <!-- Care Teams Tab -->
-                    <div class="tab-pane fade" id="careTeams">
-                        <div class="row">
-                            {% for team in assigned_teams %}
-                            <div class="col-md-6 mb-4">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">{{ team.name }}</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <h6 class="card-subtitle mb-2 text-muted">Team Members</h6>
-                                        <ul class="list-unstyled">
-                                            {% for member in team.members.all %}
-                                            <li class="mb-2">
-                                                <i class="bi bi-person-circle"></i>
-                                                {{ member.get_full_name }} - {{ member.role }}
-                                            </li>
-                                            {% endfor %}
-                                        </ul>
-                                        <div class="mt-3">
-                                            <button class="btn btn-sm btn-primary" onclick="contactTeam({{ team.id }})">
-                                                <i class="bi bi-chat-dots"></i> Contact Team
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-primary" onclick="viewTeamSchedule({{ team.id }})">
-                                                <i class="bi bi-calendar3"></i> View Schedule
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                    <div class="tab-pane fade" id="careTeams" role="tabpanel">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                                <h6 class="m-0 font-weight-bold text-primary">
+                                    <i class="bi bi-people-fill me-2"></i>My Care Teams
+                                </h6>
                             </div>
-                            {% empty %}
-                            <div class="col-12">
-                                <div class="alert alert-info">
-                                    <i class="bi bi-info-circle"></i> No care teams assigned yet.
-                                </div>
+                            <div class="card-body">
+                                {% if team_visits %}
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Team Name</th>
+                                                    <th>Organization</th>
+                                                    <th>Next Visit</th>
+                                                    <th>Status</th>
+                                                    <th>Team Members</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for visit in team_visits %}
+                                                <tr>
+                                                    <td>{{ visit.team.name }}</td>
+                                                    <td>{{ visit.team.organization.org_name }}</td>
+                                                    <td>
+                                                        {{ visit.scheduled_date|date:"M d, Y" }}<br>
+                                                        <small class="text-muted">
+                                                            {{ visit.start_time|time:"g:i A" }} - {{ visit.end_time|time:"g:i A" }}
+                                                        </small>
+                                                    </td>
+                                                    <td>
+                                                        {% if visit.status == 'SCHEDULED' %}
+                                                            <span class="badge bg-primary">Scheduled</span>
+                                                        {% elif visit.status == 'COMPLETED' %}
+                                                            <span class="badge bg-success">Completed</span>
+                                                        {% elif visit.status == 'CANCELLED' %}
+                                                            <span class="badge bg-danger">Cancelled</span>
+                                                        {% elif visit.status == 'POSTPONED' %}
+                                                            <span class="badge bg-warning">Postponed</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        <button type="button" 
+                                                                class="btn btn-sm btn-info view-team" 
+                                                                data-team-id="{{ visit.team_id }}">
+                                                            View Team
+                                                        </button>
+                                                    </td>
+                                                    <td>
+                                                        {% if visit.status == 'SCHEDULED' %}
+                                                            <button class="btn btn-sm btn-warning" 
+                                                                    onclick="requestReschedule('{{ visit.id }}')">
+                                                                Request Reschedule
+                                                            </button>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                                        <p class="mt-3 text-muted">No care team visits scheduled yet.</p>
+                                    </div>
+                                {% endif %}
                             </div>
-                            {% endfor %}
                         </div>
                     </div>
 
@@ -716,7 +869,7 @@
                                                 <th>Organization</th>
                                                 <th>Status</th>
                                                 <th>Started</th>
-                                                <th>Actions</th>
+                                                {% comment %} <th>Actions</th> {% endcomment %}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -730,18 +883,18 @@
                                                     </span>
                                                 </td>
                                                 <td>{{ request.created_at|date:"M d, Y" }}</td>
-                                                <td>
+                                                {% comment %} <td>
                                                     <button class="btn btn-sm btn-info" onclick="viewServiceDetails({{ request.id }})">
                                                         Details
                                                     </button>
-                                                </td>
+                                                </td> {% endcomment %}
                                             </tr>
                                             {% endfor %}
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            {% comment %} <div class="col-md-4">
                                 <div class="card">
                                     <div class="card-header">
                                         <h6 class="mb-0">Available Services</h6>
@@ -760,7 +913,7 @@
                                         </button>
                                     </div>
                                 </div>
-                            </div>
+                            </div> {% endcomment %}
                         </div>
                     </div>
                 </div>
@@ -904,6 +1057,52 @@
         </div>
     </div>
 
+    <!-- Team Members Modal -->
+    <div class="modal fade" id="teamMembersModal{{ visit.team.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ visit.team.name }} Members</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="list-group list-group-flush">
+                        {% for member in visit.team.members.all %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ member.get_full_name }}</h6>
+                                        <span class="badge bg-primary">{{ member.role }}</span>
+                                    </div>
+                                    <div class="text-muted">
+                                        <i class="bi bi-telephone"></i> 
+                                        {{ member.phone_number }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="text-center py-3">
+                                <p class="text-muted mb-0">No team members found.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add this modal container at the top level of your template -->
+    <div class="modal fade" id="teamDetailsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content" id="teamDetailsContent">
+                <!-- Modal content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -1035,6 +1234,101 @@
                 tabTrigger.show()
             })
         })
+    });
+
+    // Prevent modal from closing when clicking outside
+    document.querySelectorAll('.team-members-modal').forEach(modal => {
+        modal.addEventListener('click', function(event) {
+            if (event.target === this) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+    });
+    
+    // Prevent hover effects while modal is open
+    document.querySelectorAll('.view-team-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.body.style.cursor = 'default';
+        });
+    });
+
+    // Initialize all modals
+    document.addEventListener('DOMContentLoaded', function() {
+        var modals = document.querySelectorAll('.modal');
+        modals.forEach(function(modal) {
+            new bootstrap.Modal(modal);
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle view team button clicks
+        document.querySelectorAll('.view-team').forEach(button => {
+            button.addEventListener('click', function() {
+                const teamId = this.getAttribute('data-team-id');
+                const modalContent = document.getElementById('teamDetailsContent');
+                
+                // Show loading state
+                modalContent.innerHTML = `
+                    <div class="modal-body text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">Loading team details...</p>
+                    </div>
+                `;
+                
+                // Show the modal
+                const modal = new bootstrap.Modal(document.getElementById('teamDetailsModal'));
+                modal.show();
+                
+                // Fetch team details
+                fetch(`/get-team-details/${teamId}/`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        modalContent.innerHTML = data.html;
+                    } else {
+                        modalContent.innerHTML = `
+                            <div class="modal-header">
+                                <h5 class="modal-title">Error</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-danger">
+                                    ${data.message || 'Error loading team details'}
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    modalContent.innerHTML = `
+                        <div class="modal-header">
+                            <h5 class="modal-title">Error</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-danger">
+                                An unexpected error occurred while loading team details.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    `;
+                });
+            });
+        });
     });
     </script>
 </body>

@@ -301,76 +301,112 @@
             </div>
             
             <button class="mobile-menu-toggle">
-                <i class="fas fa-bars"></i>
+                <i class="bi bi-list"></i>
             </button>
             
             <ul class="nav-menu">
-                <li><a href="{% url 'service_list' %}">Services</a></li>
                 <li>
-                    <a href="javascript:void(0)">Service Requests <i class="fas fa-chevron-down"></i></a>
+                    <a href="{% url 'service_list' %}">
+                        <i class="bi bi-gear-fill"></i> Services
+                    </a>
+                </li>
+                <li>
+                    <a href="javascript:void(0)">
+                        <i class="bi bi-clipboard-check"></i> Service Requests 
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
                     <ul class="dropdown">
-                        <li><a href="{% url 'pending_requests' %}">Pending Requests</a></li>
-                        <li><a href="{% url 'approved_rejected_requests' %}">Approved/Rejected Requests</a></li>
+                        <li>
+                            <a href="{% url 'pending_requests' %}">
+                                <i class="bi bi-hourglass"></i> Pending Requests
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'approved_rejected_requests' %}">
+                                <i class="bi bi-list-check"></i> Approved/Rejected
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 <li>
-                    <a href="#">Staff Corner <i class="fas fa-chevron-down"></i></a>
+                    <a href="#">
+                        <i class="bi bi-people-fill"></i> Staff Corner 
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
                     <ul class="dropdown">
-                        <li><a href="{% url 'staff_list' %}">Manage Staff</a></li>
-                        <li><a href="{% url 'patient_assignment_list' %}">Patient Assignments</a></li>
+                        <li>
+                            <a href="{% url 'staff_list' %}">
+                                <i class="bi bi-person-gear"></i> Manage Staff
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'patient_assignment_list' %}">
+                                <i class="bi bi-person-check"></i> Patient Assignments
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 <li>
-                    <a href="#">Team Management <i class="fas fa-chevron-down"></i></a>
+                    <a href="#">
+                        <i class="bi bi-diagram-3"></i> Team Management 
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
                     <ul class="dropdown">
-                        <li><a href="{% url 'team_list' %}">Manage Teams</a></li>
-                        <li><a href="{% url 'team_visit_list' %}">Team Visits</a></li>
-                        <li><a href="{% url 'team_visit_calendar' %}">Team Visit Calendar</a></li>
+                        <li>
+                            <a href="{% url 'team_list' %}">
+                                <i class="bi bi-people"></i> Manage Teams
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'team_visit_list' %}">
+                                <i class="bi bi-calendar-check"></i> Team Visits
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'team_visit_calendar' %}">
+                                <i class="bi bi-calendar-week"></i> Visit Calendar
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 <li>
-                    <a href="#">Prediction Analysis <i class="fas fa-chevron-down"></i></a>
+                    <a href="#">
+                        <i class="bi bi-graph-up"></i> Prediction Analysis 
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
                     <ul class="dropdown">
-                        {% comment %} <li><a href="{% url 'risk_monitoring' %}">
-                            <i class="fas fa-chart-line"></i> Risk Monitoring
-                        </a></li>
-                        <li><a href="{% url 'patient_risk_history' %}">
-                            <i class="fas fa-history"></i> Patient Risk History
-                        </a></li>
-                        <li><a href="{% url 'risk_comparison' %}">
-                            <i class="fas fa-balance-scale"></i> Risk Comparison
-                        </a></li> {% endcomment %}
-                        <li><a href="{% url 'schedule_optimizer' %}">
-                            <i class="fas fa-calendar-check"></i> Schedule Optimizer
-                        </a></li>
-                        <li><a href="{% url 'team_availability' %}">
-                            <i class="fas fa-users"></i> Team Availability
-                        </a></li>
-                        <li><a href="{% url 'priority_alerts' %}">
-                            <i class="fas fa-bell"></i> Priority Alerts
-                        </a></li>
-                        <li><a href="{% url 'visit_priority' %}">
-                            <i class="fas fa-sort-amount-down"></i> Visit Priority
-                        </a></li>
+                        <li>
+                            <a href="{% url 'priority_dashboard' %}">
+                                <i class="bi bi-list-ol"></i> Priority Dashboard
+                            </a>
+                        </li>
                     </ul>
                 </li>
-                {% comment %} <li>
-                    <a href="#">Taxi Management <i class="fas fa-chevron-down"></i></a>
+                <li>
+                    <a href="#">
+                        <i class="bi bi-box-seam"></i> Equipment Rental 
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
                     <ul class="dropdown">
-                        <li><a href="{% url 'manage_taxi_drivers' %}">Manage Drivers</a></li>
-                        <li><a href="{% url 'view_taxi_bookings' %}">Taxi Bookings</a></li>
+                        <li>
+                            <a href="{% url 'manage_equipment' %}">
+                                <i class="bi bi-tools"></i> Manage Equipment
+                            </a>
+                        </li>
                     </ul>
-                </li> {% endcomment %}
+                </li>
             </ul>
             
-            {% if request.session.org_name %}
             <div class="user-info">
-                <span>Welcome {{request.session.org_name}}</span>
-                <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
+                {% if request.session.org_name %}
+                    <span class="welcome-text">
+                        <i class="bi bi-building"></i> {{ request.session.org_name }}
+                    </span>
+                    <a href="{% url 'org_logout' %}" class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
     </div>
 
@@ -379,25 +415,29 @@
 
         <div class="stats-container">
             <div class="stat-box">
-                <h5>Total Staff</h5>
-                <p>{{ staff_count }}</p>
+                <h5><i class="bi bi-box-seam"></i> Available Equipment</h5>
+                <p>{{ available_equipment_count }}</p>
             </div>
             <div class="stat-box">
-                <h5>Assigned Patients</h5>
+                <h5><i class="bi bi-cart-check"></i> Active Rentals</h5>
+                <p>{{ active_rentals_count }}</p>
+            </div>
+            <div class="stat-box">
+                <h5><i class="bi bi-people"></i> Total Staff</h5>
+                <p>{{ total_staff_count }}</p>
+            </div>
+            <div class="stat-box">
+                <h5><i class="bi bi-person-check"></i> Assigned Patients</h5>
                 <p>{{ assigned_patients_count }}</p>
             </div>
             <div class="stat-box">
-                <h5>Pending Requests</h5>
-                <p>{{ pending_requests.count }}</p>
+                <h5><i class="bi bi-clipboard-data"></i> Pending Requests</h5>
+                <p>{{ pending_requests_count }}</p>
             </div>
             <div class="stat-box">
-                <h5>Active Teams</h5>
+                <h5><i class="bi bi-people-fill"></i> Active Teams</h5>
                 <p>{{ active_teams_count }}</p>
             </div>
-            {% comment %} <div class="stat-box">
-                <h5>Pending Taxi Requests</h5>
-                <p>{{ pending_taxi_requests_count }}</p>
-            </div> {% endcomment %}
         </div>
 
         <div class="dashboard-section">

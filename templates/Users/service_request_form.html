@@ -12,32 +12,27 @@
     
     <style>
         :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --success-color: #1cc88a;
-            --info-color: #36b9cc;
-            --warning-color: #f6c23e;
-            --danger-color: #e74a3b;
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --danger-color: #e74c3c;
             --light-color: #f8f9fc;
-            --dark-color: #5a5c69;
         }
 
         body {
-            font-family: 'Nunito', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--light-color);
             padding-top: 56px;
         }
 
         .navbar {
             background-color: var(--primary-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .navbar-brand, .nav-link {
-            color: #fff !important;
-        }
-
-        .nav-link:hover {
-            color: var(--light-color) !important;
+            color: white !important;
         }
 
         .main-content {
@@ -45,53 +40,114 @@
             margin: 2rem auto;
             padding: 2rem;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-        }
-
-        .form-label {
-            font-weight: 500;
-            color: #333;
-            margin-bottom: 0.5rem;
-        }
-
-        .form-control {
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            padding: 0.75rem;
-            margin-bottom: 1rem;
-        }
-
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .service-card {
-            border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 1rem;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            padding: 1.5rem;
             margin-bottom: 1rem;
             transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
 
         .service-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
         .service-card.selected {
-            border-color: var(--primary-color);
-            background-color: rgba(78, 115, 223, 0.05);
+            border-color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.05);
         }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: var(--secondary-color);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .service-card.selected::before {
+            opacity: 1;
+        }
+
+        .service-name {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .service-description {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control {
+            border: 2px solid #eee;
+            border-radius: 8px;
+            padding: 0.75rem;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+            border: none;
+        }
+
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+
+        .alert {
+            border-radius: 8px;
+            border: none;
+        }
+
+        .service-type-1 { border-left-color: var(--success-color); }
+        .service-type-2 { border-left-color: var(--warning-color); }
+        .service-type-3 { border-left-color: var(--danger-color); }
     </style>
 </head>
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container-fluid">
-            <a href="{% url 'patients_dashboard' %}">
-                <img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px" style="object-fit: contain;"/>
+            <a class="navbar-brand" href="{% url 'organizations_list' %}">
+                <img src="{% static 'img/logo.png' %}" alt="CareFusion" width="178px" height="37px" style="object-fit: contain;"/>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -99,15 +155,15 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'patients_dashboard' %}">
-                            <i class="bi bi-arrow-left"></i> Back to Dashboard
+                        <a class="nav-link" href="{% url 'organizations_list' %}">
+                            <i class="bi bi-arrow-left"></i> Back to Organizations
                         </a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item">
                         <a class="nav-link" href="#">
-                            <i class="bi bi-building"></i> {{ organization.org_name }}
+                            <i class="bi bi-person"></i> {{ user.username }}
                         </a>
                     </li>
                 </ul>
@@ -137,11 +193,11 @@
                     <label class="form-label">Available Services</label>
                     <div class="services-container">
                         {% for service in services %}
-                            <div class="service-card" onclick="selectService(this, '{{ service.id }}')">
+                            <div class="service-card service-type-{{ forloop.counter }}" onclick="selectService(this, '{{ service.id }}')">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <h5 class="mb-1">{{ service.name }}</h5>
-                                        <p class="mb-0 text-muted">{{ service.description }}</p>
+                                        <h5 class="service-name">{{ service.name }}</h5>
+                                        <p class="service-description mb-0">{{ service.description }}</p>
                                     </div>
                                     <div class="form-check">
                                         <input type="radio" name="service" value="{{ service.id }}" 
@@ -169,7 +225,7 @@
 
                 <!-- Doctor's Referral -->
                 <div class="mb-4">
-                    <label class="form-label" for="doctor_referral">Doctor's Referral Letter</label>
+                    <label class="form-label" for="doctor_referral">Doctor's Referral Letter (Optional)</label>
                     <input type="file" class="form-control" id="doctor_referral" 
                            name="doctor_referral" accept=".pdf,.jpg,.jpeg,.png">
                     <small class="text-muted">Upload PDF or image files (max 5MB)</small>
@@ -177,17 +233,17 @@
 
                 <!-- Additional Notes -->
                 <div class="mb-4">
-                    <label class="form-label" for="additional_notes">Additional Notes</label>
+                    <label class="form-label" for="additional_notes">Additional Notes (Optional)</label>
                     <textarea class="form-control" id="additional_notes" name="additional_notes" 
                               rows="4" placeholder="Enter any additional information..."></textarea>
                 </div>
 
-                <!-- Submit Button -->
+                <!-- Submit Buttons -->
                 <div class="text-center">
                     <button type="submit" class="btn btn-primary px-4">
                         <i class="bi bi-send"></i> Submit Request
                     </button>
-                    <a href="{% url 'patients_dashboard' %}" class="btn btn-secondary px-4 ms-2">
+                    <a href="{% url 'organizations_list' %}" class="btn btn-secondary px-4 ms-2">
                         <i class="bi bi-x"></i> Cancel
                     </a>
                 </div>

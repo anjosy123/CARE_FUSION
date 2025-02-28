@@ -2,7 +2,7 @@ from django.urls import path, include
 from . import views
 from .views import (
     index, about, organizations_home, contact, services, handlelogin, 
-    handlesignup, handlelogout, register_organization, org_logout, handle_service_request
+    handlesignup, handlelogout, register_organization, org_logout, handle_service_request, handle_org_login
 )
 from accounts.views import verify_email
 from django.contrib.auth import views as auth_views
@@ -23,9 +23,9 @@ urlpatterns = [
     path('logout', handlelogout, name='logout'),
     path('user_notification_dashboard', views.user_notification_dashboard, name='user_notification_dashboard'),
     # Organization login, signup, and logout
-    path('organizations_home', organizations_home, name='organizations_home'), 
-    # path('org_login', views.handle_org_login, name='org_login'),  # Organization login
-    path('org_signup', register_organization, name='org_signup'),  # Organization signup
+    path('organizations_home', organizations_home, name='organizations_home'),
+    path('org_login', handle_org_login, name='handle_org_login'),
+    path('org_signup', register_organization, name='org_signup'),
     path('org_logout', org_logout, name='org_logout'),
     
     # Provider routes
@@ -100,6 +100,7 @@ urlpatterns = [
     
     # Email verification
     path('verify-email/<str:token>/<str:is_organization>/', views.verify_email, name='verify_email'),
+    path('verify-user-email/<str:token>/', views.verify_user_email, name='verify_user_email'),
     
     # Force password change for staff members
     # path('change_staff_password/', views.change_staff_password, name='change_staff_password'),
@@ -176,48 +177,83 @@ urlpatterns = [
     path('team-visit/<int:visit_id>/cancel/', views.cancel_team_visit, name='cancel_team_visit'),
     path('toggle-staff-status/<int:staff_id>/', views.toggle_staff_status, name='toggle_staff_status'),
 
-    path('manage-taxi-drivers/', views.manage_taxi_drivers, name='manage_taxi_drivers'),
-    path('request-emergency-taxi/', views.request_emergency_taxi, name='request_emergency_taxi'),
-    path('approve-taxi-request/<int:booking_id>/', views.approve_taxi_request, name='approve_taxi_request'),
-    path('view-taxi-bookings/', views.view_taxi_bookings, name='view_taxi_bookings'),
-    path('taxi-payment-callback/', views.taxi_payment_callback, name='taxi_payment_callback'),
+    # path('manage-taxi-drivers/', views.manage_taxi_drivers, name='manage_taxi_drivers'),
+    # path('request-emergency-taxi/', views.request_emergency_taxi, name='request_emergency_taxi'),
+    # path('approve-taxi-request/<int:booking_id>/', views.approve_taxi_request, name='approve_taxi_request'),
+    # path('view-taxi-bookings/', views.view_taxi_bookings, name='view_taxi_bookings'),
+    # path('taxi-payment-callback/', views.taxi_payment_callback, name='taxi_payment_callback'),
     
     # Add these to your urlpatterns
-    path('driver/dashboard/', views.driver_dashboard, name='driver_dashboard'),
-    path('driver/earnings/', views.driver_earnings, name='driver_earnings'),
-    path('driver/leave/', views.driver_leave, name='driver_leave'),
-    path('driver/toggle-availability/', views.toggle_driver_availability, name='toggle_driver_availability'),
+    # path('driver/dashboard/', views.driver_dashboard, name='driver_dashboard'),
+    # path('driver/earnings/', views.driver_earnings, name='driver_earnings'),
+    # path('driver/leave/', views.driver_leave, name='driver_leave'),
+    # path('driver/toggle-availability/', views.toggle_driver_availability, name='toggle_driver_availability'),
 
     # Add these to your urlpatterns
-    path('organization/leaves/', views.manage_leaves, name='manage_leaves'),
-    path('organization/handle-leave/', views.handle_leave_request, name='handle_leave_request'),
-    path('password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
-    path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
-    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
-    path('reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
-    path('verify-driver/<str:token>/', views.verify_driver_email, name='verify_driver_email'),
-    path('driver/forgot-password/', views.driver_forgot_password, name='driver_forgot_password'),
-    path('driver/reset-password/<str:token>/', views.driver_reset_password, name='driver_reset_password'),
-    path('request-service/<int:org_id>/', views.request_service, name='request_service'),
+    # path('organization/leaves/', views.manage_leaves, name='manage_leaves'),
+    # path('organization/handle-leave/', views.handle_leave_request, name='handle_leave_request'),
+    # path('password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
+    # path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
+    # path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    # path('reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
+    # path('verify-driver/<str:token>/', views.verify_driver_email, name='verify_driver_email'),
+    # path('driver/forgot-password/', views.driver_forgot_password, name='driver_forgot_password'),
+    # path('driver/reset-password/<str:token>/', views.driver_reset_password, name='driver_reset_password'),
+    path('request-service/<int:org_id>/', views.service_request_form, name='service_request_form'),
     path('upcoming-team-visits/', views.upcoming_team_visits, name='upcoming_team_visits'),
     path('save-patient-data/', views.save_patient_data, name='save_patient_data'),
     path('visit-report/<int:visit_id>/', views.visit_report, name='visit_report'),
-    
-     
-    
-    path('patient-risk-history/', views.patient_risk_history, name='patient_risk_history'),
-    path('priority-alerts/', views.priority_alerts, name='priority_alerts'),
-    path('risk-comparison/', views.risk_comparison, name='risk_comparison'),
-    path('risk-monitoring/', views.risk_monitoring, name='risk_monitoring'),
-    path('schedule-optimizer/', views.schedule_optimizer, name='schedule_optimizer'),
-    path('team-availability/', views.team_availability, name='team_availability'),
-    path('visit-priority/', views.visit_priority, name='visit_priority'),
-    
-    #ML-related URLs
-    path('ml/patient-risk/', views.patient_risk_history, name='patient_risk_history'),
-    path('ml/priority-alerts/', views.priority_alerts, name='priority_alerts'),
-    path('ml/risk-comparison/', views.risk_comparison, name='risk_comparison'),
-    path('ml/schedule-optimizer/', views.schedule_optimizer, name='schedule_optimizer'),
+       
     path('get-patient-details/<int:patient_id>/', views.get_patient_details, name='get_patient_details'),
+    
+    path('organizations-list/', views.organizations_list, name='organizations_list'),
+    path('get-team-details/<int:team_id>/', views.get_team_details, name='get_team_details'),
+    path('api/predict-priority/', views.predict_priority, name='predict_priority'),
+    path('api/model-metrics/', views.model_metrics, name='model_metrics'),
+    
+    path('api/predict-priority/', views.predict_priority, name='predict_priority'),
+    path('api/model-metrics/', views.model_metrics, name='model_metrics'),
+    path('priority-dashboard/', views.priority_dashboard, name='priority_dashboard'),
+    path('patient-detail/<int:patient_id>/', views.patient_detail, name='patient_detail'),
+    path('export-priority-report/', views.export_priority_report, name='export_priority_report'),
+    path('retrain-model/', views.retrain_model, name='retrain_model'),
+    path('equipment/<int:org_id>/', views.equipment_list, name='equipment_list'),
+    path('initiate-rental/<int:equipment_id>/', views.initiate_rental, name='initiate_rental'),
+    path('confirm-rental-payment/', views.confirm_rental_payment, name='confirm_rental_payment'),
+    path('manage-equipment/', views.manage_equipment, name='manage_equipment'),
+    path('api/equipment/save/', views.save_equipment, name='save_equipment'),
+    path('api/equipment/<int:equipment_id>/', views.get_equipment_details, name='get_equipment_details'),
+    path('api/equipment/<int:equipment_id>/delete/', views.delete_equipment, name='delete_equipment'),
+    path('api/equipment/<int:equipment_id>/toggle-status/', views.toggle_equipment_status, name='toggle_equipment_status'),
+    path('rental-requests/', views.rental_requests, name='rental_requests'),
+    path('api/rental/<int:rental_id>/details/', views.get_rental_details, name='get_rental_details'),
+    path('api/rental/assign-delivery/', views.assign_delivery, name='assign_delivery'),
+    path('api/rental/<int:rental_id>/mark-returned/', views.mark_rental_returned, name='mark_rental_returned'),
+    path('delivery-management/', views.delivery_management, name='delivery_management'),
+    path('volunteer/dashboard/', views.volunteer_dashboard, name='volunteer_dashboard'),
+    path('staff/logout/', views.staff_logout, name='staff_logout'),
+    path('staff/my-deliveries/', views.staff_deliveries, name='staff_deliveries'),
+    path('staff/delivery-history/', views.delivery_history, name='delivery_history'),
+    path('api/delivery/<int:delivery_id>/accept/', views.accept_delivery, name='accept_delivery'),
+    path('api/delivery/<int:delivery_id>/complete/', views.complete_delivery, name='complete_delivery'),
+    path('patient/rentals/', views.patient_rentals, name='patient_rentals'),
+    path('equipment/add/', views.add_equipment, name='add_equipment'),
+    path('equipment/edit/<int:equipment_id>/', views.add_equipment, name='edit_equipment'),
+    path('api/equipment/update/<int:equipment_id>/', views.update_equipment, name='update_equipment'),
+    path('rental/<int:rental_id>/payment/', views.process_rental_payment, name='process_rental_payment'),
+    path('rental/verify-payment/', views.verify_rental_payment, name='verify_rental_payment'),
+    path('initiate-rental-request/<int:equipment_id>/', views.initiate_rental_request, name='initiate_rental_request'),
+    path('api/rental/<int:rental_id>/approve/', views.approve_rental_request, name='approve_rental_request'),
+    path('api/rental/<int:rental_id>/reject/', views.reject_rental_request, name='reject_rental_request'),
+    path('api/rental/<int:rental_id>/history/', views.get_rental_history, name='get_rental_history'),
+    path('rental/confirm/<int:rental_id>/', views.confirm_rental, name='confirm_rental'),
+    path('rental-request/<int:equipment_id>/', views.rental_request, name='rental_request'),
+    path('api/delivery/assign-volunteer/', views.assign_volunteer, name='assign_volunteer'),
+    path('api/delivery/<int:delivery_id>/start/', views.start_delivery, name='start_delivery'),
+    path('api/delivery/<int:delivery_id>/complete/', views.complete_delivery, name='complete_delivery'),
+    path('api/delivery/<int:delivery_id>/update-location/', views.update_delivery_location, name='update_delivery_location'),
+    path('api/delivery/<int:delivery_id>/mark-arrived/', views.mark_arrived, name='mark_arrived'),
+    path('api/delivery/<int:delivery_id>/verify-otp/', views.verify_delivery_otp, name='verify_delivery_otp'),
+    path('api/delivery/<int:delivery_id>/location/', views.get_delivery_location, name='get_delivery_location'),
 ]
 

@@ -1,0 +1,24 @@
+{% extends 'emails/base_email.html' %}
+
+{% block content %}
+<div style="padding: 20px; background-color: #ffffff; border-radius: 5px;">
+    <h2 style="color: #2c3e50;">Payment Confirmation</h2>
+    
+    <p>Dear {{ rental.patient.get_full_name }},</p>
+    
+    <p>Your payment for the rental of <strong>{{ rental.equipment.name }}</strong> has been successfully processed.</p>
+    
+    <div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+        <h3 style="color: #2c3e50; margin-bottom: 15px;">Payment Details</h3>
+        <p><strong>Equipment:</strong> {{ rental.equipment.name }}</p>
+        <p><strong>Organization:</strong> {{ rental.equipment.organization.org_name }}</p>
+        <p><strong>Daily Rate:</strong> ₹{{ rental.daily_rental_price }}</p>
+        <p><strong>Security Deposit:</strong> ₹{{ rental.deposit_amount }}</p>
+        <p><strong>Rental Period:</strong> {{ rental.rental_start_date|date }} to {{ rental.rental_end_date|date }}</p>
+    </div>
+    
+    <p>Your rental period has started and the equipment will be delivered to you shortly.</p>
+    
+    <p>You can view your rental details and track delivery status in your <a href="{{ domain }}{% url 'patient_rentals' %}">dashboard</a>.</p>
+</div>
+{% endblock %} 

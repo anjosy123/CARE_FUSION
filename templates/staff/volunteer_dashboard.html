@@ -1,11 +1,491 @@
-{% extends 'base.html' %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volunteer Dashboard - CareFusion</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f5f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-{% block content %}
-<h2>Volunteer-specific Features</h2>
-<p>Welcome, Volunteer {{ request.session.username }}</p>
-<ul>
-    <li><a href="#">View Task Assignments</a></li>
-    <li><a href="#">Manage Visit Schedules</a></li>
-    <li><a href="#">Log Support Activities</a></li>
+        .navbar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 0.5rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand img {
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .navbar-brand span {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            margin: 0 1rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            color: white !important;
+            transform: translateY(-2px);
+        }
+
+        .welcome-text {
+            color: white;
+            font-size: 0.9rem;
+            margin-right: 1rem;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            padding: 1rem;
+        }
+
+        .badge {
+            padding: 0.5em 1em;
+            border-radius: 20px;
+        }
+
+        .alert {
+            border: none;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .delivery-item {
+            border-left: 4px solid #1e3c72;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: white;
+            border-radius: 0 8px 8px 0;
+            transition: all 0.3s ease;
+        }
+
+        .delivery-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stats-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .stats-card i {
+            font-size: 2rem;
+            color: #1e3c72;
+            margin-bottom: 1rem;
+        }
+
+        .stats-card h3 {
+            font-size: 2rem;
+            color: #1e3c72;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-card p {
+            color: #6c757d;
+            margin: 0;
+        }
+
+        .welcome-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .welcome-card .card-body {
+            padding: 1.5rem;
+        }
+        
+        .fa-hand-wave {
+            animation: wave 1s infinite;
+        }
+        
+        @keyframes wave {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+            100% { transform: rotate(0deg); }
+        }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="{% static 'img/logo.png' %}" alt="CareFusion Logo">
+                {% comment %} <span>CareFusion</span> {% endcomment %}
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% comment %} <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'volunteer_dashboard' %}">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li> {% endcomment %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'staff_deliveries' %}">
+                            <i class="fas fa-truck"></i> My Deliveries
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'delivery_history' %}">
+                            <i class="fas fa-history"></i> History
+                        </a>
+                    </li>
 </ul>
-{% endblock %}
+                <div class="d-flex align-items-center">
+                    <span class="welcome-text">
+                        <i class="fas fa-user"></i> Welcome, {{ staff.get_full_name }}
+                    </span>
+                    <a class="nav-link" href="{% url 'staff_logout' %}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages Container -->
+    <div class="container mt-3">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'success' %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% elif message.tags == 'error' or message.tags == 'danger' %}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                    {% elif message.tags == 'warning' %}
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                    {% elif message.tags == 'info' %}
+                        <i class="fas fa-info-circle me-2"></i>
+                    {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Add a welcome banner after the messages container -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card welcome-card mb-4">
+                    <div class="card-body">
+                        {% comment %} <h4 class="mb-0">
+                            <i class="fas fa-hand-wave text-primary me-2"></i>
+                            Welcome back, {{ staff.get_full_name }}!
+                        </h4> {% endcomment %}
+                        <p class="text-muted mb-0">
+                            You have {{ total_pending }} pending and {{ total_active }} active deliveries today.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="container mt-4">
+            <!-- Stats Row -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <i class="fas fa-truck"></i>
+                        <h3>{{ pending_deliveries.count }}</h3>
+                        <p>Pending Deliveries</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <i class="fas fa-route"></i>
+                        <h3>{{ active_deliveries.count }}</h3>
+                        <p>Active Deliveries</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>{{ completed_deliveries.count }}</h3>
+                        <p>Completed Deliveries</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <i class="fas fa-star"></i>
+                        <h3>{{ completion_rate }}%</h3>
+                        <p>On-Time Rate</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Deliveries -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-truck me-2"></i>Active Deliveries</h5>
+                </div>
+                <div class="card-body">
+                    {% for delivery in active_deliveries %}
+                        <div class="delivery-item">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <h6>{{ delivery.rental.equipment.name }}</h6>
+                                    <small class="text-muted">ID: {{ delivery.id }}</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <p class="mb-0">
+                                        <i class="fas fa-user me-2"></i>
+                                        {{ delivery.rental.patient.get_full_name }}
+                                    </p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-map-marker-alt me-2"></i>
+                                        {{ delivery.rental.delivery_address }}
+                                    </small>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <button class="btn btn-primary btn-sm" onclick="completeDelivery({{ delivery.id }})">
+                                        <i class="fas fa-check me-2"></i>Complete Delivery
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="delivery-map mb-3" id="map-{{ delivery.id }}" style="height: 200px;"></div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <button class="btn btn-info btn-sm" onclick="updateLocation({{ delivery.id }})">
+                                <i class="fas fa-location-arrow me-2"></i>Update Location
+                            </button>
+                            <button class="btn btn-success btn-sm" onclick="markArrived({{ delivery.id }})">
+                                <i class="fas fa-map-marker-alt me-2"></i>Mark Arrived
+                            </button>
+                        </div>
+                        <div class="otp-verification mt-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Enter OTP" id="otp-{{ delivery.id }}">
+                                <button class="btn btn-primary" onclick="verifyOTP({{ delivery.id }})">
+                                    Verify OTP
+                                </button>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-center text-muted my-4">No active deliveries</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Pending Deliveries -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Pending Deliveries</h5>
+                </div>
+                <div class="card-body">
+                    {% for delivery in pending_deliveries %}
+                        <div class="delivery-item">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <h6>{{ delivery.rental.equipment.name }}</h6>
+                                    <small class="text-muted">ID: {{ delivery.id }}</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <p class="mb-0">
+                                        <i class="fas fa-user me-2"></i>
+                                        {{ delivery.rental.patient.get_full_name }}
+                                    </p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-map-marker-alt me-2"></i>
+                                        {{ delivery.rental.delivery_address }}
+                                    </small>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <button class="btn btn-success btn-sm" onclick="startDelivery({{ delivery.id }})">
+                                        <i class="fas fa-check me-2"></i>Start Delivery
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-center text-muted my-4">No pending deliveries</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function startDelivery(deliveryId) {
+            if (confirm('Start this delivery?')) {
+                fetch(`/api/delivery/${deliveryId}/start/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.error || 'Failed to start delivery');
+                    }
+                });
+            }
+        }
+
+        function completeDelivery(deliveryId) {
+            if (confirm('Mark this delivery as completed?')) {
+                fetch(`/api/delivery/${deliveryId}/complete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.error || 'Failed to complete delivery');
+                    }
+                });
+            }
+        }
+
+        let map;
+        let marker;
+        let watchId;
+
+        function initMap(deliveryId, deliveryLat, deliveryLng) {
+            const mapElement = document.getElementById(`map-${deliveryId}`);
+            if (!mapElement) return;
+            
+            const deliveryLocation = { lat: deliveryLat, lng: deliveryLng };
+            
+            map = new google.maps.Map(mapElement, {
+                zoom: 15,
+                center: deliveryLocation,
+            });
+            
+            // Add delivery location marker
+            new google.maps.Marker({
+                position: deliveryLocation,
+                map: map,
+                icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+            });
+            
+            // Add volunteer location marker
+            marker = new google.maps.Marker({
+                map: map,
+                icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+            });
+            
+            // Start watching location
+            watchId = navigator.geolocation.watchPosition(
+                position => updateVolunteerLocation(position, deliveryId),
+                error => console.error('Error getting location:', error),
+                { enableHighAccuracy: true }
+            );
+        }
+
+        function updateVolunteerLocation(position, deliveryId) {
+            const { latitude, longitude } = position.coords;
+            
+            // Update marker position
+            marker.setPosition({ lat: latitude, lng: longitude });
+            
+            // Send location to server
+            fetch(`/api/delivery/${deliveryId}/update-location/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ latitude, longitude })
+            });
+        }
+
+        function markArrived(deliveryId) {
+            if (confirm('Mark as arrived at delivery location?')) {
+                fetch(`/api/delivery/${deliveryId}/mark-arrived/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Marked as arrived. OTP has been sent to the patient.');
+                        location.reload();
+                    } else {
+                        alert(data.error || 'Failed to mark as arrived');
+                    }
+                });
+            }
+        }
+
+        function verifyOTP(deliveryId) {
+            const otp = document.getElementById(`otp-${deliveryId}`).value;
+            
+            fetch(`/api/delivery/${deliveryId}/verify-otp/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ otp })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('OTP verified successfully!');
+                    location.reload();
+                } else {
+                    alert(data.error || 'Invalid OTP');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

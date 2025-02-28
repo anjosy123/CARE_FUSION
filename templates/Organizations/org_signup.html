@@ -183,7 +183,7 @@
             </div>
             {% endif %}
 
-            <form id="signupForm" action="{% url 'org_signup' %}" method="post" novalidate>
+            <form id="signupForm" method="post" action="{% url 'org_signup' %}">
                 {% csrf_token %}
                 
                 <div class="form-row">
@@ -243,6 +243,10 @@
                     </div>
                 </div>
 
+                <!-- Add hidden fields for location -->
+                <input type="hidden" name="latitude" id="latitude">
+                <input type="hidden" name="longitude" id="longitude">
+
                 <button type="submit" class="btn btn-signup">
                     <i class="bi bi-building me-2"></i>Register Organization
                 </button>
@@ -259,6 +263,7 @@
 
     <!-- Validation Script -->
     <script>
+        // Wait for DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('signupForm');
             const emailField = document.getElementById('org_email');
@@ -267,6 +272,14 @@
             const passwordField1 = document.getElementById('passw1');
             const passwordField2 = document.getElementById('passw2');
             const regIdField = document.getElementById('org_regid');
+            const allowLocationBtn = document.getElementById('allowLocation');
+            const denyLocationBtn = document.getElementById('denyLocation');
+            let locationCaptured = false;
+
+            if (!form || !emailField || !phoneField || !pincodeField || !passwordField1 || !passwordField2 || !regIdField || !allowLocationBtn || !denyLocationBtn) {
+                console.error('Required elements not found!');
+                return;
+            }
 
             function showError(input, errorDiv, message) {
                 input.classList.add('is-invalid');
@@ -354,7 +367,155 @@
                     event.preventDefault();
                 }
             });
+
+            // Prevent form submission and show location modal first
+            form.addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent default form submission
+                
+                // Validate form fields first
+                if (!validateForm()) {
+                    return false;
+                }
+                
+                // Show location modal if location not yet captured
+                if (!locationCaptured) {
+                    const locationModal = new bootstrap.Modal(document.getElementById('locationModal'));
+                    locationModal.show();
+                }
+            });
+
+            // Function to validate form
+            function validateForm() {
+                // Add your existing form validation logic here
+                return true; // Return true if validation passes
+            }
+
+            // Handle browser's location permission
+            function requestLocation() {
+                return new Promise((resolve, reject) => {
+                    if ("geolocation" in navigator) {
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => resolve(position),
+                            (error) => reject(error),
+                            {
+                                enableHighAccuracy: true,
+                                timeout: 10000,
+                                maximumAge: 0
+                            }
+                        );
+                    } else {
+                        reject(new Error("Geolocation is not supported"));
+                    }
+                });
+            }
+
+            // Handle "Allow Location Access" button click
+            allowLocationBtn.addEventListener('click', async function() {
+                try {
+                    const position = await requestLocation();
+                    
+                    // Location access granted
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    
+                    console.log('Location captured:', latitude, longitude); // Debug log
+                    
+                    // Create hidden inputs for location
+                    const latInput = document.createElement('input');
+                    latInput.type = 'hidden';
+                    latInput.name = 'latitude';
+                    latInput.value = latitude;
+                    
+                    const longInput = document.createElement('input');
+                    longInput.type = 'hidden';
+                    longInput.name = 'longitude';
+                    longInput.value = longitude;
+                    
+                    // Remove any existing location inputs
+                    const existingLat = form.querySelector('input[name="latitude"]');
+                    const existingLong = form.querySelector('input[name="longitude"]');
+                    if (existingLat) existingLat.remove();
+                    if (existingLong) existingLong.remove();
+                    
+                    // Add new location inputs to form
+                    form.appendChild(latInput);
+                    form.appendChild(longInput);
+                    
+                    // Close modal
+                    const locationModal = bootstrap.Modal.getInstance(document.getElementById('locationModal'));
+                    locationModal.hide();
+                    
+                    // Set flag and submit form
+                    locationCaptured = true;
+                    console.log('Form submitting with location data...'); // Debug log
+                    
+                    // Submit the form
+                    form.submit();
+                    
+                } catch (error) {
+                    console.error('Location error:', error); // Debug log
+                    handleLocationError(error);
+                }
+            });
+
+            // Handle "Cancel Registration" button click
+            denyLocationBtn.addEventListener('click', function() {
+                console.log('Location access denied by user'); // Debug log
+                window.location.href = "{% url 'index' %}";
+            });
+
+            function handleLocationError(error) {
+                let message;
+                switch(error.code) {
+                    case 1: // PERMISSION_DENIED
+                        message = "Location access was denied. Location is required for registration.";
+                        break;
+                    case 2: // POSITION_UNAVAILABLE
+                        message = "Location information is unavailable.";
+                        break;
+                    case 3: // TIMEOUT
+                        message = "Location request timed out.";
+                        break;
+                    default:
+                        message = "An unknown error occurred while getting location.";
+                        break;
+                }
+                console.error('Location error message:', message); // Debug log
+                alert(message);
+                window.location.href = "{% url 'index' %}";
+            }
         });
+
+        // Restore form data if available
+        {% if form_data %}
+            document.querySelector('[name="org_email"]').value = '{{ form_data.org_email }}';
+            document.querySelector('[name="org_name"]').value = '{{ form_data.org_name }}';
+            document.querySelector('[name="org_regid"]').value = '{{ form_data.org_regid }}';
+            document.querySelector('[name="org_address"]').value = '{{ form_data.org_address }}';
+            document.querySelector('[name="org_phone"]').value = '{{ form_data.org_phone }}';
+            document.querySelector('[name="org_pincode"]').value = '{{ form_data.org_pincode }}';
+            document.querySelector('[name="org_pass1"]').value = '{{ form_data.org_pass1 }}';
+            document.querySelector('[name="org_pass2"]').value = '{{ form_data.org_pass2 }}';
+        {% endif %}
     </script>
+
+    <!-- Update the modal HTML -->
+    <div class="modal fade" id="locationModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="locationModalLabel">Location Access Required</h5>
+                </div>
+                <div class="modal-body">
+                    <p>To complete your organization registration, we need access to your location. This helps us better coordinate healthcare services in your area.</p>
+                    <p><strong>Note:</strong> Location access is required for registration. If you deny access, you'll be redirected to the home page.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="denyLocation">Cancel Registration</button>
+                    <button type="button" class="btn btn-primary" id="allowLocation">Allow Location Access</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

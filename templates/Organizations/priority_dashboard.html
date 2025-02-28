@@ -1,0 +1,322 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Priority Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .back-button {
+            font-size: 1.2rem;
+            color: white;
+            text-decoration: none;
+            margin-right: 15px;
+        }
+        .back-button:hover {
+            color: #ddd;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a href="{% url 'palliatives_dashboard' %}">
+            <img src="{% static 'img/logo.png' %}" alt="Logo" width="178px" height="37px">
+        </a>
+        <span class="navbar-brand">Visit Prioritization</span>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    
+
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Patient Priority Dashboard</h2>
+            <p class="text-muted">ML-Powered Patient Visit Prioritization</p>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" onclick="window.location.reload();">
+                <i class="fas fa-sync"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Priority Statistics Cards -->
+    <div class="row mb-4">
+        <!-- High Priority Card -->
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">High Priority</h5>
+                    <h2>{{ high_priority_count }}</h2>
+                    <p>Immediate Attention Required</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Medium Priority Card -->
+        <div class="col-md-3">
+            <div class="card bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Medium Priority</h5>
+                    <h2>{{ medium_priority_count }}</h2>
+                    <p>Monitoring Needed</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Priority Card -->
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Low Priority</h5>
+                    <h2>{{ low_priority_count }}</h2>
+                    <p>Stable Condition</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ML Model Accuracy Card -->
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">ML Model Accuracy</h5>
+                    <h2>{{ model_accuracy|floatformat:1 }}%</h2>
+                    <p>Last Updated: {{ last_update }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Lists -->
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Priority Tabs -->
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#highPriority">
+                        High Priority ({{ high_priority_count }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#mediumPriority">
+                        Medium Priority ({{ medium_priority_count }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#lowPriority">
+                        Low Priority ({{ low_priority_count }})
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content mt-3">
+                <!-- High Priority Patients -->
+                <div class="tab-pane fade show active" id="highPriority">
+                    {% for patient in high_priority_patients %}
+                    <div class="card mb-3 border-danger">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h5>{{ patient.full_name }}</h5>
+                                    <p class="text-muted">
+                                        ID: {{ patient.patient_id }} | 
+                                        Age: {{ patient.age }} | 
+                                        Gender: {{ patient.gender }}
+                                    </p>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>Blood Pressure:</strong> {{ patient.blood_pressure }}</p>
+                                            <p><strong>Heart Rate:</strong> {{ patient.heart_rate }}</p>
+                                            <p><strong>SpO2:</strong> {{ patient.oxygen_level }}%</p>
+                                            <p><strong>Phone:</strong> {{ patient.phone }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>Temperature:</strong> {{ patient.temperature }}°C</p>
+                                            <p><strong>Pain Score:</strong> {{ patient.pain_score }}/10</p>
+                                            <p><strong>Visit Priority:</strong> {{ patient.visit_priority_score }}/10</p>
+                                            <p><strong>Last Visit:</strong> {{ patient.last_visit_date }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <!-- Risk Scores -->
+                                    <div class="mb-3">
+                                        <p><strong>Fall Risk:</strong> {{ patient.fall_risk }}</p>
+                                        <p><strong>Deterioration Risk:</strong> {{ patient.deterioration_risk }}</p>
+                                        <p><strong>Overall Health:</strong> {{ patient.overall_health }}</p>
+                                    </div>
+                                    <!-- Action Buttons -->
+                                    <div class="text-end">
+                                        <a href="{% url 'patient_detail' patient.patient_id %}" class="btn btn-primary mb-2">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p>No high priority patients at this time.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Medium Priority Patients -->
+                <div class="tab-pane fade" id="mediumPriority">
+                    {% for patient in medium_priority_patients %}
+                    <div class="card mb-3 border-warning">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h5>{{ patient.full_name }}</h5>
+                                    <p class="text-muted">
+                                        ID: {{ patient.patient_id }} | 
+                                        Age: {{ patient.age }} | 
+                                        Gender: {{ patient.gender }}
+                                    </p>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>Blood Pressure:</strong> {{ patient.blood_pressure }}</p>
+                                            <p><strong>Heart Rate:</strong> {{ patient.heart_rate }}</p>
+                                            <p><strong>SpO2:</strong> {{ patient.oxygen_level }}%</p>
+                                            <p><strong>Phone:</strong> {{ patient.phone }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>Temperature:</strong> {{ patient.temperature }}°C</p>
+                                            <p><strong>Pain Score:</strong> {{ patient.pain_score }}/10</p>
+                                            <p><strong>Visit Priority:</strong> {{ patient.visit_priority_score }}/10</p>
+                                            <p><strong>Last Visit:</strong> {{ patient.last_visit_date }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <!-- Risk Scores -->
+                                    <div class="mb-3">
+                                        <p><strong>Fall Risk:</strong> {{ patient.fall_risk }}</p>
+                                        <p><strong>Deterioration Risk:</strong> {{ patient.deterioration_risk }}</p>
+                                        <p><strong>Overall Health:</strong> {{ patient.overall_health }}</p>
+                                    </div>
+                                    <!-- Action Buttons -->
+                                    <div class="text-end">
+                                        <a href="{% url 'patient_detail' patient.patient_id %}" class="btn btn-primary mb-2">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p>No medium priority patients at this time.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Low Priority Patients -->
+                <div class="tab-pane fade" id="lowPriority">
+                    {% for patient in low_priority_patients %}
+                    <div class="card mb-3 border-success">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h5>{{ patient.full_name }}</h5>
+                                    <p class="text-muted">
+                                        ID: {{ patient.patient_id }} | 
+                                        Age: {{ patient.age }} | 
+                                        Gender: {{ patient.gender }}
+                                    </p>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>Blood Pressure:</strong> {{ patient.blood_pressure }}</p>
+                                            <p><strong>Heart Rate:</strong> {{ patient.heart_rate }}</p>
+                                            <p><strong>SpO2:</strong> {{ patient.oxygen_level }}%</p>
+                                            <p><strong>Phone:</strong> {{ patient.phone }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>Temperature:</strong> {{ patient.temperature }}°C</p>
+                                            <p><strong>Pain Score:</strong> {{ patient.pain_score }}/10</p>
+                                            <p><strong>Visit Priority:</strong> {{ patient.visit_priority_score }}/10</p>
+                                            <p><strong>Last Visit:</strong> {{ patient.last_visit_date }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <!-- Risk Scores -->
+                                    <div class="mb-3">
+                                        <p><strong>Fall Risk:</strong> {{ patient.fall_risk }}</p>
+                                        <p><strong>Deterioration Risk:</strong> {{ patient.deterioration_risk }}</p>
+                                        <p><strong>Overall Health:</strong> {{ patient.overall_health }}</p>
+                                    </div>
+                                    <!-- Action Buttons -->
+                                    <div class="text-end">
+                                        <a href="{% url 'patient_detail' patient.patient_id %}" class="btn btn-primary mb-2">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p>No low priority patients at this time.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Performance Metrics -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Model Performance</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Accuracy:</strong> {{ model_accuracy|floatformat:1 }}%</p>
+                    <p><strong>Precision:</strong> {{ model_precision|floatformat:1 }}%</p>
+                    <p><strong>Recall:</strong> {{ model_recall|floatformat:1 }}%</p>
+                    <p><strong>F1 Score:</strong> {{ model_f1_score|floatformat:1 }}%</p>
+                    <canvas id="accuracyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS and dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize accuracy chart
+    const ctx = document.getElementById('accuracyChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Model Accuracy',
+                data: {{ chart_data|safe }},
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+</script>
+</body>
+</html>

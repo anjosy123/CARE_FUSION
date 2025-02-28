@@ -160,6 +160,44 @@
                     <form id="signup-form" action="{% url 'signup' %}" method="post">
                         {% csrf_token %}
                         <div class="mb-3">
+                            <label class="form-label">User Type</label>
+                            <select class="form-control" id="userType" name="user_type" required>
+                                <option value="patient">I am a Patient</option>
+                                <option value="caretaker">I am a Caretaker/Relative</option>
+                            </select>
+                        </div>
+
+                        <!-- Patient Details Section (Initially Hidden) -->
+                        <div id="patientDetails" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">Patient's Full Name</label>
+                                <input type="text" class="form-control" name="patient_name">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Relationship with Patient</label>
+                                <input type="text" class="form-control" name="relationship">
+                            </div>
+                        </div>
+
+                        <!-- Location Details -->
+                        <div class="mb-3">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control" name="address" rows="2"></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Pincode</label>
+                                <input type="text" class="form-control" name="pincode" maxlength="6">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">City</label>
+                                <input type="text" class="form-control" name="city">
+                            </div>
+                        </div>
+
+                        <!-- Existing fields -->
+                        <div class="mb-3">
                             <label for="username" class="form-label">Username</label>
                             <input type="text" class="form-control" id="username" name="username" required>
                             <div class="error" id="usernameError"></div>
@@ -205,12 +243,126 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Validation Script -->
+    <!-- Add this modal for location permission -->
+    <div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="locationModalLabel">Location Access Required</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>We need your location to provide better healthcare services. Would you like to share your location?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="denyLocation">No, Thanks</button>
+                    <button type="button" class="btn btn-primary" id="allowLocation">Allow Location Access</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update your existing script section -->
     <script>
-        // Your existing validation script remains unchanged
+        document.getElementById('userType').addEventListener('change', function() {
+            const patientDetails = document.getElementById('patientDetails');
+            if (this.value === 'caretaker') {
+                patientDetails.style.display = 'block';
+            } else {
+                patientDetails.style.display = 'none';
+            }
+        });
+
+        const form = document.getElementById('signup-form');
+        let locationCaptured = false;
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent form submission initially
+            
+            if (!locationCaptured) {
+                // Show location permission modal
+                const locationModal = new bootstrap.Modal(document.getElementById('locationModal'));
+                locationModal.show();
+            } else {
+                // If location is already captured, submit the form
+                form.submit();
+            }
+        });
+
+        // Handle location permission
+        document.getElementById('allowLocation').addEventListener('click', function() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        // Location access granted
+                        const latitude = position.coords.latitude;
+                        const longitude = position.coords.longitude;
+                        
+                        // Add hidden fields to form
+                        addLocationToForm(latitude, longitude);
+                        
+                        // Close modal and submit form
+                        const locationModal = bootstrap.Modal.getInstance(document.getElementById('locationModal'));
+                        locationModal.hide();
+                        locationCaptured = true;
+                        form.submit();
+                    },
+                    function(error) {
+                        // Location access denied or error
+                        handleLocationError(error);
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by your browser");
+                window.location.href = "{% url 'index' %}";
+            }
+        });
+
+        // Handle location denial
+        document.getElementById('denyLocation').addEventListener('click', function() {
+            window.location.href = "{% url 'index' %}";
+        });
+
+        function addLocationToForm(latitude, longitude) {
+            // Create hidden inputs for latitude and longitude
+            const latInput = document.createElement('input');
+            latInput.type = 'hidden';
+            latInput.name = 'latitude';
+            latInput.value = latitude;
+            
+            const longInput = document.createElement('input');
+            longInput.type = 'hidden';
+            longInput.name = 'longitude';
+            longInput.value = longitude;
+            
+            // Add to form
+            form.appendChild(latInput);
+            form.appendChild(longInput);
+        }
+
+        function handleLocationError(error) {
+            let message;
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    message = "Location access was denied";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message = "Location information is unavailable";
+                    break;
+                case error.TIMEOUT:
+                    message = "Location request timed out";
+                    break;
+                default:
+                    message = "An unknown error occurred";
+                    break;
+            }
+            alert(message);
+            window.location.href = "{% url 'index' %}";
+        }
+
+        // Validation for existing fields remains unchanged
         const usernameInput = document.getElementById('username');
         const usernameError = document.getElementById('usernameError');
-
         usernameInput.addEventListener('input', function() {
             const usernameValue = usernameInput.value;
             const usernameRegex = /^[A-Za-z\s]+$/;
@@ -258,14 +410,6 @@
 
         passwordInput.addEventListener('input', validatePassword);
         confirmPasswordInput.addEventListener('input', validatePassword);
-
-        const form = document.getElementById('signup-form');
-        form.addEventListener('submit', function(event) {
-            if (usernameError.textContent || emailError.textContent || 
-                passwordError.textContent || confirmPasswordError.textContent) {
-                event.preventDefault();
-            }
-        });
     </script>
 </body>
 </html>

@@ -1,0 +1,381 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Management - CareFusion</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f5f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 0.5rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            padding: 0;
+            margin-right: 2rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            margin: 0 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: white !important;
+            transform: translateY(-2px);
+        }
+
+        .nav-link.active {
+            color: white !important;
+            font-weight: 600;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-tabs {
+            border-bottom: none;
+            margin-bottom: 1rem;
+        }
+
+        .nav-tabs .nav-link {
+            color: #495057 !important;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            margin-right: 0.5rem;
+            font-weight: 500;
+        }
+
+        .nav-tabs .nav-link.active {
+            background: #1e3c72;
+            color: white !important;
+        }
+
+        .badge {
+            padding: 0.5em 1em;
+            border-radius: 20px;
+        }
+
+        .btn {
+            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .table {
+            background: white;
+            border-radius: 10px;
+        }
+
+        .bg-pending { background-color: #ffc107 !important; }
+        .bg-assigned { background-color: #17a2b8 !important; }
+        .bg-in_progress { background-color: #007bff !important; }
+        .bg-delivered { background-color: #28a745 !important; }
+        .bg-failed { background-color: #dc3545 !important; }
+
+        .delivery-status {
+            font-size: 0.85rem;
+            padding: 0.4rem 0.8rem;
+        }
+
+        .timeline {
+            position: relative;
+            padding: 1rem;
+        }
+
+        .timeline-item {
+            padding: 1rem;
+            border-left: 2px solid #1e3c72;
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 1.5rem;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1e3c72;
+        }
+
+        /* Make navbar dark themed */
+        .navbar-dark .navbar-toggler {
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        .navbar-dark .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3e%3cpath stroke='rgba(255, 255, 255, 0.8)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'palliatives_dashboard' %}">
+                <img src="{% static 'img/logo.png' %}" alt="CareFusion" class="navbar-logo me-2">
+                {% comment %} <span>CareFusion</span> {% endcomment %}
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% comment %} <li class="nav-item">
+                        <a class="nav-link" href="{% url 'palliatives_dashboard' %}">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li> {% endcomment %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'manage_equipment' %}">
+                            <i class="fas fa-wheelchair"></i> Equipment
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'rental_requests' %}">
+                            <i class="fas fa-clipboard-list"></i> Rentals
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'delivery_management' %}">
+                            <i class="fas fa-truck"></i> Deliveries
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <span class="nav-link">
+                        <i class="fas fa-user"></i> {{ request.session.org_name }}
+                    </span>
+                    <a class="nav-link" href="{% url 'org_logout' %}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <h2 class="mb-4"><i class="fas fa-truck"></i> Delivery Management</h2>
+
+        <ul class="nav nav-tabs" id="deliveryTabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="pending-tab" data-bs-toggle="tab" href="#pending">
+                    <i class="fas fa-clock"></i> Pending/Assigned
+                    <span class="badge bg-warning">{{ pending_deliveries.count }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="progress-tab" data-bs-toggle="tab" href="#progress">
+                    <i class="fas fa-truck-loading"></i> In Progress
+                    <span class="badge bg-info">{{ in_progress_deliveries.count }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="completed-tab" data-bs-toggle="tab" href="#completed">
+                    <i class="fas fa-check-circle"></i> Completed
+                    <span class="badge bg-success">{{ completed_deliveries.count }}</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="deliveryTabContent">
+            <!-- Pending/Assigned Deliveries -->
+            <div class="tab-pane fade show active" id="pending">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Equipment</th>
+                                        <th>Patient</th>
+                                        <th>Delivery Address</th>
+                                        <th>Status</th>
+                                        <th>Volunteer</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for delivery in pending_deliveries %}
+                                    <tr>
+                                        <td>{{ delivery.rental.equipment.name }}</td>
+                                        <td>{{ delivery.rental.patient.get_full_name }}</td>
+                                        <td>{{ delivery.rental.delivery_address }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ delivery.status|lower }}">
+                                                {{ delivery.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if delivery.volunteer %}
+                                                {{ delivery.volunteer.get_full_name }}
+                                            {% else %}
+                                                Not Assigned
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-info" onclick="viewDeliveryDetails({{ delivery.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            {% if not delivery.volunteer %}
+                                            <button class="btn btn-sm btn-success" onclick="assignVolunteer({{ delivery.id }})">
+                                                <i class="fas fa-user-plus"></i> Assign
+                                            </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center">No pending deliveries</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- In Progress Deliveries -->
+            <div class="tab-pane fade" id="progress">
+                <!-- Similar structure as pending deliveries -->
+            </div>
+
+            <!-- Completed Deliveries -->
+            <div class="tab-pane fade" id="completed">
+                <!-- Similar structure as pending deliveries -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Delivery Details Modal -->
+    <div class="modal fade" id="deliveryDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delivery Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Details will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Volunteer Modal -->
+    <div class="modal fade" id="assignVolunteerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Assign Volunteer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="assignVolunteerForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="delivery_id" id="delivery_id">
+                        <div class="mb-3">
+                            <label class="form-label">Select Volunteer</label>
+                            <select class="form-select" name="volunteer_id" required>
+                                <option value="">Choose a volunteer...</option>
+                                {% for volunteer in available_volunteers %}
+                                <option value="{{ volunteer.id }}">{{ volunteer.get_full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Delivery Notes</label>
+                            <textarea class="form-control" name="notes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitAssignment()">Assign Volunteer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function viewDeliveryDetails(deliveryId) {
+            fetch(`/api/delivery/${deliveryId}/details/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelector('#deliveryDetailsModal .modal-body').innerHTML = data.html;
+                        new bootstrap.Modal(document.getElementById('deliveryDetailsModal')).show();
+                    }
+                });
+        }
+
+        function assignVolunteer(deliveryId) {
+            document.getElementById('delivery_id').value = deliveryId;
+            new bootstrap.Modal(document.getElementById('assignVolunteerModal')).show();
+        }
+
+        function submitAssignment() {
+            const form = document.getElementById('assignVolunteerForm');
+            const formData = new FormData(form);
+            
+            fetch('/api/delivery/assign-volunteer/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Failed to assign volunteer');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while assigning volunteer');
+            });
+        }
+    </script>
+</body>
+</html> 

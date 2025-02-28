@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Care Fusion - Organizations</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background-color: var(--primary-color);
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            color: white !important;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            margin-left: 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: white !important;
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .org-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            height: 100%;
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .org-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .badge-verified {
+            background-color: #28a745;
+            color: white;
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+        }
+
+        .org-image {
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .contact-info {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .contact-info i {
+            width: 20px;
+            color: var(--secondary-color);
+        }
+
+        .request-service-btn {
+            background-color: var(--secondary-color);
+            border: none;
+            transition: background-color 0.3s;
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .request-service-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .org-description {
+            height: 4.5em;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        .search-box {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .search-box input {
+            border-radius: 30px;
+            padding: 12px 20px;
+            border: 2px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .search-box input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .search-box input:focus {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.3);
+            color: white;
+            box-shadow: none;
+        }
+
+        .user-welcome {
+            color: white;
+            margin-right: 1rem;
+        }
+
+        .logout-btn {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.1);
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="#">CareFusion</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <div class="navbar-nav">
+                    <span class="user-welcome">Welcome, {{ request.session.username }}</span>
+                    <a href="{% url 'logout' %}" class="logout-btn">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header with Search -->
+    <header class="page-header">
+        <div class="container text-center">
+            <h1 class="display-4 mb-3">Palliative Care Organizations</h1>
+            <p class="lead mb-4">Find and connect with verified palliative care providers near you</p>
+            
+            <!-- Search Box -->
+            <div class="search-box mb-4">
+                <input type="text" id="searchOrg" class="form-control" 
+                       placeholder="Search organizations by name or location...">
+            </div>
+        </div>
+    </header>
+
+    <!-- Organizations Grid -->
+    <div class="container py-4">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="orgContainer">
+            {% for org in organizations %}
+            <div class="col">
+                <div class="card org-card h-100">
+                    {% comment %} <img src="{{ org.image_url|default:'/static/images/default-org.jpg' }}"  {% endcomment %}
+                         {% comment %} class="card-img-top org-image" 
+                         alt="{{ org.org_name }}"> {% endcomment %}
+                    
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">{{ org.org_name }}</h5>
+                            <span class="badge badge-verified">Verified</span>
+                        </div>
+                        
+                        <div class="contact-info mb-3">
+                            <p class="mb-2">
+                                <i class="bi bi-geo-alt"></i> {{ org.org_address }}
+                            </p>
+                            <p class="mb-2">
+                                <i class="bi bi-envelope"></i> {{ org.org_email }}
+                            </p>
+                            <p class="mb-2">
+                                <i class="bi bi-telephone"></i> {{ org.org_phone }}
+                            </p>
+                            <p class="mb-0">
+                                <i class="bi bi-pin-map"></i> Pincode: {{ org.pincode }}
+                            </p>
+                        </div>
+                        
+                        <a href="{% url 'service_request_form' org.id %}" 
+                           class="btn btn-primary request-service-btn">
+                            Request Service
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center">
+                <div class="alert alert-info">
+                    No organizations available at the moment.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Search Functionality -->
+    <script>
+        document.getElementById('searchOrg').addEventListener('keyup', function() {
+            const searchValue = this.value.toLowerCase();
+            const cards = document.querySelectorAll('.col');
+            
+            cards.forEach(card => {
+                const orgName = card.querySelector('.card-title').textContent.toLowerCase();
+                const orgAddress = card.querySelector('.contact-info').textContent.toLowerCase();
+                
+                if (orgName.includes(searchValue) || orgAddress.includes(searchValue)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

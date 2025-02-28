@@ -1,0 +1,103 @@
+<div class="rental-details">
+    <div class="row">
+        <div class="col-md-6">
+            <h6>Equipment Details</h6>
+            <table class="table table-sm">
+                <tr>
+                    <th>Name:</th>
+                    <td>{{ rental.equipment.name }}</td>
+                </tr>
+                <tr>
+                    <th>Type:</th>
+                    <td>{{ rental.equipment.equipment_type }}</td>
+                </tr>
+                <tr>
+                    <th>Serial Number:</th>
+                    <td>{{ rental.equipment.serial_number }}</td>
+                </tr>
+                <tr>
+                    <th>Condition:</th>
+                    <td>{{ rental.equipment.get_condition_display }}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <h6>Rental Information</h6>
+            <table class="table table-sm">
+                <tr>
+                    <th>Start Date:</th>
+                    <td>{{ rental.rental_start_date|date:"M d, Y" }}</td>
+                </tr>
+                <tr>
+                    <th>End Date:</th>
+                    <td>{{ rental.rental_end_date|date:"M d, Y" }}</td>
+                </tr>
+                <tr>
+                    <th>Daily Rate:</th>
+                    <td>₹{{ rental.daily_rental_price }}</td>
+                </tr>
+                <tr>
+                    <th>Security Deposit:</th>
+                    <td>₹{{ rental.deposit_amount }}</td>
+                </tr>
+                <tr>
+                    <th>Payment Status:</th>
+                    <td>{{ rental.get_payment_status_display }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <h6>Patient Information</h6>
+            <table class="table table-sm">
+                <tr>
+                    <th>Name:</th>
+                    <td>{{ rental.patient.get_full_name }}</td>
+                </tr>
+                <tr>
+                    <th>Email:</th>
+                    <td>{{ rental.patient.email }}</td>
+                </tr>
+                <tr>
+                    <th>Delivery Address:</th>
+                    <td>{{ rental.delivery_address }}</td>
+                </tr>
+            </table>
+        </div>
+        {% if delivery %}
+        <div class="col-md-6">
+            <h6>Delivery Information</h6>
+            <table class="table table-sm">
+                <tr>
+                    <th>Status:</th>
+                    <td>
+                        <span class="badge bg-{{ delivery.status|lower }}">
+                            {{ delivery.get_status_display }}
+                        </span>
+                    </td>
+                </tr>
+                {% if delivery.volunteer %}
+                <tr>
+                    <th>Assigned To:</th>
+                    <td>{{ delivery.volunteer.get_full_name }}</td>
+                </tr>
+                {% endif %}
+                {% if delivery.assigned_at %}
+                <tr>
+                    <th>Assigned On:</th>
+                    <td>{{ delivery.assigned_at|date:"M d, Y H:i" }}</td>
+                </tr>
+                {% endif %}
+                {% if delivery.delivery_notes %}
+                <tr>
+                    <th>Notes:</th>
+                    <td>{{ delivery.delivery_notes }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div> 

@@ -1,0 +1,403 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rental Requests - CareFusion</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f5f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 0.5rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            padding: 0;
+            margin-right: 2rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            margin: 0 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: white !important;
+            transform: translateY(-2px);
+        }
+
+        .nav-link.active {
+            color: white !important;
+            font-weight: 600;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-tabs {
+            border-bottom: none;
+            margin-bottom: 1rem;
+        }
+
+        .nav-tabs .nav-link {
+            color: #495057 !important;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            margin-right: 0.5rem;
+            font-weight: 500;
+        }
+
+        .nav-tabs .nav-link.active {
+            background: #1e3c72;
+            color: white !important;
+        }
+
+        .badge {
+            padding: 0.5em 1em;
+            border-radius: 20px;
+        }
+
+        .btn {
+            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .table {
+            background: white;
+            border-radius: 10px;
+        }
+
+        .bg-warning { background-color: #ffc107 !important; }
+        .bg-success { background-color: #28a745 !important; }
+        .bg-info { background-color: #17a2b8 !important; }
+
+        /* Make navbar dark themed */
+        .navbar-dark .navbar-toggler {
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        .navbar-dark .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3e%3cpath stroke='rgba(255, 255, 255, 0.8)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'palliatives_dashboard' %}">
+                <img src="{% static 'img/logo.png' %}" alt="CareFusion" class="navbar-logo me-2">
+                {% comment %} <span>CareFusion</span> {% endcomment %}
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% comment %} <li class="nav-item">
+                        <a class="nav-link" href="{% url 'palliatives_dashboard' %}">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li> {% endcomment %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'manage_equipment' %}">
+                            <i class="fas fa-wheelchair"></i> Equipment
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'rental_requests' %}">
+                            <i class="fas fa-clipboard-list"></i> Rentals
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'delivery_management' %}">
+                            <i class="fas fa-truck"></i> Deliveries
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <span class="nav-link">
+                        <i class="fas fa-user"></i> {{ request.session.org_name }}
+                    </span>
+                    <a class="nav-link" href="{% url 'org_logout' %}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <h2 class="mb-4"><i class="fas fa-clipboard-list"></i> Equipment Rental Requests</h2>
+
+        <ul class="nav nav-tabs" id="rentalTabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="pending-tab" data-bs-toggle="tab" href="#pending">
+                    <i class="fas fa-clock"></i> Pending
+                    <span class="badge bg-warning">{{ pending_rentals.count }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="active-tab" data-bs-toggle="tab" href="#active">
+                    <i class="fas fa-check-circle"></i> Active
+                    <span class="badge bg-success">{{ active_rentals.count }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="completed-tab" data-bs-toggle="tab" href="#completed">
+                    <i class="fas fa-flag-checkered"></i> Completed
+                    <span class="badge bg-info">{{ completed_rentals.count }}</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="rentalTabContent">
+            <!-- Pending Rentals -->
+            <div class="tab-pane fade show active" id="pending">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Equipment</th>
+                                        <th>Patient</th>
+                                        <th>Duration</th>
+                                        <th>Total Amount</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for rental in pending_rentals %}
+                                    <tr>
+                                        <td>{{ rental.equipment.name }}</td>
+                                        <td>{{ rental.patient.get_full_name }}</td>
+                                        <td>{{ rental.start_date|date:"M d" }} - {{ rental.end_date|date:"M d" }}</td>
+                                        <td>₹{{ rental.total_amount }}</td>
+                                        <td>
+                                            <span class="badge bg-warning">{{ rental.get_status_display }}</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-info" onclick="viewDetails({{ rental.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-success" onclick="assignDelivery({{ rental.id }})">
+                                                <i class="fas fa-truck"></i> Assign
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center">No pending rental requests</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Rentals Tab -->
+            <div class="tab-pane fade" id="active">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Equipment</th>
+                                        <th>Patient</th>
+                                        <th>Duration</th>
+                                        <th>Return Due</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for rental in active_rentals %}
+                                    <tr>
+                                        <td>{{ rental.equipment.name }}</td>
+                                        <td>{{ rental.patient.get_full_name }}</td>
+                                        <td>{{ rental.start_date|date:"M d" }} - {{ rental.end_date|date:"M d" }}</td>
+                                        <td>
+                                            {% if rental.end_date|date:"Y-m-d" < today %}
+                                            <span class="text-danger">Overdue</span>
+                                            {% else %}
+                                            {{ rental.end_date|timeuntil }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">{{ rental.get_status_display }}</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-info" onclick="viewDetails({{ rental.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-warning" onclick="markReturned({{ rental.id }})">
+                                                <i class="fas fa-undo"></i> Return
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center">No active rentals</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completed Rentals Tab -->
+            <div class="tab-pane fade" id="completed">
+                <!-- Similar structure as pending rentals -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Rental Details Modal -->
+    <div class="modal fade" id="rentalDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rental Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Details will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Delivery Modal -->
+    <div class="modal fade" id="assignDeliveryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Assign Delivery</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="assignDeliveryForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="rental_id" id="rental_id">
+                        <div class="mb-3">
+                            <label class="form-label">Select Volunteer</label>
+                            <select class="form-select" name="volunteer_id" required>
+                                <option value="">Choose a volunteer...</option>
+                                {% for volunteer in available_volunteers %}
+                                <option value="{{ volunteer.id }}">{{ volunteer.get_full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Delivery Notes</label>
+                            <textarea class="form-control" name="delivery_notes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitAssignment()">Assign Delivery</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function viewDetails(rentalId) {
+            fetch(`/api/rental/${rentalId}/details/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelector('#rentalDetailsModal .modal-body').innerHTML = data.html;
+                        new bootstrap.Modal(document.getElementById('rentalDetailsModal')).show();
+                    }
+                });
+        }
+
+        function assignDelivery(rentalId) {
+            document.getElementById('rental_id').value = rentalId;
+            new bootstrap.Modal(document.getElementById('assignDeliveryModal')).show();
+        }
+
+        function submitAssignment() {
+            const formData = new FormData(document.getElementById('assignDeliveryForm'));
+            
+            fetch('/api/rental/assign-delivery/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error);
+                }
+            });
+        }
+
+        function markReturned(rentalId) {
+            if (confirm('Mark this equipment as returned?')) {
+                fetch(`/api/rental/${rentalId}/mark-returned/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.error);
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html> 

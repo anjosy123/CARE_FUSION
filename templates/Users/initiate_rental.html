@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Rent Equipment</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Equipment Details</h6>
+                            <p class="mb-1">{{ equipment.name }}</p>
+                            <p class="mb-1">{{ equipment.organization.org_name }}</p>
+                            <p class="mb-1">Condition: {{ equipment.get_condition_display }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Rental Rates</h6>
+                            <p class="mb-1">₹{{ equipment.rental_price_per_day }}/day</p>
+                            <p class="mb-1">Security Deposit: ₹{{ equipment.security_deposit }}</p>
+                        </div>
+                    </div>
+
+                    <form id="rentalForm" onsubmit="submitRental(event)">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Start Date</label>
+                                    <input type="date" class="form-control" name="start_date" 
+                                           min="{{ min_date }}" max="{{ max_date }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">End Date</label>
+                                    <input type="date" class="form-control" name="end_date"
+                                           min="{{ min_date }}" max="{{ max_date }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-shopping-cart me-2"></i>Proceed to Payment
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+function submitRental(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Initialize Razorpay payment
+            const options = {
+                key: '{{ razorpay_key }}',
+                amount: data.amount,
+                currency: 'INR',
+                name: 'CareFusion',
+                description: 'Equipment Rental Payment',
+                order_id: data.order_id,
+                handler: function(response) {
+                    // Handle successful payment
+                    window.location.href = "{% url 'patient_rentals' %}";
+                }
+            };
+            const rzp = new Razorpay(options);
+            rzp.open();
+        } else {
+            alert(data.error || 'Failed to initiate rental');
+        }
+    });
+}
+</script>
+{% endblock %} 

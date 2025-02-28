@@ -5,11 +5,23 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.utils.crypto import get_random_string
 import uuid
 from datetime import datetime
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.db import transaction
+import random
+from datetime import timedelta
 
 class User(AbstractUser):
+    USER_TYPE_CHOICES = (
+        ('patient', 'Patient'),
+        ('caretaker', 'Caretaker'),
+    )
+    
     is_email_verified = models.BooleanField(default=False)
     email_verification_token = models.UUIDField(default=uuid.uuid4, editable=False)
     organization = models.ForeignKey('Organizations', on_delete=models.SET_NULL, null=True, blank=True)
+    usertype = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='patient')
+    patient_name = models.CharField(max_length=100, null=True, blank=True)  # For storing patient name if registered by caretaker
 
     groups = models.ManyToManyField(
         'auth.Group',
@@ -46,17 +58,26 @@ class User(AbstractUser):
         user.save(using=self._db)
         return user
 
-    # def create_superuser(self, org_email, org_name, org_address, org_phone, org_password=None):
-    #     user = self.create_user(
-    #         org_email,
-    #         org_name,
-    #         org_address,
-    #         org_phone,
-    #         org_password=org_password,
-    #     )
-    #     user.is_admin = True
-    #     user.save(using=self._db)
-    #     return user
+    
+class UserLocation(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    address = models.TextField()
+    city = models.CharField(max_length=100)
+    pincode = models.CharField(max_length=6)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    is_verified = models.BooleanField(default=False)
+    def __str__(self):
+        return f"Location for {self.user.username}"
+    
+class CaretakerDetails(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='caretaker_details')
+    caretaker_name = models.CharField(max_length=100)
+    relationship = models.CharField(max_length=50)
+    patient_name = models.CharField(max_length=100)
+    
+    def __str__(self):
+        return f"{self.caretaker_name} - Caretaker for {self.patient_name}"
 
 class Contact(models.Model):
     name = models.CharField(max_length=30)
@@ -77,6 +98,8 @@ class Organizations(models.Model):
     is_active = models.BooleanField(default=True) 
     email_verification_token = models.UUIDField(default=uuid.uuid4, editable=False)
     teams = models.ManyToManyField('Team', related_name='team_organizations', blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     
     def set_password(self, raw_password):
         self.org_password = make_password(raw_password)
@@ -676,6 +699,10 @@ class PatientVisitRecord(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Add these fields for priority prediction
+    priority_score = models.FloatField(null=True, blank=True)
+    priority_updated_at = models.DateTimeField(auto_now=True)
+    
     class Meta:
         ordering = ['-visit_date']
 
@@ -712,3 +739,231 @@ class EmergencyContact(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.relationship})"
+
+class Meta:
+    permissions = [
+        ("can_schedule_visits", "Can schedule team visits"),
+        ("can_export_reports", "Can export priority reports"),
+        ("can_retrain_model", "Can retrain priority model"),
+    ]
+
+# Add these new models after the existing models
+
+class MedicalEquipment(models.Model):
+    CONDITION_CHOICES = [
+        ('NEW', 'New'),
+        ('EXCELLENT', 'Excellent'),
+        ('GOOD', 'Good'),
+        ('FAIR', 'Fair')
+    ]
+    
+    STATUS_CHOICES = [
+        ('AVAILABLE', 'Available'),
+        ('RENTED', 'Rented'),
+        ('MAINTENANCE', 'Under Maintenance'),
+        ('RETIRED', 'Retired')
+    ]
+    
+    organization = models.ForeignKey(Organizations, on_delete=models.CASCADE, related_name='equipment')
+    name = models.CharField(max_length=200)
+    description = models.TextField()
+    equipment_type = models.CharField(max_length=100)
+    condition = models.CharField(max_length=20, choices=CONDITION_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='AVAILABLE')
+    rental_price_per_day = models.DecimalField(max_digits=10, decimal_places=2)
+    security_deposit = models.DecimalField(max_digits=10, decimal_places=2)
+    serial_number = models.CharField(max_length=100, unique=True)
+    maintenance_history = models.TextField(blank=True)
+    
+    # Add these new fields
+    primary_image = models.ImageField(upload_to='equipment_images/', null=True, blank=True)
+    additional_images = models.JSONField(default=list, blank=True)  # Store paths to additional images
+    
+    quantity = models.PositiveIntegerField(default=1, help_text="Number of units available")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.serial_number})"
+
+class EquipmentRental(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('ACTIVE', 'Active'),
+        ('COMPLETED', 'Completed'),
+        ('REJECTED', 'Rejected')
+    ]
+    
+    PAYMENT_STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('PAID', 'Paid'),
+        ('REFUNDED', 'Refunded'),
+        ('FAILED', 'Failed')
+    ]
+    
+    patient = models.ForeignKey(User, on_delete=models.CASCADE)
+    equipment = models.ForeignKey(MedicalEquipment, on_delete=models.CASCADE)
+    daily_rental_price = models.DecimalField(max_digits=10, decimal_places=2)
+    deposit_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    rental_start_date = models.DateField(null=True, blank=True)
+    rental_end_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='PENDING')
+    rejection_reason = models.TextField(blank=True)
+    delivery_address = models.TextField(blank=True)
+    special_instructions = models.TextField(blank=True)
+    # Add these new fields
+    razorpay_order_id = models.CharField(max_length=100, blank=True)
+    razorpay_payment_id = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.patient.username} - {self.equipment.name}"
+
+class RentalPayment(models.Model):
+    PAYMENT_TYPE_CHOICES = [
+        ('INITIAL', 'Initial Payment'),
+        ('EXTENSION', 'Rental Extension'),
+        ('DAMAGE', 'Damage Charges'),
+        ('REFUND', 'Security Deposit Refund')
+    ]
+    
+    rental = models.ForeignKey(EquipmentRental, on_delete=models.CASCADE, related_name='payments')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES)
+    razorpay_payment_id = models.CharField(max_length=100)
+    razorpay_order_id = models.CharField(max_length=100)
+    payment_date = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=EquipmentRental.PAYMENT_STATUS_CHOICES)
+    
+    def __str__(self):
+        return f"Payment for {self.rental} - {self.payment_type}"
+
+class EquipmentDelivery(models.Model):
+    STATUS_CHOICES = (
+        ('PENDING', 'Pending'),
+        ('ASSIGNED', 'Assigned'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('ARRIVED', 'Arrived at Location'),
+        ('OTP_VERIFIED', 'OTP Verified'),
+        ('DELIVERED', 'Delivered'),
+        ('CANCELLED', 'Cancelled'),
+    )
+    
+    rental = models.ForeignKey('EquipmentRental', on_delete=models.CASCADE)
+    volunteer = models.ForeignKey('Staff', on_delete=models.SET_NULL, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    delivery_notes = models.TextField(blank=True)
+    
+    # Location tracking
+    volunteer_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    volunteer_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    delivery_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    delivery_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    
+    # OTP verification
+    delivery_otp = models.CharField(max_length=6, null=True, blank=True)
+    otp_generated_at = models.DateTimeField(null=True, blank=True)
+    otp_verified_at = models.DateTimeField(null=True, blank=True)
+    
+    # Timestamps
+    assigned_at = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    arrived_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def generate_otp(self):
+        """Generate a 6-digit OTP and save it"""
+        self.delivery_otp = ''.join(random.choices('0123456789', k=6))
+        self.otp_generated_at = timezone.now()
+        self.save()
+        return self.delivery_otp
+    
+    def verify_otp(self, otp):
+        """Verify the provided OTP"""
+        if not self.delivery_otp:
+            return False
+        if self.otp_generated_at < timezone.now() - timedelta(minutes=10):
+            return False
+        return self.delivery_otp == otp
+
+class RentalPaymentAnalytics(models.Model):
+    organization = models.ForeignKey(Organizations, on_delete=models.CASCADE)
+    date = models.DateField()
+    total_payments = models.IntegerField(default=0)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    security_deposits = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    rental_fees = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    refunds_issued = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    class Meta:
+        unique_together = ['organization', 'date']
+        
+    @classmethod
+    def update_analytics(cls, payment):
+        """Update analytics when a payment is made"""
+        date = payment.payment_date.date()
+        org = payment.rental.equipment.organization
+        
+        analytics, created = cls.objects.get_or_create(
+            organization=org,
+            date=date,
+            defaults={
+                'total_payments': 0,
+                'total_amount': 0,
+                'security_deposits': 0,
+                'rental_fees': 0,
+                'refunds_issued': 0
+            }
+        )
+        
+        analytics.total_payments += 1
+        analytics.total_amount += payment.amount
+        
+        if payment.payment_type == 'INITIAL':
+            analytics.security_deposits += payment.rental.deposit_amount
+            analytics.rental_fees += (payment.amount - payment.rental.deposit_amount)
+        elif payment.payment_type == 'REFUND':
+            analytics.refunds_issued += payment.amount
+            
+        analytics.save()
+
+@receiver(post_save, sender=EquipmentRental)
+def update_equipment_quantity(sender, instance, created, **kwargs):
+    """
+    Signal to update equipment quantity when rental payment is processed
+    """
+    try:
+        if not created and instance.payment_status == 'PAID' and instance.status == 'APPROVED':
+            with transaction.atomic():
+                equipment = instance.equipment
+                if equipment.quantity > 0:
+                    # Store previous quantity for message
+                    previous_quantity = equipment.quantity
+                    
+                    # Update quantity
+                    equipment.quantity -= 1
+                    equipment.save()
+                    
+                    # Update rental status to ACTIVE
+                    instance.status = 'ACTIVE'
+                    instance.save()
+                    
+                    # Create a notification for the organization
+                    from django.contrib import messages
+                    from django.contrib.messages import constants as message_levels
+                    
+                    # Store message in session for display on manage_equipment page
+                    from django.core.cache import cache
+                    message_key = f'equipment_update_{equipment.id}'
+                    message = f'Equipment "{equipment.name}" quantity updated from {previous_quantity} to {equipment.quantity} units.'
+                    cache.set(message_key, message, 300)  # Store for 5 minutes
+                    
+    except Exception as e:
+        print(f"Error updating equipment quantity: {str(e)}")

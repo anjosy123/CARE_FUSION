@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
-from .models import ServiceRequest,Service,Staff,PatientAssignment,Prescription,Appointment, Team, TeamVisit, TeamMessage, VisitChecklist, VisitNote, TaxiDriver, TaxiBooking, FareStage, DriverLeave, DriverEarning, TaxiComplaint
+from .models import ServiceRequest,Service,Staff,PatientAssignment,Prescription,Appointment, Team, TeamVisit, TeamMessage, VisitChecklist, VisitNote, TaxiDriver, TaxiBooking, FareStage, DriverLeave, DriverEarning, TaxiComplaint, MedicalEquipment
 from django.core.exceptions import ValidationError
 from datetime import datetime
 import os
@@ -579,3 +579,47 @@ class ComplaintForm(forms.ModelForm):
             'complaint_type': forms.Select(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
         }
+
+class TeamMemberDetailForm(forms.Form):
+    team_name = forms.CharField(disabled=True, required=False)
+    members = forms.CharField(widget=forms.Textarea(attrs={
+        'readonly': 'readonly',
+        'rows': 10,
+        'class': 'form-control'
+    }), required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['team_name'].widget.attrs.update({'class': 'form-control'})
+
+class EquipmentForm(forms.ModelForm):
+    class Meta:
+        model = MedicalEquipment
+        fields = [
+            'name', 
+            'equipment_type',
+            'description',
+            'condition',
+            'rental_price_per_day',
+            'security_deposit',
+            'serial_number',
+            'primary_image',
+            'quantity'
+        ]
+        
+    def clean_primary_image(self):
+        image = self.cleaned_data.get('primary_image')
+        if image:
+            # Validate file type
+            if not image.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+                raise forms.ValidationError('Only PNG, JPG, and JPEG files are allowed.')
+            # Validate file size (e.g., max 5MB)
+            if image.size > 5 * 1024 * 1024:
+                raise forms.ValidationError('Image file size must be under 5MB.')
+        return image
+
+    def clean_quantity(self):
+        quantity = self.cleaned_data.get('quantity')
+        if quantity < 1:
+            raise forms.ValidationError("Quantity must be at least 1")
+        return quantity

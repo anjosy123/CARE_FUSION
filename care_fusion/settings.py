@@ -14,6 +14,7 @@ from pathlib import Path
 import pymysql
 pymysql.install_as_MySQLdb()
 from dotenv import load_dotenv 
+from .utils import baseconv  # This will apply the monkey patch
 
 load_dotenv()
 from django.contrib.messages import constants as messages
@@ -66,6 +67,7 @@ INSTALLED_APPS = [
     'social_django',
     'channels',
     'widget_tweaks',
+    'django_q',
 ]
 
 
@@ -269,4 +271,19 @@ ACCOUNT_UNIQUE_EMAIL = True
 
 
 ACCOUNT_TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates', 'account')
+
+# Add these settings to your settings.py
+Q_CLUSTER = {
+    'name': 'care_fusion',
+    'workers': 4,
+    'timeout': 300,  # 5 minutes
+    'retry': 600,    # 10 minutes (must be larger than timeout)
+    'queue_limit': 50,
+    'bulk': 10,
+    'orm': 'default'
+}
+
+# Create receipts directory
+RECEIPT_ROOT = os.path.join(MEDIA_ROOT, 'receipts')
+os.makedirs(RECEIPT_ROOT, exist_ok=True)
 

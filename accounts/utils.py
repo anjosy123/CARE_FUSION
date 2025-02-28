@@ -6,18 +6,40 @@ from .models import Staff, PatientAssignment, ServiceRequest, FareStage, Notific
 from twilio.rest import Client
 from django.utils import timezone
 import googlemaps, razorpay
+from django.core.mail import EmailMessage
+from django.utils.html import strip_tags
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+import os
 
 razorpay_client = razorpay.Client(
     auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
 )
 
 def send_verification_email(email, token, is_organization=False):
-    subject = 'Verify your email address'
-    verification_link = reverse('verify_email', kwargs={'token': token, 'is_organization': int(is_organization)})
-    message = f'Please click the following link to verify your email address: {settings.BASE_URL}{verification_link}'
-    from_email = settings.DEFAULT_FROM_EMAIL
-    recipient_list = [email]
-    send_mail(subject, message, from_email, recipient_list)
+    try:
+        subject = 'Verify your email address'
+        
+        # Different verification URLs for users and organizations
+        if is_organization:
+            verification_url = f"{settings.BASE_URL}/verify-email/{token}/true/"
+        else:
+            verification_url = f"{settings.BASE_URL}/verify-user-email/{token}/"
+            
+        message = f'Click the following link to verify your email address: {verification_url}'
+        
+        email_message = EmailMessage(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [email]
+        )
+        email_message.send()
+        return True
+    except Exception as e:
+        print(f"Error sending verification email: {str(e)}")
+        return False
 
 def get_dashboard_context(organization):
     staff_count = Staff.objects.filter(organization=organization, is_active=True).count()
@@ -245,4 +267,268 @@ def notify_payment_success(booking):
         user=booking.driver.user,
         title='Payment Received',
         message=f'Payment received for booking #{booking.id}'
+    )
+
+def create_rental_payment_order(rental):
+    """Create Razorpay order for equipment rental"""
+    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+    
+    # Calculate total amount (rental amount + security deposit)
+    total_amount = float(rental.daily_rental_price + rental.deposit_amount)
+    
+    # Convert to paise (Razorpay expects amount in smallest currency unit)
+    amount_in_paise = int(total_amount * 100)
+    
+    # Create order data
+    order_data = {
+        'amount': amount_in_paise,
+        'currency': 'INR',
+        'payment_capture': 1,  # Auto-capture payment
+        'notes': {
+            'rental_id': str(rental.id),
+            'equipment_name': rental.equipment.name,
+            'patient_name': rental.patient.get_full_name()
+        }
+    }
+    
+    try:
+        # Create Razorpay order
+        order = client.order.create(data=order_data)
+        
+        # Update rental with order ID
+        rental.razorpay_order_id = order['id']
+        rental.save()
+        
+        return order
+    except Exception as e:
+        print(f"Error creating Razorpay order: {str(e)}")
+        return None
+
+def verify_rental_payment(payment_id, order_id, signature):
+    """Verify Razorpay payment signature"""
+    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+    
+    try:
+        client.utility.verify_payment_signature({
+            'razorpay_payment_id': payment_id,
+            'razorpay_order_id': order_id,
+            'razorpay_signature': signature
+        })
+        return True
+    except razorpay.errors.SignatureVerificationError:
+        return False
+
+def send_rental_payment_notification(rental, payment):
+    """Send notifications about successful payment to both patient and organization"""
+    # Send to patient
+    subject = 'Payment Confirmation - Equipment Rental'
+    template = 'emails/rental_payment_patient.html'
+    
+    context = {
+        'rental': rental,
+        'payment': payment,
+        'domain': settings.BASE_URL,
+    }
+    
+    html_message = render_to_string(template, context)
+    plain_message = strip_tags(html_message)
+    
+    send_mail(
+        subject=subject,
+        message=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[rental.patient.email],
+        html_message=html_message
+    )
+    
+    # Send to organization
+    subject = 'New Rental Payment Received'
+    template = 'emails/rental_payment_organization.html'
+    
+    html_message = render_to_string(template, context)
+    plain_message = strip_tags(html_message)
+    
+    send_mail(
+        subject=subject,
+        message=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[rental.equipment.organization.org_email],
+        html_message=html_message
+    )
+
+def generate_rental_receipt(rental, payment):
+    """Generate PDF receipt for rental payment"""
+    filename = f"rental_receipt_{rental.id}_{payment.id}.pdf"
+    filepath = os.path.join(settings.MEDIA_ROOT, 'receipts', filename)
+    
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    
+    c = canvas.Canvas(filepath, pagesize=letter)
+    width, height = letter
+    
+    # Add header with logo and company details
+    c.setFont("Helvetica-Bold", 24)
+    c.drawString(50, height - 50, "CareFusion")
+    c.setFont("Helvetica", 10)
+    c.drawString(50, height - 70, "Healthcare Equipment Rentals")
+    
+    # Add receipt details in a box
+    c.rect(40, height - 320, width - 80, 230)
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, height - 100, f"RECEIPT")
+    c.setFont("Helvetica", 12)
+    
+    # Receipt metadata
+    c.drawString(50, height - 120, f"Receipt No: {payment.id}")
+    c.drawString(50, height - 140, f"Date: {payment.payment_date.strftime('%d-%m-%Y %H:%M')}")
+    c.drawString(50, height - 160, f"Payment ID: {payment.razorpay_payment_id}")
+    
+    # Customer details
+    c.drawString(50, height - 190, "Customer Details:")
+    c.setFont("Helvetica", 11)
+    c.drawString(70, height - 210, f"Name: {rental.patient.get_full_name()}")
+    c.drawString(70, height - 230, f"Email: {rental.patient.email}")
+    
+    # Rental details
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, height - 260, "Rental Details:")
+    c.setFont("Helvetica", 11)
+    c.drawString(70, height - 280, f"Equipment: {rental.equipment.name}")
+    c.drawString(70, height - 300, f"Organization: {rental.equipment.organization.org_name}")
+    
+    # Payment breakdown
+    c.setFont("Helvetica-Bold", 12)
+    y = height - 340
+    c.drawString(50, y, "Payment Breakdown:")
+    c.setFont("Helvetica", 11)
+    
+    # Table headers
+    y -= 25
+    c.drawString(70, y, "Description")
+    c.drawString(300, y, "Amount")
+    
+    # Table content
+    y -= 20
+    c.drawString(70, y, "Daily Rental Rate")
+    c.drawRightString(400, y, f"₹{rental.daily_rental_price}")
+    
+    y -= 20
+    c.drawString(70, y, "Rental Period")
+    c.drawString(300, y, "30 days")
+    
+    y -= 20
+    c.drawString(70, y, "Security Deposit")
+    c.drawRightString(400, y, f"₹{rental.deposit_amount}")
+    
+    # Total
+    y -= 30
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(70, y, "Total Amount")
+    c.drawRightString(400, y, f"₹{payment.amount}")
+    
+    # Footer
+    c.setFont("Helvetica", 9)
+    c.drawString(50, 50, "This is a computer generated receipt and does not require signature.")
+    c.drawString(50, 35, f"Generated on: {timezone.now().strftime('%d-%m-%Y %H:%M:%S')}")
+    
+    c.save()
+    return os.path.join(settings.MEDIA_URL, 'receipts', filename)
+
+def send_rental_request_notification(rental):
+    """Send notification to organization about new rental request"""
+    subject = 'New Equipment Rental Request'
+    template = 'emails/rental_request_organization.html'
+    
+    context = {
+        'rental': rental,
+        'domain': settings.BASE_URL,
+    }
+    
+    html_message = render_to_string(template, context)
+    plain_message = strip_tags(html_message)
+    
+    send_mail(
+        subject=subject,
+        message=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[rental.equipment.organization.email],
+        html_message=html_message
+    )
+
+def send_rental_approval_notification(rental):
+    """Send notification to patient about rental approval"""
+    subject = 'Your Rental Request has been Approved'
+    template = 'emails/rental_approval_patient.html'
+    
+    context = {
+        'rental': rental,
+        'domain': settings.BASE_URL,
+        'static': settings.STATIC_URL,  # Add this for static files in email
+    }
+    
+    html_message = render_to_string(template, context)
+    plain_message = strip_tags(html_message)
+    
+    try:
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[rental.patient.email],
+            html_message=html_message,
+            fail_silently=False
+        )
+        return True
+    except Exception as e:
+        print(f"Error sending rental approval notification: {str(e)}")
+        return False
+
+def send_rental_rejection_notification(rental):
+    """Send notification to patient about rental rejection"""
+    subject = 'Your Rental Request has been Declined'
+    template = 'emails/rental_rejection_patient.html'
+    
+    context = {
+        'rental': rental,
+        'domain': settings.BASE_URL,
+    }
+    
+    html_message = render_to_string(template, context)
+    plain_message = strip_tags(html_message)
+    
+    send_mail(
+        subject=subject,
+        message=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[rental.patient.email],
+        html_message=html_message
+    )
+
+def send_delivery_otp(delivery):
+    """Send OTP to patient via SMS and email"""
+    patient = delivery.rental.patient
+    otp = delivery.delivery_otp
+    
+    # Send SMS
+    message = f"Your CareFusion delivery OTP is {otp}. Share this with the volunteer to complete the delivery."
+    send_sms(patient.phone_number, message)
+    
+    # Send email
+    subject = "CareFusion Delivery OTP"
+    template = 'emails/delivery_otp.html'
+    context = {
+        'patient': patient,
+        'delivery': delivery,
+        'otp': otp
+    }
+    
+    html_message = render_to_string(template, context)
+    plain_message = strip_tags(html_message)
+    
+    send_mail(
+        subject=subject,
+        message=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[patient.email],
+        html_message=html_message
     )

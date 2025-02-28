@@ -1,0 +1,48 @@
+{% extends 'emails/base_email.html' %}
+
+{% block content %}
+<div style="padding: 20px; background-color: #ffffff; border-radius: 5px;">
+    <h2 style="color: #2c3e50;">New Rental Payment Received</h2>
+    
+    <p>Dear {{ rental.equipment.organization.org_name }},</p>
+    
+    <p>A new payment has been received for equipment rental.</p>
+    
+    <div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+        <h3 style="color: #2c3e50; margin-bottom: 15px;">Rental Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>Equipment:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ rental.equipment.name }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>Patient:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ rental.patient.get_full_name }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>Daily Rate:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">₹{{ rental.daily_rental_price }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>Security Deposit:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">₹{{ rental.deposit_amount }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>Rental Period:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ rental.rental_start_date|date }} to {{ rental.rental_end_date|date }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div style="margin-top: 20px; padding: 15px; background-color: #e8f5e9; border-radius: 5px; color: #2e7d32;">
+        <p style="margin: 0;"><strong>Next Steps:</strong></p>
+        <ul style="margin: 10px 0;">
+            <li>Prepare the equipment for delivery</li>
+            <li>Assign a delivery volunteer</li>
+            <li>Update delivery status in the system</li>
+        </ul>
+    </div>
+    
+    <p>You can manage this rental and assign delivery in your <a href="{{ domain }}{% url 'manage_equipment' %}" style="color: #1a73e8;">dashboard</a>.</p>
+</div>
+{% endblock %} 

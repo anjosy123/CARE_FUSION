@@ -1,0 +1,115 @@
+<div class="rental-history">
+    <div class="timeline">
+        <!-- Initial Request -->
+        <div class="event">
+            <div class="event-date">{{ rental.created_at|date:"M d, Y H:i" }}</div>
+            <div class="event-content">
+                <h6>Request Created</h6>
+                <p>Rental request submitted by {{ rental.patient.get_full_name }}</p>
+                <div class="event-details">
+                    <p><strong>Equipment:</strong> {{ rental.equipment.name }}</p>
+                    <p><strong>Daily Rate:</strong> ₹{{ rental.daily_rental_price }}</p>
+                    <p><strong>Security Deposit:</strong> ₹{{ rental.deposit_amount }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status Update -->
+        {% if rental.status != 'PENDING' %}
+        <div class="event">
+            <div class="event-date">{{ rental.updated_at|date:"M d, Y H:i" }}</div>
+            <div class="event-content">
+                <h6>Request {{ rental.get_status_display }}</h6>
+                {% if rental.status == 'REJECTED' and rental.rejection_reason %}
+                    <p class="text-danger">Reason: {{ rental.rejection_reason }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Payment History -->
+        {% for payment in payments %}
+        <div class="event">
+            <div class="event-date">{{ payment.payment_date|date:"M d, Y H:i" }}</div>
+            <div class="event-content">
+                <h6>{{ payment.get_payment_type_display }}</h6>
+                <div class="event-details">
+                    <p><strong>Amount:</strong> ₹{{ payment.amount }}</p>
+                    <p><strong>Status:</strong> {{ payment.get_status_display }}</p>
+                    <p><strong>Transaction ID:</strong> {{ payment.razorpay_payment_id }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Delivery Information -->
+        {% if delivery %}
+        <div class="event">
+            <div class="event-date">{{ delivery.updated_at|date:"M d, Y H:i" }}</div>
+            <div class="event-content">
+                <h6>Delivery Status: {{ delivery.get_status_display }}</h6>
+                {% if delivery.volunteer %}
+                    <p><strong>Assigned to:</strong> {{ delivery.volunteer.get_full_name }}</p>
+                {% endif %}
+                {% if delivery.delivery_notes %}
+                    <p><strong>Notes:</strong> {{ delivery.delivery_notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.event {
+    padding: 20px;
+    border-left: 2px solid #1e3c72;
+    position: relative;
+    margin-bottom: 20px;
+    background-color: #f8f9fa;
+    border-radius: 0 8px 8px 0;
+}
+
+.event:before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 24px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #1e3c72;
+}
+
+.event-date {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.event-content h6 {
+    margin-bottom: 10px;
+    color: #1e3c72;
+    font-weight: 600;
+}
+
+.event-details {
+    background-color: white;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.event-details p {
+    margin-bottom: 5px;
+}
+
+.text-danger {
+    color: #dc3545;
+}
+</style> 
