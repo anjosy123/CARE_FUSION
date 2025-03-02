@@ -255,5 +255,13 @@ urlpatterns = [
     path('api/delivery/<int:delivery_id>/mark-arrived/', views.mark_arrived, name='mark_arrived'),
     path('api/delivery/<int:delivery_id>/verify-otp/', views.verify_delivery_otp, name='verify_delivery_otp'),
     path('api/delivery/<int:delivery_id>/location/', views.get_delivery_location, name='get_delivery_location'),
+    path('rental/calculate/<int:equipment_id>/', views.calculate_rental, name='calculate_rental'),
+    path('api/create-deposit-order/<int:equipment_id>/', views.create_deposit_order, name='create_deposit_order'),
+    path('api/verify-deposit-payment/', views.verify_deposit_payment, name='verify_deposit_payment'),
+    path('api/check-rental-status/', views.check_rental_status, name='check_rental_status'),
+    path('api/cancel-rental-request/', views.cancel_rental_request, name='cancel_rental_request'),
+    path('api/rental/<int:rental_id>/usage-details/', views.get_rental_usage_details, name='rental_usage_details'),
+    path('api/rental/<int:rental_id>/end-service/', views.end_rental_service, name='end_rental_service'),
+    path('api/rental/<int:rental_id>/org-details/', views.get_rental_org_details, name='rental_org_details'),
 ]
 

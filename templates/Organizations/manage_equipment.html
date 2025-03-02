@@ -209,9 +209,93 @@
             vertical-align: middle;
             margin-left: 5px;
         }
+
+        .toast {
+            opacity: 1 !important;
+        }
+        .toast.bg-success {
+            background-color: #198754 !important;
+        }
+        .toast.bg-danger {
+            background-color: #dc3545 !important;
+        }
+        .toast.bg-info {
+            background-color: #0dcaf0 !important;
+        }
+
+        /* Add these status-specific badge styles in your <style> section */
+        .badge.bg-pending {
+            background-color: #ffc107 !important;  /* Warm yellow */
+            color: #000;
+        }
+
+        .badge.bg-approved {
+            background-color: #28a745 !important;  /* Green */
+            color: white;
+        }
+
+        .badge.bg-active {
+            background-color: #0d6efd !important;  /* Blue */
+            color: white;
+        }
+
+        .badge.bg-completed {
+            background-color: #198754 !important;  /* Dark green */
+            color: white;
+        }
+
+        .badge.bg-rejected {
+            background-color: #dc3545 !important;  /* Red */
+            color: white;
+        }
+
+        .badge.bg-pending_return {
+            background-color: #fd7e14 !important;  /* Orange */
+            color: white;
+        }
+
+        .badge.bg-overdue {
+            background-color: #dc3545 !important;  /* Red */
+            color: white;
+        }
+
+        .badge.bg-paid {
+            background-color: #198754 !important;  /* Dark green */
+            color: white;
+        }
+
+        /* Add hover effect for better interactivity */
+        .badge {
+            transition: all 0.3s ease;
+        }
+
+        .badge:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        /* Make badges more prominent */
+        .badge {
+            font-size: 0.85rem !important;
+            padding: 0.5em 0.8em !important;
+            font-weight: 500 !important;
+            text-transform: capitalize;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
+    <!-- Add this right after the body tag opens -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1070">
+        <div id="toast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
@@ -303,8 +387,8 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="tab" href="#history">
-                    <i class="fas fa-history me-1"></i>Request History
+                <a class="nav-link" data-bs-toggle="tab" href="#rental-history">
+                    <i class="fas fa-history me-1"></i>Rental History
                 </a>
             </li>
         </ul>
@@ -388,141 +472,114 @@
             
             <!-- New rental requests tab -->
             <div class="tab-pane fade" id="requests">
-                <!-- Debug info - remove in production -->
-                {% if debug %}
-                <div class="alert alert-info">
-                    <p>Debug Information:</p>
-                    <p>Pending Rentals Count: {{ pending_rentals|length }}</p>
-                    <p>Pending Requests Count: {{ pending_requests_count }}</p>
-                    <ul>
-                    {% for rental in pending_rentals %}
-                        <li>
-                            Rental ID: {{ rental.id }} - 
-                            Equipment: {{ rental.equipment.name }} - 
-                            Status: {{ rental.status }}
-                        </li>
-                    {% endfor %}
-                    </ul>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Equipment</th>
+                                <th>Patient</th>
+                                <th>Rental Duration</th>
+                                <th>Deposit Amount</th>
+                                <th>Payment Status</th>
+                                <th>Requested On</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rental in rental_requests %}
+                            <tr>
+                                <td>{{ rental.equipment.name }}</td>
+                                <td>{{ rental.patient.get_full_name }}</td>
+                                <td>
+                                    <small class="d-block">From: {{ rental.rental_start_date|date:"M d, Y" }}</small>
+                                    <small class="d-block">To: {{ rental.rental_end_date|date:"M d, Y" }}</small>
+                                    <small class="text-muted">{{ rental.rental_duration }} days</small>
+                                </td>
+                                <td>₹{{ rental.deposit_amount }}</td>
+                                <td>
+                                    {% if rental.status == 'PENDING' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Deposit Paid</span>
+                                        <small class="d-block text-muted">{{ rental.payment_date|date:"M d, Y H:i" }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ rental.created_at|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-info" onclick="viewRentalDetails({{ rental.id }})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        {% if rental.status == 'PENDING' %}
+                                        <button class="btn btn-sm btn-success" onclick="approveRental({{ rental.id }})">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="showRejectModal({{ rental.id }})">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center">No pending rental requests</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                {% endif %}
-                
-                {% for rental in pending_rentals %}
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <div class="row">
-                            <!-- Equipment Details -->
-                            <div class="col-md-4">
-                                <h6 class="text-primary mb-3">Equipment Details</h6>
-                                <p class="mb-2">
-                                    <strong><i class="fas fa-wheelchair me-2"></i>Name:</strong> 
-                                    {{ rental.equipment.name }}
-                                </p>
-                                <p class="mb-2">
-                                    <strong><i class="fas fa-tag me-2"></i>Daily Rate:</strong> 
-                                    ₹{{ rental.daily_rental_price }}
-                                </p>
-                                <p class="mb-2">
-                                    <strong><i class="fas fa-shield-alt me-2"></i>Security Deposit:</strong> 
-                                    ₹{{ rental.deposit_amount }}
-                                </p>
-                            </div>
-
-                            <!-- Patient Details -->
-                            <div class="col-md-4">
-                                <h6 class="text-primary mb-3">Patient Details</h6>
-                                <p class="mb-2">
-                                    <strong><i class="fas fa-user me-2"></i>Name:</strong> 
-                                    {{ rental.patient.get_full_name }}
-                                </p>
-                                <p class="mb-2">
-                                    <strong><i class="fas fa-envelope me-2"></i>Email:</strong> 
-                                    {{ rental.patient.email }}
-                                </p>
-                                <p class="mb-2">
-                                    <strong><i class="fas fa-calendar me-2"></i>Requested on:</strong> 
-                                    {{ rental.created_at|date:"M d, Y H:i" }}
-                                </p>
-                            </div>
-
-                            <!-- Request Status and Actions -->
-                            <div class="col-md-4">
-                                <h6 class="text-primary mb-3">Request Status</h6>
-                                <p class="mb-3">
-                                    <span class="badge bg-{{ rental.status|lower }} p-2">
-                                        <i class="fas fa-clock me-1"></i>
-                                        {{ rental.get_status_display }}
-                                    </span>
-                                </p>
-                                <div class="d-grid gap-2">
-                                    <button class="btn btn-success" onclick="approveRental({{ rental.id }})">
-                                        <i class="fas fa-check me-2"></i>Approve Request
-                                    </button>
-                                    <button class="btn btn-danger" onclick="showRejectModal({{ rental.id }})">
-                                        <i class="fas fa-times me-2"></i>Reject Request
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {% if rental.delivery_address %}
-                        <!-- Delivery Information -->
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <div class="alert alert-info mb-0">
-                                    <h6 class="text-primary mb-2">
-                                        <i class="fas fa-truck me-2"></i>Delivery Information
-                                    </h6>
-                                    <p class="mb-0">{{ rental.delivery_address }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% empty %}
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>No pending rental requests.
-                </div>
-                {% endfor %}
             </div>
 
-            <!-- Add the history tab content -->
-            <div class="tab-pane fade" id="history">
+            <!-- Rental History tab -->
+            <div class="tab-pane fade" id="rental-history">
                 <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h5 class="mb-0">Rental History</h5>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="text" id="rentalSearchInput" class="form-control" placeholder="Search by patient name, equipment, or status...">
+                            </div>
+                        </div>
+                    </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table">
+                            <table class="table" id="rentalHistoryTable">
                                 <thead>
                                     <tr>
-                                        <th>Equipment</th>
                                         <th>Patient</th>
-                                        <th>Requested On</th>
+                                        <th>Equipment</th>
+                                        <th>Duration</th>
                                         <th>Status</th>
-                                        <th>Action Date</th>
-                                        <th>Details</th>
+                                        <th>Total Amount</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for rental in rental_history %}
-                                    <tr>
-                                        <td>{{ rental.equipment.name }}</td>
+                                    <tr class="rental-row" 
+                                        data-patient="{{ rental.patient.get_full_name }}" 
+                                        data-equipment="{{ rental.equipment.name }}" 
+                                        data-status="{{ rental.status }}">
                                         <td>{{ rental.patient.get_full_name }}</td>
-                                        <td>{{ rental.created_at|date:"M d, Y H:i" }}</td>
+                                        <td>{{ rental.equipment.name }}</td>
                                         <td>
-                                            <span class="badge bg-{{ rental.status|lower }}">
-                                                {{ rental.get_status_display }}
-                                            </span>
+                                            {{ rental.rental_start_date|date:"M d, Y" }} - 
+                                            {% if rental.rental_end_date %}
+                                                {{ rental.rental_end_date|date:"M d, Y" }}
+                                            {% else %}
+                                                Present
+                                            {% endif %}
                                         </td>
-                                        <td>{{ rental.updated_at|date:"M d, Y H:i" }}</td>
+                                        <td><span class="badge bg-{{ rental.status|lower }}">{{ rental.status }}</span></td>
+                                        <td>₹{{ rental.get_current_bill_amount }}</td>
                                         <td>
-                                            <button class="btn btn-sm btn-info" onclick="viewRentalHistory({{ rental.id }})">
-                                                <i class="fas fa-info-circle"></i> View
+                                            <button class="btn btn-sm btn-info" onclick="viewRentalDetails({{ rental.id }})">
+                                                <i class="fas fa-eye"></i> View Details
                                             </button>
                                         </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="6" class="text-center">No rental history found</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -608,8 +665,8 @@
         </div>
     </div>
 
-    <!-- Add a rejection modal -->
-    <div class="modal fade" id="rejectModal" tabindex="-1">
+    <!-- Add this modal for rejection reason -->
+    <div class="modal fade" id="rejectModal">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -619,11 +676,10 @@
                 <div class="modal-body">
                     <form id="rejectForm">
                         {% csrf_token %}
-                        <input type="hidden" id="reject_rental_id" name="rental_id">
+                        <input type="hidden" name="rental_id" id="reject_rental_id">
                         <div class="mb-3">
                             <label class="form-label">Reason for Rejection</label>
-                            <textarea class="form-control" name="rejection_reason" rows="3" required></textarea>
-                            <div class="form-text">Please provide a reason for rejecting this request.</div>
+                            <textarea class="form-control" name="rejection_reason" required></textarea>
                         </div>
                     </form>
                 </div>
@@ -635,16 +691,38 @@
         </div>
     </div>
 
-    <!-- Add a rental history modal -->
-    <div class="modal fade" id="rentalHistoryModal" tabindex="-1">
+    <!-- Rental Details Modal -->
+    <div class="modal fade" id="rentalDetailsModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Rental Request Details</h5>
+                    <h5 class="modal-title">Rental Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="rentalHistoryContent">
-                    <!-- Content will be loaded dynamically -->
+                <div class="modal-body">
+                    <div id="rentalDetailsContent">
+                        <!-- Content will be loaded here -->
+                    </div>
+                    
+                    <!-- Usage History Section -->
+                    <div class="usage-history mt-4">
+                        <h6>Usage History</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Period</th>
+                                        <th>Duration</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usageHistoryBody">
+                                    <!-- Usage history will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -788,21 +866,45 @@
             bootstrap.Modal.getInstance(document.getElementById('confirmationModal')).hide();
         });
 
+        // Add this helper function to manage button loading state
+        function setButtonLoading(button, isLoading) {
+            if (isLoading) {
+                // Store original content and disable button
+                button.dataset.originalHtml = button.innerHTML;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+                button.disabled = true;
+            } else {
+                // Restore original content and enable button
+                button.innerHTML = button.dataset.originalHtml;
+                button.disabled = false;
+            }
+        }
+
         function approveRental(rentalId) {
             if (confirm('Are you sure you want to approve this rental request?')) {
+                const button = event.currentTarget;  // Get clicked button
+                setButtonLoading(button, true);
+
                 fetch(`/api/rental/${rentalId}/approve/`, {
                     method: 'POST',
                     headers: {
+                        'Content-Type': 'application/json',
                         'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                     }
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        location.reload();
+                        showToast('Rental request approved successfully!');
+                        setTimeout(() => location.reload(), 1000);
                     } else {
-                        alert(data.error || 'Failed to approve rental');
+                        showToast(data.error || 'Failed to approve rental', 'danger');
+                        setButtonLoading(button, false);  // Reset button only on error
                     }
+                })
+                .catch(error => {
+                    showToast('An error occurred while processing your request', 'danger');
+                    setButtonLoading(button, false);  // Reset button on error
                 });
             }
         }
@@ -817,6 +919,9 @@
             const formData = new FormData(form);
             const rentalId = formData.get('rental_id');
             
+            const button = document.querySelector('#rejectModal .btn-danger');  // Get reject button
+            setButtonLoading(button, true);
+            
             fetch(`/api/rental/${rentalId}/reject/`, {
                 method: 'POST',
                 body: formData,
@@ -827,34 +932,130 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload();
+                    bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
+                    showToast('Rental request rejected successfully');
+                    setTimeout(() => location.reload(), 1000);
                 } else {
-                    alert(data.error || 'Failed to reject rental');
+                    showToast(data.error || 'Failed to reject rental', 'danger');
+                    setButtonLoading(button, false);  // Reset button only on error
                 }
+            })
+            .catch(error => {
+                showToast('An error occurred while processing your request', 'danger');
+                setButtonLoading(button, false);  // Reset button on error
             });
         }
 
-        function viewRentalHistory(rentalId) {
-            console.log('Fetching history for rental:', rentalId);  // Debug log
+        // Search functionality
+        document.getElementById('rentalSearchInput').addEventListener('keyup', function() {
+            const searchText = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.rental-row');
             
-            fetch(`/api/rental/${rentalId}/history/`)
-                .then(response => {
-                    console.log('Response status:', response.status);  // Debug log
-                    return response.json();
-                })
+            rows.forEach(row => {
+                const patient = row.dataset.patient.toLowerCase();
+                const equipment = row.dataset.equipment.toLowerCase();
+                const status = row.dataset.status.toLowerCase();
+                
+                if (patient.includes(searchText) || 
+                    equipment.includes(searchText) || 
+                    status.includes(searchText)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        function viewRentalDetails(rentalId) {
+            fetch(`/api/rental/${rentalId}/org-details/`)
+                .then(response => response.json())
                 .then(data => {
-                    console.log('Response data:', data);  // Debug log
                     if (data.success) {
-                        document.getElementById('rentalHistoryContent').innerHTML = data.html;
-                        new bootstrap.Modal(document.getElementById('rentalHistoryModal')).show();
+                        // Update rental details
+                        document.getElementById('rentalDetailsContent').innerHTML = `
+                            <div class="rental-info">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Patient Information</h6>
+                                        <p>Name: ${data.patient_name}</p>
+                                        <p>Contact: ${data.patient_contact}</p>
+                                        <p>Address: ${data.delivery_address}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Rental Information</h6>
+                                        <p>Equipment: ${data.equipment_name}</p>
+                                        <p>Daily Rate: ₹${data.daily_rate}</p>
+                                        <p>Start Date: ${data.start_date}</p>
+                                        <p>Status: 
+                                            <span class="badge bg-${data.status.toLowerCase()}">
+                                                ${data.status.replace('_', ' ')}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div class="usage-stats mt-4">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <h6>Total Duration</h6>
+                                            <div class="h4">${data.total_days} days</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h6>Total Amount</h6>
+                                            <div class="h4">₹${data.total_amount}</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h6>Payment Status</h6>
+                                            <div class="h4">
+                                                <span class="badge bg-${data.payment_status.toLowerCase()}">
+                                                    ${data.payment_status.replace('_', ' ')}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Update usage history with improved status display
+                        const historyHtml = data.usage_history.map(period => `
+                            <tr>
+                                <td>${period.start_date} - ${period.end_date}</td>
+                                <td>${period.duration} days</td>
+                                <td>₹${period.amount}</td>
+                                <td>
+                                    <span class="badge bg-${period.status.toLowerCase()}">
+                                        ${period.status.replace('_', ' ')}
+                                    </span>
+                                </td>
+                            </tr>
+                        `).join('') || '<tr><td colspan="4" class="text-center">No usage history available</td></tr>';
+                        
+                        document.getElementById('usageHistoryBody').innerHTML = historyHtml;
+                        
+                        // Show modal
+                        new bootstrap.Modal(document.getElementById('rentalDetailsModal')).show();
                     } else {
-                        alert('Failed to load rental history: ' + (data.error || 'Unknown error'));
+                        showToast('Failed to load rental details', 'danger');
                     }
                 })
                 .catch(error => {
-                    console.error('Error loading rental history:', error);  // Debug log
-                    alert('Failed to load rental history: ' + error);
+                    showToast('An error occurred while loading rental details', 'danger');
                 });
+        }
+
+        // Add this toast function
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.className = `toast align-items-center text-white border-0 bg-${type}`;
+            toast.querySelector('.toast-body').textContent = message;
+            
+            const bsToast = new bootstrap.Toast(toast, {
+                animation: true,
+                autohide: true,
+                delay: 7000  // Changed from 3000 to 7000 milliseconds (7 seconds)
+            });
+            bsToast.show();
         }
     </script>
 </body>

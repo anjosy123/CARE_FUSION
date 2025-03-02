@@ -27,7 +27,8 @@ from .models import (
     TeamMessage, VisitChecklist, VisitNote, TeamDashboard, PrivacySettings,
     TaxiDriver, TaxiBooking, FareStage, DriverLeave, DriverEarning, 
     TaxiComplaint, PatientVisitRecord, EmergencyContact, CaretakerDetails, UserLocation,
-    MedicalEquipment, EquipmentRental, EquipmentDelivery, RentalPayment, RentalPaymentAnalytics
+    MedicalEquipment, EquipmentRental, EquipmentDelivery, RentalPayment, RentalPaymentAnalytics,
+    MonthlyRentalPayment, RentalUsagePeriod
 )
 from .forms import AppointmentRequestForm, ServiceRequestForm,ServiceForm,StaffForm,PatientAssignmentForm,PrescriptionForm,AppointmentForm,TeamForm, TeamVisitForm, RescheduleTeamVisitForm, TeamMessageForm, VisitChecklistForm, VisitNoteForm, ProfileUpdateForm,TeamVisit, TaxiBookingForm, DriverForm, FareStageForm, DriverLeaveForm, DriverEarningForm, ComplaintForm, TeamMemberDetailForm, EquipmentForm
 from .utils import (
@@ -38,7 +39,9 @@ from .utils import (
     notify_driver_about_leave_response, create_rental_payment_order, 
     verify_rental_payment, send_rental_payment_notification, 
     generate_rental_receipt, send_rental_rejection_notification, 
-    send_rental_request_notification, send_rental_approval_notification  # Add this
+    send_rental_request_notification, send_rental_approval_notification,
+    create_monthly_rental_order, calculate_monthly_rent,
+    create_refund_order, send_rental_end_notification
 )
 from django.db.models import Q, Sum, Count, Avg, F
 from django.contrib.auth.tokens import default_token_generator
@@ -4237,55 +4240,32 @@ def confirm_rental_payment(request):
 
 @organization_login_required
 def manage_equipment(request):
-    try:
-        organization = Organizations.objects.get(id=request.session.get('org_id'))
-        
-        # Get equipment list
-        equipment = MedicalEquipment.objects.filter(organization=organization)
-        
-        # Check for quantity update messages
-        for item in equipment:
-            message_key = f'equipment_update_{item.id}'
-            update_message = cache.get(message_key)
-            if update_message:
-                messages.success(request, update_message)
-                cache.delete(message_key)  # Clear the message
-        
-        # Get pending rental requests
-        pending_rentals = EquipmentRental.objects.filter(
-            equipment__organization=organization,
-            status='PENDING'
-        ).select_related('equipment', 'patient').order_by('-created_at')
-        
-        # Get rental history (non-pending requests)
-        rental_history = EquipmentRental.objects.filter(
-            equipment__organization=organization
-        ).exclude(
-            status='PENDING'
-        ).select_related('equipment', 'patient').order_by('-created_at')
-        
-        # Count pending requests for badge
-        pending_requests_count = pending_rentals.count()
-        
-        context = {
-            'equipment': equipment,
-            'pending_rentals': pending_rentals,
-            'rental_history': rental_history,
-            'pending_requests_count': pending_requests_count,
-            'condition_choices': MedicalEquipment.CONDITION_CHOICES,
-        }
-        
-        # Add debug information
-        print(f"Organization ID: {organization.id}")
-        print(f"Pending Rentals Count: {pending_rentals.count()}")
-        print(f"Pending Rentals: {list(pending_rentals.values('id', 'equipment__name', 'patient__email', 'status'))}")
-        
-        return render(request, 'Organizations/manage_equipment.html', context)
-        
-    except Exception as e:
-        print(f"Error in manage_equipment view: {str(e)}")
-        messages.error(request, "An error occurred while loading equipment data.")
-        return redirect('organizations_home')
+    """View for managing equipment inventory and rentals"""
+    organization = get_object_or_404(Organizations, id=request.session.get('org_id'))
+    
+    # Get all equipment for this organization
+    equipment = MedicalEquipment.objects.filter(organization=organization)
+    
+    # Get pending rental requests - include both PENDING and DEPOSIT_PENDING status
+    rental_requests = EquipmentRental.objects.filter(
+        equipment__organization=organization,
+        status__in=['PENDING', 'DEPOSIT_PENDING']
+    ).select_related('equipment', 'patient').order_by('-created_at')
+    
+    # Get rental history
+    rental_history = EquipmentRental.objects.filter(
+        equipment__organization=organization,
+        status__in=['APPROVED', 'REJECTED', 'COMPLETED']
+    ).select_related('equipment', 'patient').order_by('-updated_at')
+    
+    context = {
+        'equipment': equipment,
+        'rental_requests': rental_requests,
+        'rental_history': rental_history,
+        'organization': organization
+    }
+    
+    return render(request, 'Organizations/manage_equipment.html', context)
 
 @organization_login_required
 @require_POST
@@ -4826,59 +4806,45 @@ def staff_logout(request):
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def patient_rentals(request):
-    try:
-        # Get approved service requests for this patient
-        approved_organizations = ServiceRequest.objects.filter(
-            patient_id=request.session.get('user_id'),
-            status='APPROVED'
-        ).values_list('organization_id', flat=True)
-
-        # Get available equipment from approved organizations
-        available_equipment = MedicalEquipment.objects.filter(
-            organization_id__in=approved_organizations,
-            status='AVAILABLE'
-        ).select_related('organization')
-
-        # Get pending rental requests
-        pending_rentals = EquipmentRental.objects.filter(
-            patient_id=request.session.get('user_id'),
-            status='PENDING'
-        ).select_related('equipment', 'equipment__organization')
-
-        # Get active rentals
-        active_rentals = EquipmentRental.objects.filter(
-            patient_id=request.session.get('user_id'),
-            status__in=['APPROVED', 'ACTIVE']
-        ).select_related('equipment', 'equipment__organization')
-
-        # Get rental history (completed or paid rentals)
-        rental_history = EquipmentRental.objects.filter(
-            patient_id=request.session.get('user_id'),
-            status='COMPLETED'
-        ).select_related('equipment', 'equipment__organization')
-
-        # Add paid rentals to history
-        paid_rentals = EquipmentRental.objects.filter(
-            patient_id=request.session.get('user_id'),
-            payment_status='PAID'
-        ).select_related('equipment', 'equipment__organization')
-
-        # Combine completed and paid rentals
-        rental_history = (rental_history | paid_rentals).distinct().order_by('-created_at')
-
-        context = {
-            'available_equipment': available_equipment,
-            'pending_rentals': pending_rentals,
-            'active_rentals': active_rentals,
-            'rental_history': rental_history
-        }
-
-        return render(request, 'Users/patient_rentals.html', context)
-
-    except Exception as e:
-        print(f"Error in patient_rentals view: {str(e)}")
-        messages.error(request, "An error occurred while loading your rentals.")
-        return redirect('patients_dashboard')
+    patient = get_object_or_404(User, id=request.session.get('user_id'))
+    
+    # Get available equipment
+    available_equipment = MedicalEquipment.objects.filter(
+        status='AVAILABLE',
+        quantity__gt=0
+    ).exclude(
+        equipmentrental__patient=patient,
+        equipmentrental__status__in=['PENDING', 'DEPOSIT_PENDING', 'APPROVED', 'ACTIVE']
+    )
+    
+    # Get pending rentals
+    pending_rentals = EquipmentRental.objects.filter(
+        patient=patient,
+        status__in=['PENDING', 'DEPOSIT_PENDING']
+    ).order_by('-created_at')
+    
+    # Get active rentals (explicitly exclude pending statuses)
+    active_rentals = EquipmentRental.objects.filter(
+        patient=patient,
+        status__in=['APPROVED', 'ACTIVE', 'IN_DELIVERY']
+    ).exclude(
+        status__in=['PENDING', 'DEPOSIT_PENDING']
+    ).order_by('-created_at')
+    
+    # Get rental history
+    rental_history = EquipmentRental.objects.filter(
+        patient=patient,
+        status__in=['COMPLETED', 'CANCELLED', 'REJECTED']
+    ).order_by('-created_at')
+    
+    context = {
+        'available_equipment': available_equipment,
+        'pending_rentals': pending_rentals,
+        'active_rentals': active_rentals,
+        'rental_history': rental_history
+    }
+    
+    return render(request, 'Users/patient_rentals.html', context)
 
 @organization_login_required
 def add_equipment(request, equipment_id=None):
@@ -5211,67 +5177,65 @@ def approve_rental_request(request, rental_id):
         rental = get_object_or_404(
             EquipmentRental, 
             id=rental_id,
-            equipment__organization_id=request.session.get('org_id')
+            equipment__organization_id=request.session.get('org_id'),
+            status='PENDING'
         )
         
-        if rental.status != 'PENDING':
-            return JsonResponse({
-                'success': False,
-                'error': 'This rental request has already been processed'
-            })
-        
-        # Update rental status
-        rental.status = 'APPROVED'
-        rental.save()
-        
-        # Create Razorpay order
-        order = create_rental_payment_order(rental)
-        if not order:
-            return JsonResponse({
-                'success': False,
-                'error': 'Failed to create payment order'
-            })
-        
-        # Send approval notification
-        try:
+        with transaction.atomic():
+            # Update rental status
+            rental.status = 'APPROVED'
+            rental.save()
+            
+            # Send notification to patient
             send_rental_approval_notification(rental)
-        except Exception as e:
-            print(f"Error sending approval notification: {str(e)}")
-            # Continue even if email fails
-        
-        return JsonResponse({'success': True})
-        
+            
+            return JsonResponse({'success': True})
+            
     except Exception as e:
-        print(f"Error approving rental: {str(e)}")
         return JsonResponse({
             'success': False,
             'error': str(e)
         })
 
 @organization_login_required
+@require_POST
 def reject_rental_request(request, rental_id):
     try:
-        rental = get_object_or_404(EquipmentRental, id=rental_id,
-                                 equipment__organization=request.organization)
+        rental = get_object_or_404(
+            EquipmentRental, 
+            id=rental_id,
+            equipment__organization_id=request.session.get('org_id'),
+            status='PENDING'
+        )
         
         rejection_reason = request.POST.get('rejection_reason')
         if not rejection_reason:
             return JsonResponse({
                 'success': False,
-                'error': 'Please provide a reason for rejection'
+                'error': 'Rejection reason is required'
             })
-        
-        rental.status = 'REJECTED'
-        rental.rejection_reason = rejection_reason
-        rental.save()
-        
-        # Send notification to patient
-        send_rental_rejection_notification(rental)
-        
-        return JsonResponse({'success': True})
-        
+            
+        with transaction.atomic():
+            # Update rental status
+            rental.status = 'REJECTED'
+            rental.rejection_reason = rejection_reason
+            rental.save()
+            
+            # Make equipment available again
+            equipment = rental.equipment
+            equipment.status = 'AVAILABLE'
+            equipment.save()
+            
+            # Send notification to patient
+            send_rental_rejection_notification(rental)
+            
+            return JsonResponse({'success': True})
+            
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
 
 @require_GET
 def get_rental_history(request, rental_id):
@@ -5573,3 +5537,384 @@ def get_delivery_location(request, delivery_id):
             'success': False,
             'error': str(e)
         })
+
+@patient_login_required
+def calculate_rental(request, equipment_id):
+    """Show rental calculation page"""
+    equipment = get_object_or_404(MedicalEquipment, id=equipment_id)
+    patient = get_object_or_404(User, id=request.session.get('user_id'))
+    
+    context = {
+        'equipment': equipment,
+        'today': timezone.now().date(),
+        'patient': patient  # Add patient to context
+    }
+    return render(request, 'Users/rental_calculation.html', context)
+
+@patient_login_required
+def create_deposit_order(request, equipment_id):
+    """Create Razorpay order for caution deposit"""
+    try:
+        equipment = get_object_or_404(MedicalEquipment, id=equipment_id)
+        data = json.loads(request.body)
+        
+        # Get patient from session
+        patient = get_object_or_404(User, id=request.session.get('user_id'))
+        
+        # Convert Decimal to float for JSON serialization
+        deposit_amount = float(equipment.security_deposit)
+        daily_rate = float(equipment.rental_price_per_day)
+        
+        # Create rental record with DEPOSIT_PENDING status
+        rental = EquipmentRental.objects.create(
+            equipment=equipment,
+            patient=patient,
+            rental_start_date=data['start_date'],
+            rental_end_date=data['end_date'],
+            deposit_amount=deposit_amount,
+            daily_rental_price=daily_rate,
+            status='DEPOSIT_PENDING'
+        )
+        
+        # Create Razorpay order
+        order_amount = int(deposit_amount * 100)  # Convert to paise
+        order_currency = 'INR'
+        
+        order = razorpay_client.order.create({
+            'amount': order_amount,
+            'currency': order_currency,
+            'payment_capture': 1
+        })
+        
+        return JsonResponse({
+            'success': True,
+            'key': settings.RAZORPAY_KEY_ID,
+            'amount': order_amount,
+            'order_id': order['id'],
+            'rental_id': rental.id
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+@patient_login_required
+def verify_deposit_payment(request):
+    """Verify deposit payment and create rental request"""
+    try:
+        data = json.loads(request.body)
+        
+        # Get patient from session
+        patient = get_object_or_404(User, id=request.session.get('user_id'))
+        
+        rental = get_object_or_404(
+            EquipmentRental, 
+            id=data['rental_id'],
+            patient=patient
+        )
+        
+        try:
+            # Verify payment signature
+            params_dict = {
+                'razorpay_payment_id': data['razorpay_payment_id'],
+                'razorpay_order_id': data['razorpay_order_id'],
+                'razorpay_signature': data['razorpay_signature']
+            }
+            
+            razorpay_client.utility.verify_payment_signature(params_dict)
+            
+            # Payment successful - update rental status
+            rental.status = 'PENDING'
+            rental.save()
+            
+            RentalPayment.objects.create(
+                rental=rental,
+                amount=rental.deposit_amount,
+                payment_type='DEPOSIT',
+                status='SUCCESS',
+                razorpay_payment_id=data['razorpay_payment_id'],
+                razorpay_order_id=data['razorpay_order_id']
+            )
+            
+            # Send notification
+            context = {
+                'rental': rental,
+                'domain': settings.BASE_URL,
+                'STATIC_URL': settings.STATIC_URL
+            }
+            send_rental_request_notification(rental)
+            
+            return JsonResponse({'success': True})
+            
+        except Exception as e:
+            # Payment failed - delete the rental request
+            rental.delete()
+            return JsonResponse({
+                'success': False,
+                'error': 'Payment verification failed. Please try again.'
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+@patient_login_required
+def check_rental_status(request):
+    """Check if any rental status has changed"""
+    try:
+        patient = get_object_or_404(User, id=request.session.get('user_id'))
+        
+        # Get pending rentals that might have been updated
+        pending_rentals = EquipmentRental.objects.filter(
+            patient=patient,
+            status__in=['PENDING', 'DEPOSIT_PENDING'],
+            updated_at__gt=timezone.now() - timedelta(minutes=5)
+        ).exists()
+        
+        return JsonResponse({
+            'success': True,
+            'status_changed': pending_rentals
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+@patient_login_required
+def cancel_rental_request(request):
+    """Cancel a rental request if payment fails"""
+    try:
+        data = json.loads(request.body)
+        rental = get_object_or_404(
+            EquipmentRental, 
+            id=data['rental_id'],
+            patient_id=request.session.get('user_id'),
+            status='DEPOSIT_PENDING'
+        )
+        
+        # Delete the rental request
+        rental.delete()
+        
+        return JsonResponse({'success': True})
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+@organization_login_required
+def get_rental_history(request, rental_id):
+    try:
+        rental = get_object_or_404(
+            EquipmentRental, 
+            id=rental_id,
+            equipment__organization_id=request.session.get('org_id')
+        )
+        
+        payments = RentalPayment.objects.filter(rental=rental).values(
+            'payment_date',
+            'payment_type',
+            'amount',
+            'status',
+            'razorpay_payment_id'
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'payments': list(payments)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+@patient_login_required
+def get_accumulated_amount(request, rental_id):
+    try:
+        rental = get_object_or_404(
+            EquipmentRental, 
+            id=rental_id,
+            patient_id=request.session.get('user_id'),
+            status='ACTIVE'
+        )
+        
+        # Calculate accumulated amount
+        days_rented = (timezone.now().date() - rental.rental_start_date).days
+        accumulated_amount = days_rented * rental.daily_rental_price
+        
+        return JsonResponse({
+            'success': True,
+            'amount': accumulated_amount
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@patient_login_required
+def create_monthly_payment(request, rental_id):
+    try:
+        rental = get_object_or_404(
+            EquipmentRental, 
+            id=rental_id,
+            patient_id=request.session.get('user_id'),
+            status='ACTIVE'
+        )
+        
+        # Create or get current month's payment
+        current_payment = MonthlyRentalPayment.objects.get_or_create(
+            rental=rental,
+            month_start_date=timezone.now().replace(day=1).date(),
+            defaults={
+                'month_end_date': (timezone.now().replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1),
+                'amount_due': calculate_monthly_rent(rental)
+            }
+        )[0]
+        
+        # Create Razorpay order
+        order = create_monthly_rental_order(current_payment)
+        
+        return JsonResponse({
+            'success': True,
+            'razorpay_key': settings.RAZORPAY_KEY_ID,
+            'amount': order['amount'],
+            'order_id': order['id']
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@patient_login_required
+def get_rental_usage_details(request, rental_id):
+    try:
+        rental = get_object_or_404(
+            EquipmentRental, 
+            id=rental_id,
+            patient_id=request.session.get('user_id'),
+            status='ACTIVE'
+        )
+        
+        usage_periods = [{
+            'start_date': period.start_date.strftime('%b %d, %Y'),
+            'end_date': period.end_date.strftime('%b %d, %Y'),
+            'duration': period.duration,
+            'amount': str(period.amount),
+            'status': period.status
+        } for period in rental.get_usage_periods()]
+        
+        return JsonResponse({
+            'success': True,
+            'duration': rental.get_usage_duration(),
+            'amount': rental.get_current_bill_amount(),
+            'history': usage_periods
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@patient_login_required
+@require_POST
+def end_rental_service(request, rental_id):
+    try:
+        with transaction.atomic():
+            rental = get_object_or_404(
+                EquipmentRental, 
+                id=rental_id,
+                patient_id=request.session.get('user_id'),
+                status='ACTIVE'
+            )
+            
+            # Calculate final amount
+            final_amount = rental.get_current_bill_amount()
+            
+            # Create final usage period
+            RentalUsagePeriod.objects.create(
+                rental=rental,
+                start_date=rental.rental_start_date,
+                end_date=timezone.now().date(),
+                duration=rental.get_usage_duration(),
+                amount=final_amount,
+                status='PENDING'
+            )
+            
+            # Initiate deposit refund
+            refund_amount = rental.deposit_amount
+            refund_order = create_refund_order(rental, refund_amount)
+            
+            # Update rental status
+            rental.status = 'PENDING_RETURN'
+            rental.save()
+            
+            # Send email notification
+            send_rental_end_notification(rental)
+            
+            return JsonResponse({
+                'success': True,
+                'final_amount': final_amount,
+                'deposit_amount': float(refund_amount),
+                'refund_id': refund_order['id']
+            })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@organization_login_required
+def get_rental_org_details(request, rental_id):
+    try:
+        rental = get_object_or_404(
+            EquipmentRental, 
+            id=rental_id,
+            equipment__organization_id=request.session.get('org_id')
+        )
+        
+        # Get usage history
+        usage_history = [{
+            'start_date': period.start_date.strftime('%b %d, %Y'),
+            'end_date': period.end_date.strftime('%b %d, %Y'),
+            'duration': period.duration,
+            'amount': str(period.amount),
+            'status': period.status
+        } for period in rental.get_usage_periods()]
+        
+        return JsonResponse({
+            'success': True,
+            'patient_name': rental.patient.get_full_name(),
+            'patient_contact': rental.patient.phone_number,
+            'delivery_address': rental.delivery_address,
+            'equipment_name': rental.equipment.name,
+            'daily_rate': str(rental.daily_rental_price),
+            'start_date': rental.rental_start_date.strftime('%b %d, %Y'),
+            'status': rental.status,
+            'total_days': rental.get_usage_duration(),
+            'total_amount': str(rental.get_current_bill_amount()),
+            'payment_status': rental.payment_status,
+            'usage_history': usage_history
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+def send_delivery_otp(delivery):
+    """Send OTP to patient for delivery verification"""
+    try:
+        # Get patient's phone number
+        patient_phone = delivery.rental.patient.phone_number
+        
+        # Send OTP via SMS
+        message = f"Your CareFusion delivery OTP is: {delivery.otp}"
+        send_sms(patient_phone, message)  # Assuming you have send_sms utility
+        
+        # Alternatively, send via email
+        subject = "CareFusion Delivery OTP"
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [delivery.rental.patient.email],
+            fail_silently=True
+        )
+    except Exception as e:
+        print(f"Error sending OTP: {str(e)}")

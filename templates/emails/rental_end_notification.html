@@ -1,0 +1,32 @@
+{% extends 'emails/base_email.html' %}
+
+{% block content %}
+<div style="padding: 20px; background-color: #ffffff; border-radius: 10px; margin-top: 20px;">
+    <h2 style="color: #333333; margin-bottom: 20px;">Rental Service Ended</h2>
+    
+    <p>Dear {{ rental.patient.get_full_name }},</p>
+    
+    <p>Your rental service for <strong>{{ rental.equipment.name }}</strong> has been ended as requested.</p>
+    
+    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <h4 style="color: #dc3545; margin-bottom: 10px;">Important Next Steps:</h4>
+        <ul style="list-style-type: none; padding-left: 0;">
+            <li style="margin-bottom: 10px;">✓ Return the equipment by {{ return_deadline|date:"F d, Y H:i" }}</li>
+            <li style="margin-bottom: 10px;">✓ Ensure the equipment is in good condition</li>
+            <li style="margin-bottom: 10px;">✓ Contact support if you need assistance</li>
+        </ul>
+    </div>
+    
+    <div style="background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <h4 style="color: #2e7d32; margin-bottom: 10px;">Deposit Refund Details:</h4>
+        <p style="margin: 0;">Amount: ₹{{ deposit_amount }}</p>
+        <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #666;">
+            The deposit will be refunded to your account after equipment inspection.
+        </p>
+    </div>
+    
+    <p style="color: #666666; font-size: 0.9em; margin-top: 20px;">
+        If you have any questions or concerns, please don't hesitate to contact our support team.
+    </p>
+</div>
+{% endblock %} 

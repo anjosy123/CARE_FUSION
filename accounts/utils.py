@@ -2,7 +2,7 @@ from django.core.mail import send_mail
 from django.urls import reverse
 from django.conf import settings
 from django.template.loader import render_to_string
-from .models import Staff, PatientAssignment, ServiceRequest, FareStage, Notification, DriverLeave
+from .models import Staff, PatientAssignment, ServiceRequest, FareStage, Notification, DriverLeave, MonthlyRentalPayment
 from twilio.rest import Client
 from django.utils import timezone
 import googlemaps, razorpay
@@ -12,6 +12,9 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 import os
+from datetime import datetime, timedelta
+from decimal import Decimal
+from calendar import monthrange
 
 razorpay_client = razorpay.Client(
     auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
@@ -436,24 +439,30 @@ def generate_rental_receipt(rental, payment):
 
 def send_rental_request_notification(rental):
     """Send notification to organization about new rental request"""
-    subject = 'New Equipment Rental Request'
+    subject = "New Equipment Rental Request"
     template = 'emails/rental_request_organization.html'
     
     context = {
         'rental': rental,
         'domain': settings.BASE_URL,
+        'STATIC_URL': settings.STATIC_URL  # Add STATIC_URL to context
     }
     
     html_message = render_to_string(template, context)
     plain_message = strip_tags(html_message)
     
-    send_mail(
-        subject=subject,
-        message=plain_message,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[rental.equipment.organization.email],
-        html_message=html_message
-    )
+    try:
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[rental.equipment.organization.org_email],
+            html_message=html_message
+        )
+        return True
+    except Exception as e:
+        print(f"Error sending rental request notification: {str(e)}")
+        return False
 
 def send_rental_approval_notification(rental):
     """Send notification to patient about rental approval"""
@@ -532,3 +541,159 @@ def send_delivery_otp(delivery):
         recipient_list=[patient.email],
         html_message=html_message
     )
+
+def calculate_monthly_rent(rental):
+    """Calculate the monthly rent amount including any late fees"""
+    # Get days in current month
+    today = timezone.now().date()
+    _, days_in_month = monthrange(today.year, today.month)
+    
+    # Calculate base rent
+    daily_rate = rental.daily_rental_price
+    base_amount = daily_rate * days_in_month
+    
+    # Check for any late fees from previous month
+    previous_payment = MonthlyRentalPayment.objects.filter(
+        rental=rental,
+        month_end_date__lt=today,
+        payment_status='OVERDUE'
+    ).first()
+    
+    late_fee = 0
+    if previous_payment:
+        # Add 10% late fee
+        late_fee = previous_payment.amount_due * Decimal('0.10')
+    
+    return base_amount + late_fee
+
+def create_monthly_rental_order(payment):
+    """Create Razorpay order for monthly rental payment"""
+    try:
+        amount = int(payment.amount_due * 100)  # Convert to paise
+        
+        # Create Razorpay order
+        order_data = {
+            'amount': amount,
+            'currency': 'INR',
+            'payment_capture': 1,
+            'notes': {
+                'rental_id': str(payment.rental.id),
+                'payment_id': str(payment.id),
+                'payment_type': 'MONTHLY_RENT'
+            }
+        }
+        
+        order = razorpay_client.order.create(data=order_data)
+        
+        # Update payment with order ID
+        payment.razorpay_order_id = order['id']
+        payment.save()
+        
+        return order
+        
+    except Exception as e:
+        print(f"Error creating Razorpay order: {str(e)}")
+        raise
+
+def send_payment_reminder(payment):
+    """Send payment reminder email and SMS to patient"""
+    subject = 'Rental Payment Reminder'
+    template = 'emails/payment_reminder.html'
+    context = {
+        'payment': payment,
+        'rental': payment.rental,
+        'due_date': payment.month_end_date,
+        'amount': payment.amount_due
+    }
+    
+    html_message = render_to_string(template, context)
+    plain_message = strip_tags(html_message)
+    
+    # Send email
+    send_mail(
+        subject=subject,
+        message=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[payment.rental.patient.email],
+        html_message=html_message
+    )
+    
+    # Send SMS
+    message = f"Payment Reminder: Your monthly rental payment of ₹{payment.amount_due} is due by {payment.month_end_date}. Please pay to avoid late fees."
+    send_sms(payment.rental.patient.phone_number, message)
+
+def send_rental_cancellation_notice(rental):
+    """Send rental cancellation notice to patient"""
+    subject = 'Rental Service Cancelled'
+    template = 'emails/rental_cancellation.html'
+    context = {
+        'rental': rental,
+        'cancellation_date': timezone.now().date()
+    }
+    
+    html_message = render_to_string(template, context)
+    plain_message = strip_tags(html_message)
+    
+    # Send email
+    send_mail(
+        subject=subject,
+        message=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[rental.patient.email],
+        html_message=html_message
+    )
+    
+    # Send SMS
+    message = f"Your rental service for {rental.equipment.name} has been cancelled due to payment default. Please contact support for assistance."
+    send_sms(rental.patient.phone_number, message)
+
+def create_refund_order(rental, amount):
+    """Create Razorpay refund order for deposit"""
+    try:
+        refund_data = {
+            'amount': int(amount * 100),  # Convert to paise
+            'speed': 'NORMAL',  # or 'INSTANT'
+            'notes': {
+                'rental_id': str(rental.id),
+                'refund_type': 'DEPOSIT_REFUND'
+            }
+        }
+        
+        refund = razorpay_client.payment.refund(rental.razorpay_payment_id, refund_data)
+        return refund
+        
+    except Exception as e:
+        print(f"Error creating refund order: {str(e)}")
+        raise
+
+def send_rental_end_notification(rental):
+    """Send email notification about rental end and deposit refund"""
+    subject = 'Rental Service Ended - Deposit Refund Initiated'
+    template = 'emails/rental_end_notification.html'
+    
+    context = {
+        'rental': rental,
+        'equipment': rental.equipment,
+        'deposit_amount': rental.deposit_amount,
+        'return_deadline': timezone.now() + timedelta(hours=24)
+    }
+    
+    html_message = render_to_string(template, context)
+    plain_message = strip_tags(html_message)
+    
+    # Send email to patient
+    send_mail(
+        subject=subject,
+        message=plain_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[rental.patient.email],
+        html_message=html_message
+    )
+    
+    # Send SMS notification
+    message = (
+        f"Your rental for {rental.equipment.name} has been ended. "
+        f"Please return the equipment within 24 hours. "
+        f"Deposit refund of ₹{rental.deposit_amount} will be processed after inspection."
+    )
+    send_sms(rental.patient.phone_number, message)

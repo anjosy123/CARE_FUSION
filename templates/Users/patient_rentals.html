@@ -10,6 +10,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     
     <style>
         /* Copy the relevant styles from patients_dashboard.html */
@@ -77,6 +79,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#pending">
+                            Pending Requests
+                            <span class="badge bg-warning ms-2">{{ pending_rentals.count }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" data-bs-toggle="tab" href="#active">
                             Active Rentals
                             <span class="badge bg-info ms-2">{{ active_rentals.count }}</span>
@@ -110,9 +118,22 @@
                                             <li><i class="fas fa-shield-alt me-2"></i>Deposit: ₹{{ equipment.security_deposit }}</li>
                                             <li><i class="fas fa-info-circle me-2"></i>Condition: {{ equipment.get_condition_display }}</li>
                                         </ul>
-                                        <a href="{% url 'rental_request' equipment.id %}" class="btn btn-primary btn-sm">
-                                            <i class="fas fa-shopping-cart me-1"></i> Rent Now
-                                        </a>
+                                        
+                                        {% with pending_rental=equipment.equipmentrental_set.filter.first %}
+                                            {% if pending_rental and pending_rental.status == 'PENDING' %}
+                                                <button class="btn btn-warning btn-sm" disabled>
+                                                    <i class="fas fa-clock me-1"></i> Waiting for Approval
+                                                </button>
+                                            {% elif pending_rental and pending_rental.status == 'DEPOSIT_PENDING' %}
+                                                <button class="btn btn-info btn-sm" disabled>
+                                                    <i class="fas fa-spinner fa-spin me-1"></i> Processing Deposit
+                                                </button>
+                                            {% else %}
+                                                <button onclick="initiateRental({{ equipment.id }})" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-calculator me-1"></i> Calculate Rental
+                                                </button>
+                                            {% endif %}
+                                        {% endwith %}
                                     </div>
                                 </div>
                             </div>
@@ -127,139 +148,248 @@
                         </div>
                     </div>
 
-                    <!-- Active Rentals -->
-                    <div class="tab-pane fade" id="active" role="tabpanel">
-                        <!-- Pending Requests Section -->
-                        <div class="card mb-4">
-                            <div class="card-header bg-info text-white">
-                                <h5 class="mb-0"><i class="fas fa-clock"></i> Pending Requests</h5>
-                            </div>
-                            <div class="card-body">
-                                {% for rental in pending_rentals %}
-                                <div class="alert alert-info">
-                                    <h6>{{ rental.equipment.name }}</h6>
-                                    <p class="mb-1">Organization: {{ rental.equipment.organization.org_name }}</p>
-                                    <p class="mb-1">Requested on: {{ rental.created_at|date }}</p>
-                                    <p class="mb-0"><i class="fas fa-info-circle"></i> Waiting for organization approval</p>
-                                </div>
-                                {% empty %}
-                                <p class="text-muted">No pending rental requests</p>
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                        <!-- Active Rentals Section -->
-                        <div class="card">
-                            <div class="card-header bg-success text-white">
-                                <h5 class="mb-0"><i class="fas fa-check-circle"></i> Active Rentals</h5>
-                            </div>
-                            <div class="card-body">
-                                {% for rental in active_rentals %}
-                                <div class="card mb-3">
+                    <!-- Pending Requests Tab -->
+                    <div class="tab-pane fade" id="pending">
+                        <div class="row">
+                            {% for rental in pending_rentals %}
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100">
                                     <div class="card-body">
-                                        <div class="row align-items-center">
-                                            <div class="col-md-5">
-                                                <h6 class="mb-1">{{ rental.equipment.name }}</h6>
-                                                <p class="mb-0 text-muted">{{ rental.equipment.organization.org_name }}</p>
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <h5 class="card-title">{{ rental.equipment.name }}</h5>
+                                            <span class="badge bg-{{ rental.status|lower }}">
+                                                {{ rental.get_status_display }}
+                                            </span>
+                                        </div>
+                                        <p class="text-muted mb-2">
+                                            <i class="fas fa-hospital me-2"></i>{{ rental.equipment.organization.org_name }}
+                                        </p>
+                                        <div class="rental-details mt-3">
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <small class="text-muted d-block">Start Date</small>
+                                                    <p class="mb-2">{{ rental.rental_start_date|date:"M d, Y" }}</p>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted d-block">End Date</small>
+                                                    <p class="mb-2">{{ rental.rental_end_date|date:"M d, Y" }}</p>
+                                                </div>
                                             </div>
-                                            <div class="col-md-4">
-                                                <p class="mb-1">
-                                                    <i class="fas fa-calendar me-2"></i>
-                                                    {% if rental.rental_start_date and rental.rental_end_date %}
-                                                        {{ rental.rental_start_date|date }} to {{ rental.rental_end_date|date }}
-                                                    {% else %}
-                                                        Dates to be confirmed
-                                                    {% endif %}
-                                                </p>
-                                                <p class="mb-0">
-                                                    <i class="fas fa-tag me-2"></i>
-                                                    Daily Rate: ₹{{ rental.daily_rental_price }}
-                                                </p>
+                                            <div class="row mt-2">
+                                                <div class="col-6">
+                                                    <small class="text-muted d-block">Daily Rate</small>
+                                                    <p class="mb-2">₹{{ rental.daily_rental_price }}</p>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted d-block">Security Deposit</small>
+                                                    <p class="mb-2">₹{{ rental.deposit_amount }}</p>
+                                                </div>
                                             </div>
-                                            <div class="col-md-3 text-end">
-                                                <span class="badge bg-{{ rental.status|lower }} mb-2">{{ rental.get_status_display }}</span>
-                                                {% if rental.status == 'APPROVED' and rental.payment_status == 'PENDING' %}
-                                                    <a href="{% url 'confirm_rental' rental.id %}" class="btn btn-primary btn-sm">
-                                                        <i class="fas fa-credit-card me-1"></i> Proceed to Payment
-                                                    </a>
-                                                {% elif rental.payment_status %}
-                                                    <p class="mb-0">
-                                                        <small class="text-muted">
-                                                            <i class="fas fa-money-check me-1"></i>
-                                                            Payment: {{ rental.payment_status }}
-                                                        </small>
-                                                    </p>
+                                            {% if rental.status == 'DEPOSIT_PENDING' %}
+                                            <div class="alert alert-info mt-3">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                Deposit payment is being processed
+                                            </div>
+                                            {% elif rental.status == 'PENDING' %}
+                                            <div class="alert alert-warning mt-3">
+                                                <i class="fas fa-clock me-2"></i>
+                                                Waiting for organization approval
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    No pending rental requests.
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Active Rentals -->
+                    <div class="tab-pane fade" id="active">
+                        <div class="row">
+                            {% for rental in active_rentals %}
+                            {% if rental.status != 'PENDING' and rental.status != 'DEPOSIT_PENDING' %}
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <h5 class="card-title">{{ rental.equipment.name }}</h5>
+                                            <span class="badge bg-{{ rental.status|lower }}">
+                                                {{ rental.get_status_display }}
+                                            </span>
+                                        </div>
+                                        <p class="text-muted mb-2">
+                                            <i class="fas fa-hospital me-2"></i>{{ rental.equipment.organization.org_name }}
+                                        </p>
+                                        <div class="rental-details mt-3">
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <small class="text-muted d-block">Start Date</small>
+                                                    <p class="mb-2">{{ rental.rental_start_date|date:"M d, Y" }}</p>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted d-block">End Date</small>
+                                                    <p class="mb-2">{{ rental.rental_end_date|date:"M d, Y" }}</p>
+                                                </div>
+                                            </div>
+                                            {% if rental.delivery and rental.delivery.status != 'DELIVERED' %}
+                                            <div class="delivery-tracking mt-3">
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <div>
+                                                        <h6>{{ rental.equipment.name }}</h6>
+                                                        <p class="mb-1">
+                                                            <i class="fas fa-user me-2"></i>
+                                                            Volunteer: {{ rental.delivery.volunteer.get_full_name }}
+                                                        </p>
+                                                    </div>
+                                                    <span class="badge bg-{{ rental.delivery.status|lower }}">
+                                                        {{ rental.delivery.get_status_display }}
+                                                    </span>
+                                                </div>
+
+                                                <!-- Delivery Progress Timeline -->
+                                                <div class="delivery-timeline mb-3">
+                                                    <div class="progress" style="height: 3px;">
+                                                        <div class="progress-bar" role="progressbar" 
+                                                             style="width: {% if rental.delivery.status == 'DELIVERED' %}100%
+                                                                         {% elif rental.delivery.status == 'OTP_VERIFIED' %}80%
+                                                                         {% elif rental.delivery.status == 'ARRIVED' %}60%
+                                                                         {% elif rental.delivery.status == 'IN_PROGRESS' %}40%
+                                                                         {% elif rental.delivery.status == 'ASSIGNED' %}20%
+                                                                         {% else %}0%{% endif %}">
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mt-2">
+                                                        <span class="badge {% if rental.delivery.status != 'PENDING' %}bg-success{% else %}bg-secondary{% endif %}">Assigned</span>
+                                                        <span class="badge {% if rental.delivery.status == 'IN_PROGRESS' %}bg-success{% else %}bg-secondary{% endif %}">In Transit</span>
+                                                        <span class="badge {% if rental.delivery.status == 'ARRIVED' %}bg-success{% else %}bg-secondary{% endif %}">Arrived</span>
+                                                        <span class="badge {% if rental.delivery.status == 'DELIVERED' %}bg-success{% else %}bg-secondary{% endif %}">Delivered</span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Live Tracking Map -->
+                                                {% if rental.delivery.status == 'IN_PROGRESS' %}
+                                                <div class="delivery-map mb-3" id="map-{{ rental.delivery.id }}" style="height: 200px;"></div>
+                                                {% endif %}
+
+                                                <!-- OTP Verification Section -->
+                                                {% if rental.delivery.status == 'ARRIVED' %}
+                                                <div class="otp-section alert alert-info">
+                                                    <p class="mb-2"><strong>Delivery OTP:</strong> {{ rental.delivery.delivery_otp }}</p>
+                                                    <small>Share this OTP with the volunteer to complete the delivery</small>
+                                                </div>
                                                 {% endif %}
                                             </div>
+                                            {% endif %}
                                         </div>
-                                    </div>
-                                </div>
-                                {% empty %}
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>You don't have any active rentals.
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                        <!-- Add this section for active deliveries -->
-                        <div class="card mb-4">
-                            <div class="card-header bg-info text-white">
-                                <h5 class="mb-0"><i class="fas fa-truck me-2"></i>Active Deliveries</h5>
-                            </div>
-                            <div class="card-body">
-                                {% for rental in active_rentals %}
-                                {% if rental.delivery and rental.delivery.status != 'DELIVERED' %}
-                                <div class="delivery-tracking-card p-3 mb-3 border rounded">
-                                    <div class="d-flex justify-content-between align-items-start mb-3">
-                                        <div>
-                                            <h6>{{ rental.equipment.name }}</h6>
-                                            <p class="mb-1">
-                                                <i class="fas fa-user me-2"></i>
-                                                Volunteer: {{ rental.delivery.volunteer.get_full_name }}
-                                            </p>
-                                        </div>
-                                        <span class="badge bg-{{ rental.delivery.status|lower }}">
-                                            {{ rental.delivery.get_status_display }}
-                                        </span>
-                                    </div>
-
-                                    <!-- Delivery Progress Timeline -->
-                                    <div class="delivery-timeline mb-3">
-                                        <div class="progress" style="height: 3px;">
-                                            <div class="progress-bar" role="progressbar" 
-                                                 style="width: {% if rental.delivery.status == 'DELIVERED' %}100%
-                                                             {% elif rental.delivery.status == 'OTP_VERIFIED' %}80%
-                                                             {% elif rental.delivery.status == 'ARRIVED' %}60%
-                                                             {% elif rental.delivery.status == 'IN_PROGRESS' %}40%
-                                                             {% elif rental.delivery.status == 'ASSIGNED' %}20%
-                                                             {% else %}0%{% endif %}">
+                                        <div class="rental-usage-details mt-3">
+                                            <div class="card">
+                                                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                                    <h5 class="mb-0">Current Usage Details</h5>
+                                                    <span class="badge bg-light text-dark">Rate: ₹{{ rental.daily_rental_price }}/day</span>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="usage-stats">
+                                                                <h6>Usage Duration</h6>
+                                                                <div class="d-flex align-items-center mb-3">
+                                                                    <div class="h4 mb-0" id="usage-duration-{{ rental.id }}">
+                                                                        {{ rental.get_usage_duration }}
+                                                                    </div>
+                                                                    <small class="text-muted ms-2">days</small>
+                                                                </div>
+                                                                
+                                                                <h6>Current Bill Amount</h6>
+                                                                <div class="h4 mb-3">₹<span id="current-amount-{{ rental.id }}">{{ rental.get_current_bill_amount }}</span></div>
+                                                                
+                                                                <div class="usage-period text-muted">
+                                                                    <small>
+                                                                        Started: {{ rental.rental_start_date|date:"M d, Y" }}<br>
+                                                                        Last Updated: <span id="last-updated-{{ rental.id }}">{% now "F d, Y H:i" %}</span>
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div class="col-md-6">
+                                                            <div class="usage-actions">
+                                                                <h6>Actions</h6>
+                                                                <button class="btn btn-danger mb-2" onclick="endRental({{ rental.id }})">
+                                                                    <i class="fas fa-stop-circle"></i> End Rental Service
+                                                                </button>
+                                                                
+                                                                <div class="alert alert-info">
+                                                                    <small>
+                                                                        <i class="fas fa-info-circle"></i>
+                                                                        Ending the rental service will generate a final bill based on your usage.
+                                                                        The equipment must be returned within 24 hours after ending the service.
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Usage History -->
+                                                    <div class="usage-history mt-4">
+                                                        <h6>Usage History</h6>
+                                                        <div class="table-responsive">
+                                                            <table class="table table-sm">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Period</th>
+                                                                        <th>Duration</th>
+                                                                        <th>Amount</th>
+                                                                        <th>Status</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody id="usage-history-{{ rental.id }}">
+                                                                    {% if rental.usage_periods.all %}
+                                                                        {% for period in rental.usage_periods.all %}
+                                                                        <tr>
+                                                                            <td>{{ period.start_date|date }} - {{ period.end_date|date }}</td>
+                                                                            <td>{{ period.duration }} days</td>
+                                                                            <td>₹{{ period.amount }}</td>
+                                                                            <td>
+                                                                                <span class="badge bg-{{ period.status|lower }}">
+                                                                                    {{ period.status }}
+                                                                                </span>
+                                                                            </td>
+                                                                        </tr>
+                                                                        {% endfor %}
+                                                                    {% else %}
+                                                                        <tr>
+                                                                            <td colspan="4" class="text-center text-muted">
+                                                                                <small>No usage history available</small>
+                                                                            </td>
+                                                                        </tr>
+                                                                    {% endif %}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="d-flex justify-content-between mt-2">
-                                            <span class="badge {% if rental.delivery.status != 'PENDING' %}bg-success{% else %}bg-secondary{% endif %}">Assigned</span>
-                                            <span class="badge {% if rental.delivery.status == 'IN_PROGRESS' %}bg-success{% else %}bg-secondary{% endif %}">In Transit</span>
-                                            <span class="badge {% if rental.delivery.status == 'ARRIVED' %}bg-success{% else %}bg-secondary{% endif %}">Arrived</span>
-                                            <span class="badge {% if rental.delivery.status == 'DELIVERED' %}bg-success{% else %}bg-secondary{% endif %}">Delivered</span>
-                                        </div>
                                     </div>
-
-                                    <!-- Live Tracking Map -->
-                                    {% if rental.delivery.status == 'IN_PROGRESS' %}
-                                    <div class="delivery-map mb-3" id="map-{{ rental.delivery.id }}" style="height: 200px;"></div>
-                                    {% endif %}
-
-                                    <!-- OTP Verification Section -->
-                                    {% if rental.delivery.status == 'ARRIVED' %}
-                                    <div class="otp-section alert alert-info">
-                                        <p class="mb-2"><strong>Delivery OTP:</strong> {{ rental.delivery.delivery_otp }}</p>
-                                        <small>Share this OTP with the volunteer to complete the delivery</small>
-                                    </div>
-                                    {% endif %}
                                 </div>
-                                {% endif %}
-                                {% endfor %}
                             </div>
+                            {% endif %}
+                            {% empty %}
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    No active rentals at the moment.
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
                     </div>
 
@@ -328,7 +458,7 @@
     <!-- JavaScript functions -->
     <script>
         function initiateRental(equipmentId) {
-            window.location.href = "{% url 'initiate_rental' '0' %}".replace('0', equipmentId);
+            window.location.href = `/rental/calculate/${equipmentId}/`;
         }
 
         function makePayment(rentalId) {
@@ -349,6 +479,23 @@
                 }
             });
         }
+
+        // Add function to check rental status periodically
+        function checkRentalStatus() {
+            const pendingButtons = document.querySelectorAll('.btn-warning[disabled]');
+            if (pendingButtons.length > 0) {
+                fetch('/api/check-rental-status/')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status_changed) {
+                            location.reload();
+                        }
+                    });
+            }
+        }
+
+        // Check status every 30 seconds
+        setInterval(checkRentalStatus, 30000);
     </script>
 
     <!-- Add this JavaScript for map functionality -->
@@ -414,5 +561,125 @@
     // Start polling when page loads
     setInterval(pollDeliveryUpdates, 30000); // Update every 30 seconds
     </script>
+
+    <script>
+    function updateUsageDetails(rentalId) {
+        fetch(`/api/rental/${rentalId}/usage-details/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById(`usage-duration-${rentalId}`).textContent = data.duration;
+                    document.getElementById(`current-amount-${rentalId}`).textContent = data.amount;
+                    document.getElementById(`last-updated-${rentalId}`).textContent = new Date().toLocaleString();
+                    
+                    // Update usage history
+                    if (data.history) {
+                        const historyHtml = data.history.map(period => `
+                            <tr>
+                                <td>${period.start_date} - ${period.end_date}</td>
+                                <td>${period.duration} days</td>
+                                <td>₹${period.amount}</td>
+                                <td>
+                                    <span class="badge bg-${period.status.toLowerCase()}">
+                                        ${period.status}
+                                    </span>
+                                </td>
+                            </tr>
+                        `).join('');
+                        document.getElementById(`usage-history-${rentalId}`).innerHTML = historyHtml;
+                    }
+                }
+            });
+    }
+
+    function endRental(rentalId) {
+        Swal.fire({
+            title: 'End Rental Service?',
+            html: `
+                <div class="text-left">
+                    <p>Please confirm that you want to end this rental service.</p>
+                    <ul class="text-muted" style="font-size: 0.9em;">
+                        <li>Equipment must be returned within 24 hours</li>
+                        <li>Caution deposit will be refunded after equipment inspection</li>
+                        <li>Any damages will be deducted from the deposit</li>
+                    </ul>
+                </div>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, End Rental',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading state
+                Swal.fire({
+                    title: 'Processing...',
+                    html: 'Initiating rental end process...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                fetch(`/api/rental/${rentalId}/end-service/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Rental Service Ended',
+                            html: `
+                                <div class="text-left">
+                                    <p>Your rental service has been ended successfully.</p>
+                                    <p class="mt-2"><strong>Next Steps:</strong></p>
+                                    <ul class="text-muted" style="font-size: 0.9em;">
+                                        <li>Return equipment within 24 hours</li>
+                                        <li>Deposit refund of ₹${data.deposit_amount} will be processed</li>
+                                        <li>You will receive confirmation emails</li>
+                                    </ul>
+                                </div>
+                            `,
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: data.error || 'Failed to end rental service',
+                            icon: 'error'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'An error occurred while processing your request',
+                        icon: 'error'
+                    });
+                });
+            }
+        });
+    }
+
+    // Update usage details every minute
+    setInterval(() => {
+        document.querySelectorAll('[id^="usage-duration-"]').forEach(element => {
+            const rentalId = element.id.split('-').pop();
+            updateUsageDetails(rentalId);
+        });
+    }, 60000);
+    </script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html> 

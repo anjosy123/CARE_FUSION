@@ -823,6 +823,32 @@ class EquipmentRental(models.Model):
     def __str__(self):
         return f"{self.patient.username} - {self.equipment.name}"
 
+    def get_usage_duration(self):
+        """Calculate the total days of usage"""
+        if self.status == 'ACTIVE':
+            return (timezone.now().date() - self.rental_start_date).days
+        return 0
+
+    def get_current_bill_amount(self):
+        """Calculate the current bill amount based on usage"""
+        days = self.get_usage_duration()
+        return days * self.daily_rental_price
+
+    def get_usage_periods(self):
+        """Get the usage history in periods"""
+        try:
+            return self.usage_periods.all().order_by('-start_date')
+        except Exception:
+            return []
+
+    def get_total_amount(self):
+        """Get total amount paid/due for this rental"""
+        return self.get_current_bill_amount()
+
+    def get_full_name(self):
+        """Get patient's full name"""
+        return f"{self.patient.first_name} {self.patient.last_name}"
+
 class RentalPayment(models.Model):
     PAYMENT_TYPE_CHOICES = [
         ('INITIAL', 'Initial Payment'),
@@ -967,3 +993,47 @@ def update_equipment_quantity(sender, instance, created, **kwargs):
                     
     except Exception as e:
         print(f"Error updating equipment quantity: {str(e)}")
+
+class MonthlyRentalPayment(models.Model):
+    rental = models.ForeignKey(EquipmentRental, on_delete=models.CASCADE, related_name='monthly_payments')
+    month_start_date = models.DateField()
+    month_end_date = models.DateField()
+    amount_due = models.DecimalField(max_digits=10, decimal_places=2)
+    late_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    payment_status = models.CharField(max_length=20, choices=[
+        ('PENDING', 'Pending'),
+        ('OVERDUE', 'Overdue'),
+        ('PAID', 'Paid'),
+        ('CANCELLED', 'Cancelled')
+    ], default='PENDING')
+    payment_date = models.DateTimeField(null=True, blank=True)
+    razorpay_order_id = models.CharField(max_length=100, null=True, blank=True)
+    razorpay_payment_id = models.CharField(max_length=100, null=True, blank=True)
+    warning_sent = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-month_start_date']
+
+    def is_overdue(self):
+        if self.payment_status == 'PENDING':
+            return timezone.now().date() > (self.month_end_date + timedelta(days=7))
+        return False
+
+class RentalUsagePeriod(models.Model):
+    rental = models.ForeignKey(EquipmentRental, on_delete=models.CASCADE, related_name='usage_periods')
+    start_date = models.DateField()
+    end_date = models.DateField()
+    duration = models.IntegerField()  # in days
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=[
+        ('PENDING', 'Pending'),
+        ('PAID', 'Paid'),
+        ('CANCELLED', 'Cancelled')
+    ])
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-start_date']

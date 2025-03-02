@@ -1,0 +1,223 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rental Calculation - CareFusion</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        .calculation-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .amount-box {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .total-amount {
+            font-size: 1.5rem;
+            color: #1e3c72;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="calculation-card p-4">
+                    <h4 class="mb-4">Rental Calculation</h4>
+                    
+                    <div class="equipment-details mb-4">
+                        <h5>{{ equipment.name }}</h5>
+                        <p class="text-muted">{{ equipment.organization.org_name }}</p>
+                    </div>
+
+                    <form id="rentalCalculationForm">
+                        {% csrf_token %}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="startDate" 
+                                       min="{{ today|date:'Y-m-d' }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">End Date</label>
+                                <input type="date" class="form-control" id="endDate" 
+                                       min="{{ today|date:'Y-m-d' }}" required>
+                            </div>
+                        </div>
+
+                        <div class="amount-box">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Daily Rate:</span>
+                                <span>₹{{ equipment.rental_price_per_day }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Number of Days:</span>
+                                <span id="numberOfDays">0</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Rental Amount:</span>
+                                <span id="rentalAmount">₹0</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Caution Deposit:</span>
+                                <span>₹{{ equipment.security_deposit }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Add this after the amount calculations and before the buttons -->
+                        <div class="alert alert-info mt-4" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> Upon successful caution deposit payment, a rental request will be sent to {{ equipment.organization.org_name }} for approval. You can track the status of your request in the "Pending Requests" tab of your rentals page.
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'patient_rentals' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back
+                            </a>
+                            <button type="button" class="btn btn-primary" onclick="proceedToDeposit()">
+                                <i class="fas fa-shield-alt me-2"></i>Pay Caution Deposit
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            
+            [startDateInput, endDateInput].forEach(input => {
+                input.addEventListener('change', calculateRental);
+            });
+        });
+
+        function calculateRental() {
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(document.getElementById('endDate').value);
+            
+            if (startDate && endDate && endDate >= startDate) {
+                const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                const rentalAmount = days * {{ equipment.rental_price_per_day }};
+                
+                document.getElementById('numberOfDays').textContent = days;
+                document.getElementById('rentalAmount').textContent = `₹${rentalAmount}`;
+            }
+        }
+
+        function proceedToDeposit() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates');
+                return;
+            }
+
+            fetch('/api/create-deposit-order/{{ equipment.id }}/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    start_date: startDate,
+                    end_date: endDate
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const options = {
+                        key: data.key,
+                        amount: data.amount,
+                        currency: "INR",
+                        name: "CareFusion",
+                        description: "Equipment Caution Deposit",
+                        order_id: data.order_id,
+                        handler: function(response) {
+                            verifyDepositPayment(response, data.rental_id);
+                        },
+                        modal: {
+                            ondismiss: function() {
+                                handlePaymentCancellation(data.rental_id);
+                            }
+                        },
+                        prefill: {
+                            name: "{{ patient.get_full_name }}",
+                            email: "{{ patient.email }}"
+                        },
+                        theme: {
+                            color: "#1e3c72"
+                        }
+                    };
+                    const rzp = new Razorpay(options);
+                    rzp.open();
+                } else {
+                    alert(data.error || 'Failed to create payment order');
+                }
+            });
+        }
+
+        function verifyDepositPayment(response, rentalId) {
+            fetch('/api/verify-deposit-payment/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_signature: response.razorpay_signature,
+                    rental_id: rentalId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/patient/rentals/';
+                } else {
+                    alert(data.error || 'Payment verification failed');
+                }
+            });
+        }
+
+        function handlePaymentCancellation(rentalId) {
+            fetch('/api/cancel-rental-request/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    rental_id: rentalId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/patient/rentals/';
+                }
+            });
+        }
+    </script>
+</body>
+</html> 
