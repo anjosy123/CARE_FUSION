@@ -79,6 +79,13 @@ CHANNEL_LAYERS = {
     },
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'health_tips_cache',
+    }
+}
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -286,4 +293,10 @@ Q_CLUSTER = {
 # Create receipts directory
 RECEIPT_ROOT = os.path.join(MEDIA_ROOT, 'receipts')
 os.makedirs(RECEIPT_ROOT, exist_ok=True)
+
+# API Ninjas Configuration
+API_NINJAS_KEY = 'YOUR_API_NINJAS_KEY'  # Replace with your actual API key
+
+# Add this with your other configuration settings
+MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '')  # Get from environment variable
 

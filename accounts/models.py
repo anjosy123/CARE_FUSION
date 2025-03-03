@@ -38,6 +38,12 @@ class User(AbstractUser):
         verbose_name='user permissions',
     )
 
+    # Add priority score fields
+    visit_priority_score = models.FloatField(default=0.0)
+    fall_risk_score = models.FloatField(default=0.0)
+    deterioration_risk = models.FloatField(default=0.0)
+    overall_health_score = models.FloatField(default=0.0)
+
     def __str__(self):
         return self.username
 
@@ -636,7 +642,7 @@ class TaxiComplaint(models.Model):
         db_table = 'taxi_complaints'
 
 class PatientVisitRecord(models.Model):
-    patient = models.ForeignKey(User, on_delete=models.CASCADE)
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='visit_records')
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
     staff = models.ForeignKey(Staff, on_delete=models.CASCADE)
     visit_date = models.DateTimeField()

@@ -61,6 +61,10 @@ import csv
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.core.cache import cache
+from math import radians, sin, cos, sqrt, atan2
+import requests
+from django.core.cache import cache
+from datetime import timedelta
 
 def send_appointment_email(appointment, action, recipient='patient'):
     subject = f'Appointment {action.capitalize()}'
@@ -709,64 +713,123 @@ def patients_dashboard(request):
     try:
         user = User.objects.get(id=request.session.get('user_id'))
         
-        # Get organizations the patient is registered with through service requests
-        registered_organizations = Organizations.objects.filter(
-            service_requests__patient=user,  # Changed from servicerequest to service_requests
-            service_requests__status='APPROVED'  # Changed from servicerequest to service_requests
+        # Fetch health tips from both APIs
+        health_tips = get_health_tips()
+        
+        # Get team visits with related data
+        team_visits = TeamVisit.objects.filter(
+            patient=user,
+            scheduled_date__gte=timezone.now().date()
+        ).select_related(
+            'team', 
+            'team__organization'
+        ).order_by('scheduled_date', 'start_time')
+
+        # Get assigned teams through team visits
+        assigned_teams = Team.objects.filter(
+            visits__patient=user,
+            is_active=True
+        ).select_related(
+            'organization'
+        ).prefetch_related(
+            'members'
         ).distinct()
-        
-        # Get available equipment only from registered organizations
-        available_equipment = MedicalEquipment.objects.filter(
-            organization__in=registered_organizations,
-            status='AVAILABLE'
-        ).select_related('organization')
-        
-        # Get user's active rentals
-        active_rentals = EquipmentRental.objects.filter(
+
+        # Get active prescriptions
+        prescriptions = Prescription.objects.filter(
+            patient_assignment__patient=user,
+            patient_assignment__is_active=True,
+            end_date__gte=timezone.now().date()
+        ).select_related('patient_assignment')
+
+        # Get active services
+        services = ServiceRequest.objects.filter(
             patient=user,
-            status__in=['PENDING', 'APPROVED', 'ACTIVE']
-        ).select_related('equipment', 'equipment__organization')
-        
-        # Get rental history
-        rental_history = EquipmentRental.objects.filter(
-            patient=user,
-            status='COMPLETED'
-        ).select_related('equipment', 'equipment__organization')
-        
-        # Get service requests for context
-        service_requests = ServiceRequest.objects.filter(
-            patient=user
-        ).select_related('organization').order_by('-created_at')
-        
-        # Get other existing context data
+            status='APPROVED'
+        ).select_related('organization', 'service')
+
         context = {
             'user': user,
-            'registered_organizations': registered_organizations,
-            'available_equipment': available_equipment,
-            'active_rentals': active_rentals,
-            'rental_history': rental_history,
-            'service_requests': service_requests,
-            # ... (keep other existing context data)
+            'team_visits': team_visits,
+            'assigned_teams': assigned_teams,
+            'prescriptions': prescriptions,
+            'services': services,
+            'active_prescriptions_count': prescriptions.count(),
+            'active_services_count': services.count(),
+            'today': timezone.now().date(),
+            'health_tips': health_tips,  # Updated to include both tips
         }
         
-        # Add message if no registered organizations
-        if not registered_organizations.exists():
-            if service_requests.filter(status='PENDING').exists():
-                messages.info(
-                    request, 
-                    "Your registration request is pending approval. You'll be able to access medical equipment once approved."
-                )
-            else:
-                messages.info(
-                    request, 
-                    "You are not registered with any organizations. Please register with a palliative care organization to access medical equipment."
-                )
-        
         return render(request, 'Users/patients_dashboard.html', context)
-        
-    except User.DoesNotExist:
-        messages.error(request, "User not found!")
+
+    except Exception as e:
+        messages.error(request, f"Error loading dashboard: {str(e)}")
         return redirect('login')
+
+def get_health_tips():
+    """Fetch health tips from both Health.gov and API Ninjas"""
+    cache_key = 'daily_health_tips'
+    cached_tips = cache.get(cache_key)
+    
+    if cached_tips:
+        return cached_tips
+    
+    tips = {
+        'gov_tip': None,
+        'ninja_tip': None
+    }
+    
+    try:
+        # API Ninjas Health Tip
+        ninja_api_url = "https://api.api-ninjas.com/v1/quotes?category=health"
+        headers = {
+            'X-Api-Key': settings.API_NINJAS_KEY
+        }
+        
+        ninja_response = requests.get(ninja_api_url, headers=headers)
+        if ninja_response.status_code == 200:
+            ninja_data = ninja_response.json()
+            if ninja_data:
+                tips['ninja_tip'] = {
+                    'quote': ninja_data[0]['quote'],
+                    'author': ninja_data[0]['author']
+                }
+        
+        # Health.gov Tip (existing code)
+        gov_url = "https://health.gov/myhealthfinder/api/v3/topicsearch.json"
+        params = {
+            "lang": "en",
+            "categoryId": "24",
+            "limit": 1,
+        }
+        
+        gov_response = requests.get(gov_url, params=params)
+        if gov_response.status_code == 200:
+            data = gov_response.json()
+            if 'Result' in data and 'Resources' in data['Result']:
+                tips['gov_tip'] = {
+                    'title': data['Result']['Resources']['Resource'][0]['Title'],
+                    'content': data['Result']['Resources']['Resource'][0]['Sections']['section'][0]['Content'],
+                    'url': data['Result']['Resources']['Resource'][0]['AccessibleVersion']
+                }
+        
+        # Cache the tips for 24 hours
+        cache.set(cache_key, tips, timeout=60*60*24)
+        return tips
+            
+    except Exception as e:
+        logger.error(f"Error fetching health tips: {str(e)}")
+        return {
+            'gov_tip': {
+                'title': 'Daily Health Tip',
+                'content': 'Stay hydrated and maintain a balanced diet for better health.',
+                'url': '#'
+            },
+            'ninja_tip': {
+                'quote': 'Health is wealth.',
+                'author': 'Unknown'
+            }
+        }
 
 @never_cache
 def palliatives_dashboard(request):
@@ -2445,78 +2508,104 @@ def generate_password():
 
 @organization_login_required
 def schedule_team_visit(request):
-    organization = get_object_or_404(Organizations, id=request.session['org_id'])
-    
-    # Get current date and time
-    today = date.today()
-    current_time = datetime.now().strftime('%H:%M')
-    
-    # Get the team_id from query parameters
-    selected_team = request.GET.get('team')
-    
-    # Get patients who have approved service requests for this organization
-    approved_patients = User.objects.filter(
-        servicerequest__organization=organization,
-        servicerequest__status='approved'
-    ).distinct()
-    
-    if request.method == 'POST':
-        try:
-            team = Team.objects.get(id=request.POST.get('team'), organization=organization)
-            patient = User.objects.get(id=request.POST.get('patient'))
+    """Handle team visit scheduling with priority-based patient listing"""
+    try:
+        organization = get_object_or_404(Organizations, id=request.session.get('org_id'))
+        selected_team = request.GET.get('team')
+        
+        # Get all active teams for the organization
+        teams = Team.objects.filter(organization=organization, is_active=True)
+        
+        # Get all approved patients with their latest visit records
+        patients = User.objects.filter(
+            servicerequest__organization=organization,
+            servicerequest__status='approved'
+        ).prefetch_related('visit_records').distinct()
+
+        # Group patients by priority based on their latest visit records
+        high_priority = []
+        medium_priority = []
+        low_priority = []
+
+        for patient in patients:
+            # Get latest visit record
+            latest_record = patient.visit_records.order_by('-visit_date').first()
             
-            # Verify patient has an approved service request
-            if not ServiceRequest.objects.filter(
-                organization=organization,
-                patient=patient,
-                status='approved'
-            ).exists():
-                messages.error(request, 'Selected patient does not have an approved service request.')
-                return redirect('schedule_team_visit')
-            
-            # Check if the team is available on the scheduled date
-            scheduled_date = datetime.strptime(request.POST.get('scheduled_date'), '%Y-%m-%d').date()
-            schedule, created = TeamSchedule.objects.get_or_create(
-                team=team,
-                date=scheduled_date,
-                defaults={'is_available': True}
-            )
-            
-            if not schedule.is_available:
-                messages.error(request, 'The selected team is not available on this date.')
-                return redirect('schedule_team_visit')
-            
-            # Create the team visit
-            visit = TeamVisit.objects.create(
-                team=team,
-                patient=patient,
-                scheduled_date=scheduled_date,
-                start_time=request.POST.get('start_time'),
-                end_time=request.POST.get('end_time'),
-                purpose=request.POST.get('purpose'),
-                status='SCHEDULED'
-            )
-            
-            messages.success(request, 'Team visit scheduled successfully.')
-            return redirect('team_visit_list')
-            
-        except (Team.DoesNotExist, User.DoesNotExist) as e:
-            messages.error(request, 'Invalid team or patient selected.')
-        except Exception as e:
-            messages.error(request, str(e))
-    
-    # Get all active teams for the organization
-    teams = Team.objects.filter(organization=organization, is_active=True)
-    
-    context = {
-        'teams': teams,
-        'patients': approved_patients,
-        'selected_team': selected_team,
-        'today': today,
-        'current_time': current_time,
-    }
-    
-    return render(request, 'Organizations/schedule_team_visit.html', context)
+            if latest_record:
+                # Calculate priority score using the same formula as priority dashboard
+                priority_score = (
+                    float(latest_record.fall_risk_score or 0) * 0.3 +
+                    float(latest_record.deterioration_risk or 0) * 0.4 +
+                    float(latest_record.overall_health_score or 0) * 0.3
+                )
+                patient.visit_priority_score = priority_score
+            else:
+                # If no visit record exists, use default priority score
+                patient.visit_priority_score = 0.0
+
+            # Group based on priority score
+            if patient.visit_priority_score >= 7.0:
+                high_priority.append(patient)
+            elif patient.visit_priority_score >= 4.0:
+                medium_priority.append(patient)
+            else:
+                low_priority.append(patient)
+
+        # Sort each group by priority score in descending order
+        high_priority.sort(key=lambda x: x.visit_priority_score, reverse=True)
+        medium_priority.sort(key=lambda x: x.visit_priority_score, reverse=True)
+        low_priority.sort(key=lambda x: x.visit_priority_score, reverse=True)
+
+        # Get team if selected
+        team = None
+        if selected_team:
+            team = get_object_or_404(Team, id=selected_team, organization=organization)
+
+        # Handle form submission
+        if request.method == 'POST':
+            team_id = request.POST.get('team')
+            patient_id = request.POST.get('patient')
+            scheduled_date = request.POST.get('scheduled_date')
+            start_time = request.POST.get('start_time')
+            end_time = request.POST.get('end_time')
+            purpose = request.POST.get('purpose', '')
+
+            # Validate and create visit
+            if team_id and patient_id and scheduled_date and start_time and end_time:
+                team = get_object_or_404(Team, id=team_id)
+                patient = get_object_or_404(User, id=patient_id)
+                
+                visit = TeamVisit.objects.create(
+                    team=team,
+                    patient=patient,
+                    scheduled_date=scheduled_date,
+                    start_time=start_time,
+                    end_time=end_time,
+                    purpose=purpose,
+                    status='SCHEDULED'
+                )
+                
+                messages.success(request, 'Team visit scheduled successfully.')
+                return redirect('team_visit_list')
+            else:
+                messages.error(request, 'Please fill all required fields.')
+
+        context = {
+            'organization': organization,
+            'teams': teams,
+            'high_priority_patients': high_priority,
+            'medium_priority_patients': medium_priority,
+            'low_priority_patients': low_priority,
+            'selected_team': selected_team,
+            'min_date': timezone.now().date(),
+            'max_date': timezone.now().date() + timezone.timedelta(days=30),
+        }
+        
+        return render(request, 'Organizations/schedule_team_visit.html', context)
+        
+    except Exception as e:
+        messages.error(request, f"Error scheduling visit: {str(e)}")
+        return redirect('team_visit_list')
 
 
 def team_visit_list(request):
@@ -3649,46 +3738,51 @@ from django.views.decorators.csrf import csrf_protect
 @team_login_required
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def team_dashboard(request):
+    """Display team dashboard with patient locations"""
     try:
         current_time = timezone.now()
         
-        # Get patients with scheduled visits
-        scheduled_patients = User.objects.filter(
+        # Get assigned patients with their locations
+        assigned_patients = User.objects.filter(
             team_visits__team=request.team_membership.team,
             team_visits__status='SCHEDULED',
             team_visits__scheduled_date__gte=current_time,
             is_active=True
-        ).distinct().order_by('first_name')
-        
-        scheduled_visits = TeamVisit.objects.filter(
-            team=request.team_membership.team,
-            status='SCHEDULED',
-            scheduled_date__gte=current_time
-        ).select_related('patient').order_by('scheduled_date')[:5]
+        ).select_related(
+            'userlocation'
+        ).distinct().order_by(
+            '-visit_priority_score'
+        )
 
-        completed_visits = TeamVisit.objects.filter(
-            team=request.team_membership.team,
-            status='COMPLETED'
-        ).select_related('patient').order_by('-scheduled_date')[:10]
+        # Prepare patient data for map
+        patient_locations = []
+        for patient in assigned_patients:
+            if hasattr(patient, 'userlocation') and patient.userlocation:
+                patient_locations.append({
+                    'id': patient.id,
+                    'name': patient.get_full_name(),
+                    'latitude': patient.userlocation.latitude,
+                    'longitude': patient.userlocation.longitude,
+                    'priority_score': patient.visit_priority_score,
+                    'next_visit': patient.team_visits.filter(
+                        status='SCHEDULED'
+                    ).first().scheduled_date
+                })
 
         context = {
             'staff': request.team_membership.staff,
             'team': request.team_membership.team,
             'role': request.team_membership.role,
-            'patients': scheduled_patients,
-            'scheduled_visits': scheduled_visits,
-            'completed_visits': completed_visits,
+            'assigned_patients': assigned_patients,
+            'patient_locations': patient_locations,
+            'api_key': settings.MAPS_API_KEY,  # For maps integration
         }
 
         return render(request, 'teams/dashboard.html', context)
 
-    except TeamVisit.DoesNotExist:
-        messages.warning(request, "No scheduled visits found for your team.")
-        return render(request, 'teams/dashboard.html', {
-            'staff': request.team_membership.staff,
-            'team': request.team_membership.team,
-            'role': request.team_membership.role
-        })
+    except Exception as e:
+        messages.error(request, f"Error loading dashboard: {str(e)}")
+        return redirect('login')
     
     except User.DoesNotExist:
         messages.error(request, "Error accessing patient records. Please try again later.")
@@ -5918,3 +6012,17 @@ def send_delivery_otp(delivery):
         )
     except Exception as e:
         print(f"Error sending OTP: {str(e)}")
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    """Calculate distance between two points using Haversine formula"""
+    R = 6371  # Earth's radius in kilometers
+
+    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    distance = R * c
+
+    return distance

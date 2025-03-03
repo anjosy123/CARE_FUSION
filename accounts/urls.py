@@ -2,9 +2,9 @@ from django.urls import path, include
 from . import views
 from .views import (
     index, about, organizations_home, contact, services, handlelogin, 
-    handlesignup, handlelogout, register_organization, org_logout, handle_service_request, handle_org_login
+    handlesignup, handlelogout, register_organization, org_logout, handle_service_request,
+    verify_email
 )
-from accounts.views import verify_email
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
@@ -24,7 +24,7 @@ urlpatterns = [
     path('user_notification_dashboard', views.user_notification_dashboard, name='user_notification_dashboard'),
     # Organization login, signup, and logout
     path('organizations_home', organizations_home, name='organizations_home'),
-    path('org_login', handle_org_login, name='handle_org_login'),
+    path('org_login', handlelogin, name='handle_org_login'),
     path('org_signup', register_organization, name='org_signup'),
     path('org_logout', org_logout, name='org_logout'),
     

@@ -34,7 +34,7 @@ pyOpenSSL==24.2.1
 PySocks==1.7.1
 python-dotenv==1.0.1
 python3-openid==3.2.0
-requests==2.32.3
+requests==2.31.0
 requests-oauthlib==2.0.0
 selenium==4.25.0
 service-identity==24.1.0
@@ -188,3 +188,4 @@ wsproto==1.2.0
 yarl==1.18.3
 zope.interface==7.1.0
 zopfli==0.2.3.post1
+requests>=2.26.0

@@ -421,506 +421,918 @@
         .text-muted {
             font-size: 0.9rem;
         }
+
+        .nav-pills .nav-link {
+            color: #495057;
+            background: none;
+            border: 1px solid #dee2e6;
+            margin-right: 0.5rem;
+            padding: 0.5rem 1rem;
+        }
+
+        .nav-pills .nav-link.active {
+            background-color: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+
+        .nav-pills .nav-link:hover:not(.active) {
+            background-color: #f8f9fa;
+        }
+
+        .list-group-item {
+            border-left: 4px solid #0d6efd;
+            margin-bottom: 0.5rem;
+        }
+
+        .badge {
+            font-weight: normal;
+            padding: 0.4em 0.8em;
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table td, .table th {
+            padding: 0.75rem;
+            vertical-align: middle;
+        }
+
+        .bi {
+            margin-right: 0.5rem;
+        }
+
+        /* Updated styles for better visibility */
+        .nav-tabs .nav-link {
+            color: #333;
+            font-size: 16px;
+            font-weight: 500;
+            padding: 12px 20px;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #0d6efd;
+            font-weight: 600;
+        }
+
+        .visit-item {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            margin-bottom: 1rem;
+            padding: 1.25rem;
+        }
+
+        .team-card {
+            background-color: #fff;
+            border-color: #dee2e6;
+        }
+
+        .table {
+            background-color: #fff;
+        }
+
+        .table th {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .badge {
+            font-size: 14px !important;
+            padding: 8px 12px;
+        }
+
+        .fs-6 {
+            font-size: 16px !important;
+        }
+
+        .text-muted {
+            color: #666 !important;
+        }
+
+        .alert {
+            font-size: 16px;
+            padding: 1rem;
+        }
+
+        .member-item {
+            border-left: 3px solid #dee2e6;
+        }
+
+        /* Improved contrast for badges */
+        .badge.bg-success { background-color: #198754 !important; }
+        .badge.bg-warning { background-color: #ffc107 !important; color: #000 !important; }
+        .badge.bg-danger { background-color: #dc3545 !important; }
+        .badge.bg-info { background-color: #0dcaf0 !important; }
+        .badge.bg-primary { background-color: #0d6efd !important; }
+
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: none;
+            border-radius: 0.5rem;
+        }
+
+        .card-header {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+        }
+
+        .welcome-card {
+            background: linear-gradient(to right, #f8f9fa, #ffffff);
+        }
+
+        .visit-item, .team-item {
+            transition: transform 0.2s;
+        }
+
+        .visit-item:hover, .team-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .table th {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .badge {
+            font-weight: 500;
+            padding: 0.5em 0.75em;
+        }
+
+        .team-members .badge {
+            font-size: 0.85rem;
+        }
+
+        .border-4 {
+            border-width: 4px !important;
+        }
+
+        /* Add these styles to your existing CSS */
+        .member-item {
+            transition: transform 0.2s ease;
+        }
+
+        .member-item:hover {
+            transform: translateX(5px);
+        }
+
+        .member-name {
+            color: #2c3e50;
+            font-size: 0.95rem;
+        }
+
+        .member-role {
+            font-size: 0.85rem;
+        }
+
+        .member-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(13, 110, 253, 0.1);
+            border-radius: 50%;
+        }
+
+        .member-icon i {
+            font-size: 1rem;
+        }
+
+        .team-members {
+            margin-top: 1rem;
+        }
+
+        .border-primary {
+            border-color: #0d6efd !important;
+        }
+
+        .bg-light {
+            background-color: #f8f9fa !important;
+        }
+
+        /* Navbar Styles */
+        .topbar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 15px 0;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .logo img {
+            height: 40px;
+            object-fit: contain;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            gap: 2rem;
+        }
+
+        .nav-menu > li {
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+        }
+
+        .nav-menu .dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 220px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .nav-menu li:hover .dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-menu .dropdown li {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-menu .dropdown a {
+            color: #333;
+            padding: 0.75rem 1rem;
+            display: block;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .nav-menu .dropdown a:hover {
+            background-color: #f8f9fa;
+            color: #1e3c72;
+            padding-left: 1.5rem;
+        }
+
+        .nav-menu > li > a {
+            position: relative;
+        }
+
+        .nav-menu > li > a:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: white;
+            transition: width 0.3s ease;
+        }
+
+        .nav-menu > li:hover > a:after {
+            width: 100%;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: white;
+        }
+
+        .user-info .btn-outline-light {
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .user-info .btn-outline-light:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-wrap: wrap;
+            }
+
+            .nav-menu {
+                flex-direction: column;
+                width: 100%;
+                gap: 0.5rem;
+            }
+
+            .nav-menu .dropdown {
+                position: static;
+                opacity: 1;
+                visibility: visible;
+                transform: none;
+                box-shadow: none;
+                background: transparent;
+                min-width: auto;
+            }
+
+            .nav-menu .dropdown a {
+                color: white;
+                padding-left: 1rem;
+            }
+        }
+
+        /* Add padding to body to prevent content from hiding under fixed navbar */
+        body {
+            padding-top: 80px; /* Adjust this value based on your navbar height */
+            background-color: #f5f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Container for main content */
+        .main-content {
+            margin-top: 20px;
+        }
+
+        .health-tip-card {
+            background: linear-gradient(to right, #fff, #f8f9fa);
+            border-left: 4px solid #ffc107;
+        }
+
+        .health-tip-card .card-title {
+            color: #0d6efd;
+            font-size: 1.1rem;
+        }
+
+        .health-tip-card .card-text {
+            color: #495057;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .health-tip-card .bi-lightbulb-fill {
+            color: #ffc107;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Add padding to sections to account for fixed navbar */
+        #prescriptions-section,
+        #services-section {
+            scroll-margin-top: 100px; /* Adjust this value based on your navbar height */
+        }
+
+        .health-quote-card {
+            background: linear-gradient(to right, #fff, #f8f9fa);
+            border-left: 4px solid #0dcaf0;
+        }
+
+        .health-quote-card .card-text {
+            color: #2c3e50;
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        .health-quote-card .bi-quote {
+            color: #0dcaf0;
+        }
+
+        .health-tip-card {
+            background: linear-gradient(to right, #fff, #f8f9fa);
+            border-left: 4px solid #ffc107;
+        }
+
+        .health-quote-card {
+            background: linear-gradient(to right, #fff, #f8f9fa);
+            border-left: 4px solid #0dcaf0;
+        }
+
+        .health-tip-card .card-title,
+        .health-quote-card .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .health-tip-card .card-text {
+            color: #495057;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .health-quote-card .card-text {
+            color: #2c3e50;
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        .health-tip-card .bi-lightbulb-fill {
+            color: #ffc107;
+        }
+
+        .health-quote-card .bi-quote {
+            color: #0dcaf0;
+        }
+
+        .alert {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .alert .bi-info-circle-fill {
+            color: #0dcaf0;
+        }
+
+        .alert strong {
+            color: #0dcaf0;
+            font-weight: 600;
+        }
+
+        .alert span {
+            color: #495057;
+            font-size: 1rem;
+        }
+
+        .border-info {
+            border-color: #0dcaf0 !important;
+        }
+
+        .alert-dismissible .btn-close {
+            padding: 1.25rem;
+        }
     </style>
 </head>
 <body>
-    {% block navbar %}
-    <!-- Top Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-        <div class="container-fluid">
-            <a href="{% url 'patients_dashboard' %}"><img src="{% static 'img/logo.png' %}" alt="#" width="178px" height="37px"  style="object-fit: contain;"/></a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        {% comment %} <a class="nav-link" href="{% url 'patients_dashboard' %}"><i class="bi bi-house-door"></i> Home</a> {% endcomment %}
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="healthDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-heart-pulse"></i> Health
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="healthDropdown">
-                            <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=prescriptions"><i class="bi bi-capsule"></i> Prescriptions</a></li>
-                            <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=medical_history"><i class="bi bi-journal-medical"></i> Medical History</a></li>
-                        </ul>
-                    </li>
-                    {% comment %} <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="appointmentsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-calendar"></i> Appointments
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="appointmentsDropdown">
-                            <li><a class="dropdown-item" href="{% url 'patients_dashboard' %}?view=appointments"><i class="bi bi-calendar-check"></i> My Appointments</a></li>
-                            <li><a class="dropdown-item" href="{% url 'request_appointment' %}"><i class="bi bi-calendar-plus"></i> Book Appointment</a></li>
-                        </ul>
-                    </li> {% endcomment %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="careDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-clipboard-heart"></i> Care
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="careDropdown">
-                            <li><a class="dropdown-item" href="{% url 'patient_service_requests' %}"><i class="bi bi-list-check"></i> Service Requests</a></li>
-                            <li><a class="dropdown-item" href="{% url 'patient_visit_requests' %}"><i class="bi bi-clipboard-check"></i> Visit Requests</a></li>
-                            <li><a class="dropdown-item" href="{% url 'request_team_visit' %}"><i class="bi bi-calendar-plus"></i> Request Team Visit</a></li>
-                            <li><a class="dropdown-item" href="{% url 'upcoming_team_visits' %}"><i class="bi bi-calendar-check"></i> Upcoming Team Visits</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'assigned_teams' %}"><i class="bi bi-people"></i> My Care Teams</a></li>
-                        </ul>
-                    </li>
-                    {% comment %} <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="taxiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-taxi-front"></i> Taxi Services
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="taxiDropdown">
-                            <li><a class="dropdown-item" href="{% url 'request_emergency_taxi' %}">Request Emergency Taxi</a></li>
-                            <li><a class="dropdown-item" href="{% url 'view_taxi_bookings' %}">My Taxi Bookings</a></li>
-                        </ul>
-                    </li> {% endcomment %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'patient_rentals' %}">
-                            <i class="fas fa-wheelchair"></i> Equipment Rentals
-                            {% if active_rentals.exists %}
-                                <span class="badge bg-danger">{{ active_rentals.count }}</span>
-                            {% endif %}
-                        </a>
-                    </li>
-                </ul>
-                
-                <!-- Add Organization Name -->
-                <div class="ms-auto me-3">
-                    {% with latest_request=request.user.servicerequest_set.last %}
-                        {% if latest_request %}
-                            <div class="org-display">
-                                <i class="bi bi-hospital"></i>
-                                <span class="org-label">Palliative Care Organization:</span>
-                                <span class="org-name">{{ latest_request.organization.org_name }}</span>
-                            </div>
-                        {% endif %}
-                    {% endwith %}
-                </div>
-                
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link position-relative" href="{% url 'patient_notifications' %}">
-                            <i class="bi bi-bell"></i>
-                            {% if notifications %}
-                                <span class="notification-badge">{{ notifications|length }}</span>
-                            {% endif %}
-                        </a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle"></i> {{ patient.get_full_name }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{% url 'patient_profile' %}"><i class="bi bi-person"></i> Profile</a></li>
-                            <li><a class="dropdown-item" href="{% url 'patient_settings'%}"><i class="bi bi-gear"></i> Settings</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
-                        </ul>
-                    </li>
-                </ul>
+    <div class="topbar">
+        <div class="nav-container">
+            <a href="{% url 'patients_dashboard' %}" class="logo">
+                <img src="{% static 'img/logo.png' %}" alt="CareFusion" />
+            </a>
+            
+            <ul class="nav-menu">
+                {% comment %} <li>
+                    <a href="{% url 'patients_dashboard' %}">
+                        <i class="bi bi-house-door-fill"></i> Dashboard
+                    </a>
+                </li> {% endcomment %}
+                <li>
+                    <a href="#">
+                        <i class="bi bi-calendar-check-fill"></i> Appointments
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+                    <ul class="dropdown">
+                        <li>
+                            <a href="{% url 'upcoming_team_visits' %}">
+                                <i class="bi bi-calendar2-week"></i> Team Visits
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class="bi bi-file-medical-fill"></i> Health Records
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+                    <ul class="dropdown">
+                        <li>
+                            <a href="#" onclick="scrollToSection('prescriptions-section')">
+                                <i class="bi bi-capsule"></i> Prescriptions
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" onclick="scrollToSection('services-section')">
+                                <i class="bi bi-clipboard2-pulse"></i> Services
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+
+            <div class="user-info">
+                <span>
+                    <i class="bi bi-person-circle"></i> {{ user.get_full_name }}
+                </span>
+                <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
             </div>
         </div>
-    </nav>
-    {% endblock navbar %}
-
-    {% block content %}
-    <div class="container mt-3">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        </div>
-        {% endif %}
     </div>
 
-    <div class="container mt-4">
-        <!-- Dashboard Overview -->
-        <div class="row mb-4">
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card dashboard-card appointments h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Upcoming Appointments</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ upcoming_appointments.count }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="bi bi-calendar-check fa-2x text-gray-300"></i>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Add this right after the topbar navbar and before the main content -->
+    <div class="container mt-5 pt-4">
+        <!-- Daily Health Advice Alert -->
+        <div class="alert alert-light border-start border-4 border-info alert-dismissible fade show" role="alert">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0">
+                    <i class="bi bi-info-circle-fill text-info fs-4"></i>
+                </div>
+                <div class="ms-3">
+                    <strong class="text-info">Daily Health Tip:</strong>
+                    <span class="ms-2">
+                        {% if health_tips.ninja_tip %}
+                            {{ health_tips.ninja_tip.quote }}
+                        {% else %}
+                            Remember to drink enough water daily and maintain a healthy lifestyle.
+                        {% endif %}
+                    </span>
                 </div>
             </div>
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card dashboard-card prescriptions h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Active Prescriptions</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ prescriptions.count }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="bi bi-capsule fa-2x text-gray-300"></i>
-                            </div>
-                        </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        {% block content %}
+        <div class="container mt-3">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                </div>
+                {% endfor %}
             </div>
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card dashboard-card requests border-0 shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                    Pending Requests</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_requests_count }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="bi bi-clock-history fa-2x text-warning"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <a href="{% url 'patient_service_requests' %}" class="stretched-link"></a>
-                </div>
-            </div>
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card dashboard-card teams h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Assigned Teams</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ assigned_teams.count }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="bi bi-people fa-2x text-gray-300"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {% endif %}
         </div>
 
-        <!-- Add Quick Action Cards -->
-        <div class="row">
-            <!-- Quick Actions -->
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-primary shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <button class="btn btn-link text-primary p-0" data-bs-toggle="modal" data-bs-target="#requestServiceModal">
-                                    <i class="bi bi-plus-circle"></i> Request New Service
-                                </button>
+        <div class="container mt-4">
+            <!-- Welcome Section -->
+            {% comment %} <div class="card mb-4 welcome-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="welcome-icon me-3">
+                            <i class="bi bi-person-circle fs-1 text-primary"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-1">Welcome, {{ user.get_full_name }}</h4>
+                            <p class="text-muted mb-0">Here's your health dashboard</p>
+                        </div>
+                    </div>
+                </div>
+            </div> {% endcomment %}
+
+            <!-- Health Tips Section -->
+            <div class="row mb-4">
+                <!-- Health.gov Tip -->
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100 health-tip-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-lightbulb-fill fs-3 text-warning"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <h5 class="card-title text-primary mb-2">Health Tip of the Day</h5>
+                                    <p class="card-text">
+                                        {% if health_tips.gov_tip %}
+                                            {{ health_tips.gov_tip.content|safe|truncatewords:50 }}
+                                        {% else %}
+                                            Stay hydrated and maintain a balanced diet for better health.
+                                        {% endif %}
+                                    </p>
+                                    {% if health_tips.gov_tip.url %}
+                                        <a href="{{ health_tips.gov_tip.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-arrow-right-circle"></i> Learn More
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API Ninjas Health Quote -->
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100 health-quote-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-quote fs-3 text-info"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <h5 class="card-title text-info mb-2">Daily Health Quote</h5>
+                                    <p class="card-text fs-5 mb-2">
+                                        {% if health_tips.ninja_tip %}
+                                            "{{ health_tips.ninja_tip.quote }}"
+                                        {% else %}
+                                            "Health is the greatest of human blessings."
+                                        {% endif %}
+                                    </p>
+                                    <p class="text-muted mb-0">
+                                        — {% if health_tips.ninja_tip %}
+                                            {{ health_tips.ninja_tip.author }}
+                                          {% else %}
+                                            Hippocrates
+                                          {% endif %}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Schedule Visit -->
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-success shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <button class="btn btn-link text-success p-0" data-bs-toggle="modal" data-bs-target="#scheduleVisitModal">
-                                    <i class="bi bi-calendar-plus"></i> Request Team Visit
-                                </button>
+            <!-- Quick Stats Row -->
+            <div class="row mb-4">
+                <!-- Upcoming Visits Stats -->
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card h-100 border-start border-primary border-4">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0 me-3">
+                                    <i class="bi bi-calendar2-week fs-1 text-primary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="card-title mb-1">Upcoming Visits</h6>
+                                    <h4 class="mb-0">{{ team_visits.count }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Care Teams Stats -->
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card h-100 border-start border-success border-4">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0 me-3">
+                                    <i class="bi bi-people-fill fs-1 text-success"></i>
+                                </div>
+                                <div>
+                                    <h6 class="card-title mb-1">Care Teams</h6>
+                                    <h4 class="mb-0">{{ assigned_teams.count }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prescriptions Stats -->
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card h-100 border-start border-info border-4">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0 me-3">
+                                    <i class="bi bi-journal-medical fs-1 text-info"></i>
+                                </div>
+                                <div>
+                                    <h6 class="card-title mb-1">Active Prescriptions</h6>
+                                    <h4 class="mb-0">{{ active_prescriptions_count|default:"0" }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Services Stats -->
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card h-100 border-start border-warning border-4">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0 me-3">
+                                    <i class="bi bi-clipboard2-pulse fs-1 text-warning"></i>
+                                </div>
+                                <div>
+                                    <h6 class="card-title mb-1">Active Services</h6>
+                                    <h4 class="mb-0">{{ active_services_count|default:"0" }}</h4>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Emergency Contact -->
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-danger shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <button class="btn btn-link text-danger p-0" data-bs-toggle="modal" data-bs-target="#emergencyContactModal">
-                                    <i class="bi bi-telephone"></i> Emergency Contact
-                                </button>
-                            </div>
+            <!-- Main Content Cards -->
+            <div class="row">
+                <!-- Team Visits Card -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                            <h5 class="mb-0">
+                                <i class="bi bi-calendar2-check text-primary me-2"></i>
+                                Upcoming Team Visits
+                            </h5>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Medical History -->
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-info shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <button class="btn btn-link text-info p-0" data-bs-toggle="modal" data-bs-target="#medicalHistoryModal">
-                                    <i class="bi bi-journal-medical"></i> View Medical History
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content Tabs -->
-        <div class="card shadow mb-4">
-            <div class="card-header">
-                <ul class="nav nav-tabs card-header-tabs" id="dashboardTabs" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" id="prescriptions-tab" data-bs-toggle="tab" href="#prescriptions" role="tab">
-                            <i class="bi bi-capsule"></i> Prescriptions
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="teamVisits-tab" data-bs-toggle="tab" href="#teamVisits" role="tab">
-                            <i class="bi bi-calendar-check"></i> Team Visits
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="careTeams-tab" data-bs-toggle="tab" href="#careTeams" role="tab">
-                            <i class="bi bi-people"></i> Care Teams
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="services-tab" data-bs-toggle="tab" href="#services" role="tab">
-                            <i class="bi bi-gear"></i> Services
-                        </a>
-                    </li>
-                </ul>
-            </div>
-            <div class="card-body">
-                <div class="tab-content">
-                    <!-- Prescriptions Tab -->
-                    <div class="tab-pane fade show active" id="prescriptions">
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Medication</th>
-                                        <th>Dosage</th>
-                                        <th>Schedule</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for prescription in prescriptions %}
-                                    <tr>
-                                        <td>{{ prescription.medication }}</td>
-                                        <td>{{ prescription.dosage }}</td>
-                                        <td>{{ prescription.schedule }}</td>
-                                        <td>
-                                            <span class="badge bg-{{ prescription.status|lower }}">
-                                                {{ prescription.status }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button class="btn btn-sm btn-primary" onclick="requestRefill({{ prescription.id }})">
-                                                Request Refill
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Team Visits Tab -->
-                    <div class="tab-pane fade" id="teamVisits">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5>Upcoming Team Visits</h5>
-                            {% comment %} <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#scheduleVisitModal">
-                                <i class="bi bi-plus-circle"></i> Request New Team Visit
-                            </button> {% endcomment %}
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Time</th>
-                                        <th>Team</th>
-                                        <th>Purpose</th>
-                                        <th>Status</th>
-                                        {% comment %} <th>Actions</th> {% endcomment %}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for visit in team_visits %}
-                                    <tr>
-                                        <td>{{ visit.scheduled_date|date:"M d, Y" }}</td>
-                                        <td>{{ visit.start_time|time:"H:i" }} - {{ visit.end_time|time:"H:i" }}</td>
-                                        <td>{{ visit.team.name }}</td>
-                                        <td>{{ visit.purpose }}</td>
-                                        <td>
-                                            <span class="badge bg-{{ visit.status|lower }}">
-                                                {{ visit.status }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {% if visit.is_reschedulable %}
-                                            <button class="btn btn-sm btn-warning" onclick="rescheduleVisit({{ visit.id }})">
-                                                Reschedule
-                                            </button>
-                                            <button class="btn btn-sm btn-danger" onclick="cancelVisit({{ visit.id }})">
-                                                Cancel
-                                            </button>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Care Teams Tab -->
-                    <div class="tab-pane fade" id="careTeams" role="tabpanel">
-                        <div class="card shadow mb-4">
-                            <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                                <h6 class="m-0 font-weight-bold text-primary">
-                                    <i class="bi bi-people-fill me-2"></i>My Care Teams
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                {% if team_visits %}
-                                    <div class="table-responsive">
-                                        <table class="table table-hover">
-                                            <thead>
-                                                <tr>
-                                                    <th>Team Name</th>
-                                                    <th>Organization</th>
-                                                    <th>Next Visit</th>
-                                                    <th>Status</th>
-                                                    <th>Team Members</th>
-                                                    <th>Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for visit in team_visits %}
-                                                <tr>
-                                                    <td>{{ visit.team.name }}</td>
-                                                    <td>{{ visit.team.organization.org_name }}</td>
-                                                    <td>
-                                                        {{ visit.scheduled_date|date:"M d, Y" }}<br>
-                                                        <small class="text-muted">
-                                                            {{ visit.start_time|time:"g:i A" }} - {{ visit.end_time|time:"g:i A" }}
-                                                        </small>
-                                                    </td>
-                                                    <td>
-                                                        {% if visit.status == 'SCHEDULED' %}
-                                                            <span class="badge bg-primary">Scheduled</span>
-                                                        {% elif visit.status == 'COMPLETED' %}
-                                                            <span class="badge bg-success">Completed</span>
-                                                        {% elif visit.status == 'CANCELLED' %}
-                                                            <span class="badge bg-danger">Cancelled</span>
-                                                        {% elif visit.status == 'POSTPONED' %}
-                                                            <span class="badge bg-warning">Postponed</span>
-                                                        {% endif %}
-                                                    </td>
-                                                    <td>
-                                                        <button type="button" 
-                                                                class="btn btn-sm btn-info view-team" 
-                                                                data-team-id="{{ visit.team_id }}">
-                                                            View Team
-                                                        </button>
-                                                    </td>
-                                                    <td>
-                                                        {% if visit.status == 'SCHEDULED' %}
-                                                            <button class="btn btn-sm btn-warning" 
-                                                                    onclick="requestReschedule('{{ visit.id }}')">
-                                                                Request Reschedule
-                                                            </button>
-                                                        {% endif %}
-                                                    </td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
+                        <div class="card-body">
+                            {% if team_visits %}
+                                {% for visit in team_visits|slice:":3" %}
+                                <div class="visit-item mb-3 p-3 border rounded">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">
+                                                <i class="bi bi-people-fill text-primary me-2"></i>
+                                                {{ visit.team.name }}
+                                            </h6>
+                                            <p class="mb-1 text-muted">
+                                                <i class="bi bi-clock-fill me-2"></i>
+                                                {{ visit.start_time|time:"g:i A" }} - {{ visit.end_time|time:"g:i A" }}
+                                            </p>
+                                            <p class="mb-1">
+                                                <i class="bi bi-geo-alt-fill me-2"></i>
+                                                {{ visit.team.organization.org_name }}
+                                            </p>
+                                        </div>
+                                        <span class="badge bg-{{ visit.status|lower }}">
+                                            <i class="bi bi-circle-fill me-1"></i>
+                                            {{ visit.status }}
+                                        </span>
                                     </div>
-                                {% else %}
-                                    <div class="text-center py-4">
-                                        <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
-                                        <p class="mt-3 text-muted">No care team visits scheduled yet.</p>
-                                    </div>
-                                {% endif %}
-                            </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-calendar-x-fill text-muted fs-1"></i>
+                                    <p class="mt-2 text-muted">No upcoming visits scheduled</p>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
+                </div>
 
-                    <!-- Services Tab -->
-                    <div class="tab-pane fade" id="services">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h5>Active Services</h5>
-                                <div class="table-responsive">
-                                    <table class="table">
-                                        <thead>
+                <!-- Care Teams Card -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                            <h5 class="mb-0">
+                                <i class="bi bi-people-fill text-success me-2"></i>
+                                Your Care Teams
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if assigned_teams %}
+                                {% for team in assigned_teams %}
+                                <div class="team-item mb-3 p-3 border rounded">
+                                    <h6 class="mb-2">
+                                        <i class="bi bi-people-fill text-success me-2"></i>
+                                        {{ team.name }}
+                                    </h6>
+                                    <p class="mb-2 text-muted">
+                                        <i class="bi bi-building-fill me-2"></i>
+                                        {{ team.organization.org_name }}
+                                    </p>
+                                    <div class="team-members">
+                                        <small class="text-muted">
+                                            <i class="bi bi-person-badge-fill me-2"></i>
+                                            Team Members:
+                                        </small>
+                                        <div class="mt-2">
+                                            {% for member in team.members.all %}
+                                            <div class="member-item mb-2 p-2 border-start border-primary border-3 bg-light rounded">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="member-icon me-2">
+                                                        <i class="bi bi-person-fill text-primary"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div class="member-name fw-medium">{{ member.get_full_name }}</div>
+                                                        <div class="member-role small text-muted">
+                                                            <i class="bi bi-briefcase-fill me-1"></i>
+                                                            {{ member.role|default:"Team Member" }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-people-fill text-muted fs-1"></i>
+                                    <p class="mt-2 text-muted">No care teams assigned yet</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prescriptions Card -->
+                <div class="col-md-12 mb-4" id="prescriptions-section">
+                    <div class="card">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                            <h5 class="mb-0">
+                                <i class="bi bi-journal-medical text-info me-2"></i>
+                                Active Prescriptions
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Medication</th>
+                                            <th>Dosage</th>
+                                            <th>Schedule</th>
+                                            <th>Start Date</th>
+                                            <th>End Date</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if prescriptions %}
+                                            {% for prescription in prescriptions %}
                                             <tr>
-                                                <th>Service</th>
-                                                <th>Organization</th>
-                                                <th>Status</th>
-                                                <th>Started</th>
-                                                {% comment %} <th>Actions</th> {% endcomment %}
+                                                <td>{{ prescription.medication }}</td>
+                                                <td>{{ prescription.dosage }}</td>
+                                                <td>{{ prescription.frequency }}</td>
+                                                <td>{{ prescription.start_date|date:"M d, Y" }}</td>
+                                                <td>{{ prescription.end_date|date:"M d, Y" }}</td>
+                                                <td>{{ prescription.notes|default:"-" }}</td>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for request in service_requests %}
+                                            {% endfor %}
+                                        {% else %}
                                             <tr>
-                                                <td>{{ request.service.name }}</td>
-                                                <td>{{ request.organization.org_name }}</td>
+                                                <td colspan="6" class="text-center py-4">
+                                                    <i class="bi bi-x-circle text-muted fs-1"></i>
+                                                    <p class="mt-2 text-muted">No active prescriptions</p>
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Services Card -->
+                <div class="col-md-12 mb-4" id="services-section">
+                    <div class="card">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                            <h5 class="mb-0">
+                                <i class="bi bi-clipboard2-pulse text-warning me-2"></i>
+                                Active Services
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Service</th>
+                                            <th>Organization</th>
+                                            <th>Start Date</th>
+                                            <th>Status</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if services %}
+                                            {% for service in services %}
+                                            <tr>
+                                                <td>{{ service.service.name }}</td>
+                                                <td>{{ service.organization.org_name }}</td>
+                                                <td>{{ service.created_at|date:"M d, Y" }}</td>
                                                 <td>
-                                                    <span class="badge bg-{{ request.status|lower }}">
-                                                        {{ request.status }}
+                                                    <span class="badge bg-{{ service.status|lower }}">
+                                                        {{ service.status }}
                                                     </span>
                                                 </td>
-                                                <td>{{ request.created_at|date:"M d, Y" }}</td>
-                                                {% comment %} <td>
-                                                    <button class="btn btn-sm btn-info" onclick="viewServiceDetails({{ request.id }})">
-                                                        Details
-                                                    </button>
-                                                </td> {% endcomment %}
+                                                <td>{{ service.notes|default:"-" }}</td>
                                             </tr>
                                             {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="5" class="text-center py-4">
+                                                    <i class="bi bi-x-circle text-muted fs-1"></i>
+                                                    <p class="mt-2 text-muted">No active services</p>
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
                             </div>
-                            {% comment %} <div class="col-md-4">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">Available Services</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <ul class="list-unstyled">
-                                            {% for service in available_services %}
-                                            <li class="mb-2">
-                                                <i class="bi bi-check-circle"></i>
-                                                {{ service.name }}
-                                            </li>
-                                            {% endfor %}
-                                        </ul>
-                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#requestServiceModal">
-                                            Request New Service
-                                        </button>
-                                    </div>
-                                </div>
-                            </div> {% endcomment %}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        {% endblock content %}
     </div>
-    {% endblock content %}
 
     <!-- Add necessary modals -->
     <!-- Request Service Modal -->
@@ -1329,6 +1741,33 @@
                 });
             });
         });
+    });
+
+    function scrollToSection(sectionId) {
+        const element = document.getElementById(sectionId);
+        if (element) {
+            // Get the navbar height
+            const navbarHeight = document.querySelector('.topbar').offsetHeight;
+            
+            // Calculate the element's position relative to the top of the page
+            const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+            
+            // Scroll to the element minus the navbar height plus a small padding
+            window.scrollTo({
+                top: elementPosition - navbarHeight - 20,
+                behavior: 'smooth'
+            });
+        }
+    }
+
+    // Handle direct links with hash in URL
+    document.addEventListener('DOMContentLoaded', function() {
+        const hash = window.location.hash;
+        if (hash === '#prescriptions') {
+            scrollToSection('prescriptions-section');
+        } else if (hash === '#services') {
+            scrollToSection('services-section');
+        }
     });
     </script>
 </body>

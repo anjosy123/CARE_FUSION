@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,6 +24,7 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--light-bg);
+            padding-top: 80px;
         }
 
         .navbar {
@@ -87,167 +89,304 @@
                 font-size: 0.9rem;
             }
         }
+
+        /* Navbar Styles */
+        .topbar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 15px 0;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .logo img {
+            height: 40px;
+            object-fit: contain;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            gap: 2rem;
+        }
+
+        .nav-menu > li {
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+        }
+
+        .nav-menu .dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 220px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .nav-menu li:hover .dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-menu .dropdown li {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-menu .dropdown a {
+            color: #333;
+            padding: 0.75rem 1rem;
+            display: block;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .nav-menu .dropdown a:hover {
+            background-color: #f8f9fa;
+            color: #1e3c72;
+            padding-left: 1.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: white;
+        }
+
+        .user-info .btn-outline-light {
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .user-info .btn-outline-light:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        /* Adjust main content for fixed navbar */
+        .main-content {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-hospital-user me-2"></i>Doctor Dashboard
+    <!-- Replace the existing navbar with this -->
+    <div class="topbar">
+        <div class="nav-container">
+            <a href="{% url 'doctor_dashboard' %}" class="logo">
+                <img src="{% static 'img/logo.png' %}" alt="CareFusion" />
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#appointments">Appointments</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#patients">Patients</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#prescriptions">Prescriptions</a>
-                    </li>
-                </ul>
-                <div class="d-flex align-items-center">
-                    <span class="text-white me-3">
-                        Welcome, Dr. {{ request.session.staff_name }}
-                    </span>
-                    <a href="{% url 'logout' %}" class="btn btn-light btn-sm">
-                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+            
+            <ul class="nav-menu">
+                <li>
+                    <a href="#">
+                        <i class="fas fa-calendar-check"></i> Appointments
+                        <i class="fas fa-chevron-down ms-1"></i>
                     </a>
-                </div>
+                    <ul class="dropdown">
+                        <li>
+                            <a href="#appointments">
+                                <i class="fas fa-list"></i> View All
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#scheduleModal">
+                                <i class="fas fa-plus"></i> Schedule New
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class="fas fa-user-injured"></i> Patients
+                        <i class="fas fa-chevron-down ms-1"></i>
+                    </a>
+                    <ul class="dropdown">
+                        <li>
+                            <a href="#patients">
+                                <i class="fas fa-users"></i> All Patients
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#prescriptions">
+                                <i class="fas fa-prescription"></i> Prescriptions
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+
+            <div class="user-info">
+                <span>
+                    <i class="fas fa-user-md me-2"></i>Dr. {{ request.session.staff_name }}
+                </span>
+                <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <!-- Main Content -->
-    <div class="container mt-4">
-        <!-- Overview Cards -->
-        <div class="row">
-            <div class="col-md-4">
-                <div class="dashboard-card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Upcoming Appointments</h5>
+    <!-- Update the main content container -->
+    <div class="main-content">
+        <div class="container">
+            <!-- Overview Cards -->
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Upcoming Appointments</h5>
+                        </div>
+                        <div class="card-body">
+                            <h3 class="mb-0">{{ upcoming_appointments.count }}</h3>
+                            <p class="text-muted">Next 7 days</p>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <h3 class="mb-0">{{ upcoming_appointments.count }}</h3>
-                        <p class="text-muted">Next 7 days</p>
+                </div>
+                <div class="col-md-4">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-user-injured me-2"></i>Active Patients</h5>
+                        </div>
+                        <div class="card-body">
+                            <h3 class="mb-0">{{ assignments.count }}</h3>
+                            <p class="text-muted">Currently assigned</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-prescription me-2"></i>Pending Prescriptions</h5>
+                        </div>
+                        <div class="card-body">
+                            <h3 class="mb-0">{{ prescriptions.count }}</h3>
+                            <p class="text-muted">Need review</p>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="dashboard-card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-user-injured me-2"></i>Active Patients</h5>
-                    </div>
-                    <div class="card-body">
-                        <h3 class="mb-0">{{ assignments.count }}</h3>
-                        <p class="text-muted">Currently assigned</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="dashboard-card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-prescription me-2"></i>Pending Prescriptions</h5>
-                    </div>
-                    <div class="card-body">
-                        <h3 class="mb-0">{{ prescriptions.count }}</h3>
-                        <p class="text-muted">Need review</p>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Appointments Section -->
-        <div class="dashboard-card mt-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Recent Appointments</h5>
-                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#scheduleModal">
-                    <i class="fas fa-plus me-1"></i>Schedule New
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Patient</th>
-                                <th>Date & Time</th>
-                                <th>Purpose</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for appointment in upcoming_appointments %}
-                            <tr>
-                                <td>{{ appointment.patient_assignment.patient.get_full_name }}</td>
-                                <td>{{ appointment.date_time|date:"F d, Y, h:i a" }}</td>
-                                <td>{{ appointment.purpose }}</td>
-                                <td>
-                                    <span class="badge bg-{{ appointment.status|lower }}">
-                                        {{ appointment.status }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <a href="{% url 'reschedule_appointment' appointment.id %}" class="btn btn-warning btn-sm btn-action">
-                                        <i class="fas fa-clock me-1"></i>Reschedule
-                                    </a>
-                                    <form method="post" action="{% url 'cancel_appointment' appointment.id %}" style="display: inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-danger btn-sm btn-action" onclick="return confirm('Are you sure?')">
-                                            <i class="fas fa-times me-1"></i>Cancel
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <!-- Appointments Section -->
+            <div class="dashboard-card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Appointments</h5>
+                    <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#scheduleModal">
+                        <i class="fas fa-plus me-1"></i>Schedule New
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Date & Time</th>
+                                    <th>Purpose</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appointment in upcoming_appointments %}
+                                <tr>
+                                    <td>{{ appointment.patient_assignment.patient.get_full_name }}</td>
+                                    <td>{{ appointment.date_time|date:"F d, Y, h:i a" }}</td>
+                                    <td>{{ appointment.purpose }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ appointment.status|lower }}">
+                                            {{ appointment.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'reschedule_appointment' appointment.id %}" class="btn btn-warning btn-sm btn-action">
+                                            <i class="fas fa-clock me-1"></i>Reschedule
+                                        </a>
+                                        <form method="post" action="{% url 'cancel_appointment' appointment.id %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger btn-sm btn-action" onclick="return confirm('Are you sure?')">
+                                                <i class="fas fa-times me-1"></i>Cancel
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Assigned Patients Section -->
-        <div class="dashboard-card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0">Assigned Patients</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Patient Name</th>
-                                <th>Last Visit</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for assignment in assignments %}
-                            <tr>
-                                <td>{{ assignment.patient.get_full_name }}</td>
-                                <td>{{ assignment.last_interaction|default:"No visits yet" }}</td>
-                                <td>
-                                    <span class="badge bg-success">Active</span>
-                                </td>
-                                <td>
-                                    <a href="{% url 'manage_appointments' assignment.id %}" class="btn btn-primary btn-sm btn-action">
-                                        <i class="fas fa-calendar me-1"></i>Schedule
-                                    </a>
-                                    <a href="{% url 'manage_prescriptions' assignment.id %}" class="btn btn-info btn-sm btn-action">
-                                        <i class="fas fa-prescription me-1"></i>Prescriptions
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <!-- Assigned Patients Section -->
+            <div class="dashboard-card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Assigned Patients</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Patient Name</th>
+                                    <th>Last Visit</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment in assignments %}
+                                <tr>
+                                    <td>{{ assignment.patient.get_full_name }}</td>
+                                    <td>{{ assignment.last_interaction|default:"No visits yet" }}</td>
+                                    <td>
+                                        <span class="badge bg-success">Active</span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'manage_appointments' assignment.id %}" class="btn btn-primary btn-sm btn-action">
+                                            <i class="fas fa-calendar me-1"></i>Schedule
+                                        </a>
+                                        <a href="{% url 'manage_prescriptions' assignment.id %}" class="btn btn-info btn-sm btn-action">
+                                            <i class="fas fa-prescription me-1"></i>Prescriptions
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

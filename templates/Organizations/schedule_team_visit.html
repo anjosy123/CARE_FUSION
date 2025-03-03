@@ -150,6 +150,63 @@
             border-radius: 8px;
             margin-bottom: 1rem;
         }
+
+        .high-priority-option {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+
+        .medium-priority-option {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+        }
+
+        .low-priority-option {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+        }
+
+        .form-select optgroup {
+            font-weight: bold;
+            padding: 8px 0;
+        }
+
+        .form-select option {
+            padding: 8px;
+            margin: 2px 0;
+        }
+
+        .select2-container--bootstrap4 .select2-selection--single {
+            height: calc(1.5em + 0.75rem + 2px);
+            padding: 0.375rem 0.75rem;
+        }
+
+        .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+            line-height: calc(1.5em + 0.75rem);
+        }
+
+        .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
+            height: calc(1.5em + 0.75rem);
+        }
+
+        .high-priority-option {
+            color: #dc3545;
+            font-weight: 500;
+        }
+        
+        .medium-priority-option {
+            color: #ffc107;
+            font-weight: 500;
+        }
+        
+        .low-priority-option {
+            color: #28a745;
+            font-weight: 500;
+        }
+        
+        optgroup {
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -222,75 +279,85 @@
                 </div>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Select Team</label>
-                <select name="team" class="form-select" required>
+            <div class="form-group mb-3">
+                <label for="team" class="form-label">Select Team</label>
+                <select class="form-select" id="team" name="team" required>
                     <option value="">Choose a team...</option>
                     {% for team in teams %}
-                    <option value="{{ team.id }}" {% if selected_team == team.id %}selected{% endif %}>
-                        {{ team.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Select Patient</label>
-                <select name="patient" class="form-select" required>
-                    <option value="">Choose a patient...</option>
-                    {% for patient in patients %}
-                        <option value="{{ patient.id }}">
-                            {{ patient.get_full_name }} 
-                            {% with latest_request=patient.servicerequest_set.filter.first %}
-                                {% if latest_request %}
-                                    (Request #{{ latest_request.id }})
-                                {% endif %}
-                            {% endwith %}
+                        <option value="{{ team.id }}" {% if selected_team == team.id|stringformat:"s" %}selected{% endif %}>
+                            {{ team.name }}
                         </option>
-                    {% empty %}
-                        <option value="" disabled>No approved patients available</option>
                     {% endfor %}
                 </select>
-                <small class="text-muted">Only showing patients with approved service requests</small>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Visit Date</label>
-                <input type="date" 
-                       name="scheduled_date" 
-                       class="form-control" 
-                       required
-                       min="{{ today|date:'Y-m-d' }}"
-                       value="{{ today|date:'Y-m-d' }}">
+            <div class="form-group mb-3">
+                <label for="patient" class="form-label">Select Patient</label>
+                <select class="form-select" id="patient" name="patient" required>
+                    <option value="">Choose a patient...</option>
+                    
+                    <!-- High Priority Patients -->
+                    {% if high_priority_patients %}
+                    <optgroup label="High Priority Patients" class="text-danger">
+                        {% for patient in high_priority_patients %}
+                        <option value="{{ patient.id }}" class="high-priority-option">
+                            {{ patient.get_full_name }} 
+                            (Priority: {{ patient.visit_priority_score|floatformat:1 }}/10)
+                        </option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
+
+                    <!-- Medium Priority Patients -->
+                    {% if medium_priority_patients %}
+                    <optgroup label="Medium Priority Patients" class="text-warning">
+                        {% for patient in medium_priority_patients %}
+                        <option value="{{ patient.id }}" class="medium-priority-option">
+                            {{ patient.get_full_name }}
+                            (Priority: {{ patient.visit_priority_score|floatformat:1 }}/10)
+                        </option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
+
+                    <!-- Low Priority Patients -->
+                    {% if low_priority_patients %}
+                    <optgroup label="Low Priority Patients" class="text-success">
+                        {% for patient in low_priority_patients %}
+                        <option value="{{ patient.id }}" class="low-priority-option">
+                            {{ patient.get_full_name }}
+                            (Priority: {{ patient.visit_priority_score|floatformat:1 }}/10)
+                        </option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="scheduled_date" class="form-label">Visit Date</label>
+                <input type="date" class="form-control" id="scheduled_date" name="scheduled_date" 
+                       required min="{{ min_date|date:'Y-m-d' }}" max="{{ max_date|date:'Y-m-d' }}">
             </div>
 
             <div class="row">
                 <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label">Start Time</label>
-                        <input type="time" 
-                               name="start_time" 
-                               class="form-control" 
-                               required
-                               min="{{ current_time }}"
-                               onchange="updateEndTimeMin(this.value)">
+                    <div class="form-group mb-3">
+                        <label for="start_time" class="form-label">Start Time</label>
+                        <input type="time" class="form-control" id="start_time" name="start_time" required>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="form-label">End Time</label>
-                        <input type="time" 
-                               name="end_time" 
-                               class="form-control" 
-                               required
-                               id="end_time">
+                    <div class="form-group mb-3">
+                        <label for="end_time" class="form-label">End Time</label>
+                        <input type="time" class="form-control" id="end_time" name="end_time" required>
                     </div>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Visit Purpose</label>
-                <textarea name="purpose" class="form-control" rows="3" required></textarea>
+            <div class="form-group mb-3">
+                <label for="purpose" class="form-label">Visit Purpose</label>
+                <textarea class="form-control" id="purpose" name="purpose" rows="3"></textarea>
             </div>
 
             <div class="d-flex gap-2">
@@ -310,9 +377,8 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const dateInput = document.querySelector('input[name="scheduled_date"]');
-            const startTimeInput = document.querySelector('input[name="start_time"]');
-            const endTimeInput = document.querySelector('input[name="end_time"]');
-            const today = new Date().toISOString().split('T')[0];
+            const startTimeSelect = document.querySelector('select[name="start_time"]');
+            const durationSelect = document.querySelector('select[name="duration"]');
             const errorDiv = document.getElementById('customErrorMessages');
             const errorText = document.getElementById('errorMessageText');
 
@@ -323,10 +389,9 @@
                 errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 
                 setTimeout(() => {
-                    const alertElement = errorDiv.querySelector('.alert');
+                    const alertElement = errorDiv.querySelector('.btn-close');
                     if (alertElement) {
-                        const closeButton = alertElement.querySelector('.btn-close');
-                        if (closeButton) closeButton.click();
+                        alertElement.click();
                     }
                 }, 5000);
             }
@@ -341,81 +406,182 @@
                 });
             });
 
-            dateInput.addEventListener('change', function() {
-                if (this.value === today) {
-                    const now = new Date();
-                    const currentHour = String(now.getHours()).padStart(2, '0');
-                    const currentMinute = String(now.getMinutes()).padStart(2, '0');
-                    const currentTime = `${currentHour}:${currentMinute}`;
-                    startTimeInput.min = currentTime;
-                    
-                    if (startTimeInput.value && startTimeInput.value < currentTime) {
-                        startTimeInput.value = currentTime;
-                        showError('Start time has been adjusted to current time as you selected today\'s date.');
-                    }
-                } else {
-                    startTimeInput.min = '';
-                }
-            });
+            // Available time slots (8:00 AM to 5:00 PM)
+            const timeSlots = [
+                { value: '08:00', label: '8:00 AM' },
+                { value: '08:30', label: '8:30 AM' },
+                { value: '09:00', label: '9:00 AM' },
+                { value: '09:30', label: '9:30 AM' },
+                { value: '10:00', label: '10:00 AM' },
+                { value: '10:30', label: '10:30 AM' },
+                { value: '11:00', label: '11:00 AM' },
+                { value: '11:30', label: '11:30 AM' },
+                { value: '12:00', label: '12:00 PM' },
+                { value: '12:30', label: '12:30 PM' },
+                { value: '13:00', label: '1:00 PM' },
+                { value: '13:30', label: '1:30 PM' },
+                { value: '14:00', label: '2:00 PM' },
+                { value: '14:30', label: '2:30 PM' },
+                { value: '15:00', label: '3:00 PM' },
+                { value: '15:30', label: '3:30 PM' },
+                { value: '16:00', label: '4:00 PM' },
+                { value: '16:30', label: '4:30 PM' },
+                { value: '17:00', label: '5:00 PM' }
+            ];
 
-            function validateTimeRange(startTime, endTime) {
-                const start = new Date(`2000-01-01T${startTime}`);
-                const end = new Date(`2000-01-01T${endTime}`);
-                const diff = (end - start) / (1000 * 60);
+            function populateTimeSlots() {
+                startTimeSelect.innerHTML = '<option value="">Select start time</option>';
                 
-                if (diff <= 0) {
-                    showError('End time must be after start time.');
-                    return false;
-                }
-                if (diff < 30) {
-                    showError('Visit duration must be at least 30 minutes.');
-                    return false;
-                }
-                if (diff > 480) {
-                    showError('Visit duration cannot exceed 8 hours.');
-                    return false;
-                }
-                return true;
+                const now = new Date();
+                const selectedDate = new Date(dateInput.value);
+                const isToday = selectedDate.toDateString() === now.toDateString();
+                
+                timeSlots.forEach(slot => {
+                    const [hours, minutes] = slot.value.split(':').map(Number);
+                    const slotTime = new Date(selectedDate);
+                    slotTime.setHours(hours, minutes);
+
+                    // For today, only show future time slots
+                    if (!isToday || slotTime > now) {
+                        const option = new Option(slot.label, slot.value);
+                        startTimeSelect.add(option);
+                    }
+                });
             }
 
-            startTimeInput.addEventListener('change', function() {
-                const startTime = this.value;
-                if (startTime) {
-                    endTimeInput.min = startTime;
-                    
-                    if (endTimeInput.value && endTimeInput.value <= startTime) {
-                        const [hours, minutes] = startTime.split(':');
-                        const endDate = new Date();
-                        endDate.setHours(parseInt(hours) + 1, parseInt(minutes), 0);
-                        endTimeInput.value = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
-                        showError('End time has been automatically adjusted to ensure proper duration.');
-                    }
+            function calculateEndTime(startTime, durationMinutes) {
+                const [hours, minutes] = startTime.split(':').map(Number);
+                const totalMinutes = hours * 60 + minutes + parseInt(durationMinutes);
+                const endHour = Math.floor(totalMinutes / 60);
+                const endMinutes = totalMinutes % 60;
+                return `${endHour.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+            }
+
+            // Date input validation
+            dateInput.addEventListener('change', function() {
+                const selectedDate = new Date(this.value);
+                
+                if (selectedDate.getDay() === 0) { // Sunday
+                    showError('Visits cannot be scheduled on Sundays. Please select another day.');
+                    this.value = '';
+                    startTimeSelect.disabled = true;
+                    durationSelect.disabled = true;
+                } else {
+                    startTimeSelect.disabled = false;
+                    durationSelect.disabled = false;
+                    populateTimeSlots();
                 }
             });
 
+            // Form validation
             const form = document.querySelector('form');
             form.addEventListener('submit', function(e) {
-                const selectedDate = dateInput.value;
-                const selectedStartTime = startTimeInput.value;
-                const selectedEndTime = endTimeInput.value;
+                e.preventDefault();
                 
-                if (selectedDate === today) {
-                    const now = new Date();
-                    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                    
-                    if (selectedStartTime < currentTime) {
-                        e.preventDefault();
-                        showError('Please select a future time for today\'s visits.');
-                        return;
-                    }
-                }
-                
-                if (!validateTimeRange(selectedStartTime, selectedEndTime)) {
-                    e.preventDefault();
+                const date = dateInput.value;
+                const startTime = startTimeSelect.value;
+                const duration = durationSelect.value;
+
+                if (!date || !startTime || !duration) {
+                    showError('Please fill in all required fields');
                     return;
+                }
+
+                // Calculate end time
+                const endTime = calculateEndTime(startTime, duration);
+                
+                // Validate end time is before 6:00 PM
+                const [endHour, endMinutes] = endTime.split(':').map(Number);
+                if (endHour > 18 || (endHour === 18 && endMinutes > 0)) {
+                    showError('Visit must end by 6:00 PM. Please select an earlier start time or shorter duration.');
+                    return;
+                }
+
+                // Add hidden end_time field
+                const endTimeInput = document.createElement('input');
+                endTimeInput.type = 'hidden';
+                endTimeInput.name = 'end_time';
+                endTimeInput.value = endTime;
+                form.appendChild(endTimeInput);
+
+                // Submit the form
+                form.submit();
+            });
+
+            // Initialize the time slots
+            if (dateInput.value) {
+                populateTimeSlots();
+            }
+
+            // Initialize Select2
+            $(startTimeSelect).select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                placeholder: 'Select start time'
+            });
+
+            $(durationSelect).select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                placeholder: 'Select duration'
+            });
+
+            // Team selection handling
+            const teamSelect = document.querySelector('select[name="team"]');
+            const patientSelect = document.querySelector('select[name="patient"]');
+            
+            teamSelect.addEventListener('change', function() {
+                const teamId = this.value;
+                if (teamId) {
+                    // Save current scroll position
+                    const scrollPos = window.pageYOffset;
+                    
+                    // Add loading state
+                    teamSelect.disabled = true;
+                    patientSelect.disabled = true;
+                    
+                    // Reload page with selected team
+                    window.location.href = `?team=${teamId}`;
+                }
+            });
+
+            // Initialize Select2 with search
+            $(teamSelect).select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                placeholder: 'Choose a team...',
+                allowClear: true
+            });
+
+            // Initialize patient select with search and groups
+            $(patientSelect).select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                placeholder: 'Choose a patient...',
+                allowClear: true
+            });
+
+            // Form validation
+            form.addEventListener('submit', function(e) {
+                if (!teamSelect.value) {
+                    e.preventDefault();
+                    alert('Please select a team');
+                    teamSelect.focus();
+                    return false;
+                }
+                if (!patientSelect.value) {
+                    e.preventDefault();
+                    alert('Please select a patient');
+                    patientSelect.focus();
+                    return false;
                 }
             });
         });
     </script>
+
+    <!-- Add Select2 CSS and JS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme/dist/select2-bootstrap4.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </body>
 </html>
