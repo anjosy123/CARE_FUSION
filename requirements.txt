@@ -34,7 +34,7 @@ pyOpenSSL==24.2.1
 PySocks==1.7.1
 python-dotenv==1.0.1
 python3-openid==3.2.0
-requests==2.31.0
+requests
 requests-oauthlib==2.0.0
 selenium==4.25.0
 service-identity==24.1.0
@@ -142,7 +142,6 @@ pytz==2025.1
 razorpay==1.4.2
 redis==3.5.3
 reportlab==4.3.1
-requests==2.32.3
 requests-oauthlib==2.0.0
 rich==13.9.4
 scikit-learn==1.6.1
@@ -157,6 +156,11 @@ social-auth-app-django==5.4.2
 social-auth-core==4.5.4
 sortedcontainers==2.4.0
 sqlparse==0.5.1
+tensorboard==2.18.0
+tensorboard-data-server==0.7.2
+tensorflow==2.16.1
+tensorflow-cpu==2.18.0
+tensorflow_intel==2.18.0
 termcolor==2.5.0
 threadpoolctl==3.5.0
 tinycss2==1.4.0
@@ -183,4 +187,3 @@ wsproto==1.2.0
 yarl==1.18.3
 zope.interface==7.1.0
 zopfli==0.2.3.post1
-requests>=2.26.0
