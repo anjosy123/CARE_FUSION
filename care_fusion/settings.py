@@ -47,8 +47,8 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
 
 
 # Razorpay Settings
-RAZORPAY_KEY_ID = 'rzp_test_SEPMIqCTwsW0qa'
-RAZORPAY_KEY_SECRET = 'u1snr22mg4kHaB2N5wWMmdup'
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET')
 
 
 
