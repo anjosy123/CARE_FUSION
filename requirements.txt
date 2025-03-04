@@ -45,7 +45,7 @@ mdurl==0.1.2
 ml-dtypes==0.4.1
 multidict==6.1.0
 namex==0.0.8
-numpy==2.0.2
+numpy==1.23.5
 oauthlib==3.2.2
 opt_einsum==3.4.0
 optree==0.14.1
@@ -83,7 +83,7 @@ tensorboard-plugin-wit==1.8.1
 tensorflow==2.10.0
 tensorflow-estimator==2.10.0
 tensorflow-io-gcs-filesystem==0.31.0
-tensorflow_intel==2.10.0
+tensorflow_intel==2.18.0
 termcolor==2.5.0
 threadpoolctl==3.5.0
 twilio==9.4.6
