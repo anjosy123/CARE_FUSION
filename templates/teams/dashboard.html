@@ -608,68 +608,111 @@
     </nav>
 
     <div class="container-fluid py-4">
-        <!-- Patient Selection -->
-        <div class="patient-select-container">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <label class="form-label required-field">Select Scheduled Patient</label>
-                    <select id="patientSelect" class="form-select" required>
-                        <option value="">Choose a patient...</option>
-                        {% for patient in patients %}
-                            {% with visit=patient.team_visits.all|first %}
-                            <option value="{{ patient.id }}" data-visit-id="{{ visit.id }}">
-                                {{ patient.get_full_name }} - 
-                                Scheduled: {{ visit.scheduled_date|date:"d M Y" }}
-                            </option>
-                            {% endwith %}
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <div class="d-flex justify-content-end">
-                        <button type="button" class="btn btn-outline-primary" id="refreshPatients">
-                            <i class="fas fa-sync-alt"></i> Refresh List
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Form Progress Bar -->
-        <div class="progress mb-3">
-            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
-        </div>
-
         <!-- Alert Container -->
         <div class="alert-container"></div>
 
-        <!-- Scheduled Visits Card -->
-        <div class="section-card mb-4">
-            <h4 class="section-header">
-                <i class="bi bi-calendar-check"></i> Scheduled Visits
-            </h4>
-            <div class="scheduled-visits">
+        <!-- Scheduled Visits Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar2-check text-primary me-2"></i>
+                    Scheduled Team Visits
+                </h5>
+            </div>
+            <div class="card-body">
                 {% if scheduled_visits %}
-                    <div class="row">
-                        {% for visit in scheduled_visits %}
-                            <div class="col-md-4 mb-3">
-                                <div class="visit-card">
-                                    <div class="patient-info">
-                                        <i class="bi bi-person"></i>
-                                        <span class="patient-name">{{ visit.patient.get_full_name }}</span>
-                                    </div>
-                                    <div class="visit-time">
-                                        <i class="bi bi-clock"></i>
-                                        {{ visit.scheduled_date|date:"D, d M Y" }}
-                                        <br>
-                                        <small>{{ visit.start_time|time:"g:i A" }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Purpose</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for visit in scheduled_visits %}
+                                    <tr>
+                                        <td>{{ visit.patient.get_full_name }}</td>
+                                        <td>{{ visit.scheduled_date|date:"M d, Y" }}</td>
+                                        <td>{{ visit.start_time|time:"g:i A" }} - {{ visit.end_time|time:"g:i A" }}</td>
+                                        <td>{{ visit.purpose|truncatechars:30 }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ visit.status|lower }}">
+                                                {{ visit.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{% url 'record_visit' visit.id %}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-clipboard-plus"></i> Record Visit
+                                                </a>
+                                                {% if visit.is_reschedulable %}
+                                                    <a href="{% url 'reschedule_team_visit' visit.id %}" 
+                                                       class="btn btn-sm btn-outline-warning">
+                                                        <i class="bi bi-calendar-check"></i> Reschedule
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 {% else %}
-                    <p class="text-muted text-center">No scheduled visits at the moment.</p>
+                    <div class="text-center py-4">
+                        <i class="bi bi-calendar-x text-muted fs-1"></i>
+                        <p class="mt-2 text-muted">No scheduled visits for today</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Completed Visits Section -->
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0">
+                    <i class="bi bi-check-circle text-success me-2"></i>
+                    Recent Completed Visits
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if completed_visits %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Visit Date</th>
+                                    <th>Report</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for visit in completed_visits %}
+                                    <tr>
+                                        <td>{{ visit.patient.get_full_name }}</td>
+                                        <td>{{ visit.scheduled_date|date:"M d, Y" }}</td>
+                                        <td>
+                                            <a href="{% url 'visit_report' visit.id %}" 
+                                               class="btn btn-sm btn-outline-info">
+                                                <i class="bi bi-file-text"></i> View Report
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-clipboard-x text-muted fs-1"></i>
+                        <p class="mt-2 text-muted">No completed visits yet</p>
+                    </div>
                 {% endif %}
             </div>
         </div>
@@ -682,244 +725,400 @@
             {% endfor %}
         {% endif %}
 
-        <form id="patientDataForm" class="needs-validation" novalidate>
-            {% csrf_token %}
-            <input type="hidden" name="patient_id" id="selectedPatientId">
-            
-            <!-- Vital Signs Section -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>Vital Signs</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="form-floating">
-                                <input type="text" 
-                                       name="blood_pressure" 
-                                       class="form-control" 
-                                       id="bloodPressure"
-                                       pattern="^\d{2,3}\/\d{2,3}$"
-                                       required>
-                                <label for="bloodPressure" class="required-field">Blood Pressure</label>
-                                <div class="invalid-feedback">
-                                    Please enter valid blood pressure (e.g., 120/80)
-                                </div>
-                            </div>
+        <script>
+            // Function to show dismissible message
+            function showMessage(message, type = 'warning') {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type} alert-dismissible fade show message-alert`;
+                alertDiv.innerHTML = `
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                
+                // Add to message container
+                const messageContainer = document.getElementById('message-container');
+                messageContainer.appendChild(alertDiv);
+                
+                // Auto dismiss after 3 seconds
+                setTimeout(() => {
+                    alertDiv.classList.remove('show');
+                    setTimeout(() => alertDiv.remove(), 150);
+                }, 3000);
+            }
+
+            // Animation for pain value changes
+            const painScore = document.getElementById('painScore');
+            const painValue = document.getElementById('painScoreValue');
+
+            if(painScore && painValue) {
+                painScore.addEventListener('input', function() {
+                    painValue.textContent = this.value;
+                    painValue.classList.add('changing');
+                    setTimeout(() => painValue.classList.remove('changing'), 300);
+                });
+            }
+
+            // Update the form submission handler
+            document.getElementById('patientDataForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (!this.checkValidity()) {
+                    e.stopPropagation();
+                    showAlert('Please fill in all required fields', 'danger');
+                    this.classList.add('was-validated');
+                    return;
+                }
+
+                // Get patient details for confirmation
+                const patientSelect = document.getElementById('patientSelect');
+                const patientName = patientSelect.options[patientSelect.selectedIndex].text;
+                const currentDate = new Date().toLocaleDateString();
+
+                // Update confirmation modal
+                document.getElementById('confirmPatientName').textContent = patientName;
+                document.getElementById('confirmVisitDate').textContent = currentDate;
+
+                // Show confirmation modal
+                const confirmationModal = new bootstrap.Modal(document.getElementById('saveConfirmationModal'));
+                confirmationModal.show();
+            });
+
+            // Handle confirmation save button click
+            document.getElementById('confirmSaveButton').addEventListener('click', function() {
+                const form = document.getElementById('patientDataForm');
+                const formData = new FormData(form);
+                
+                // Hide confirmation modal
+                bootstrap.Modal.getInstance(document.getElementById('saveConfirmationModal')).hide();
+                
+                // Show loading state
+                showAlert('Saving visit record...', 'info');
+                
+                fetch('/save-patient-data/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showAlert('Visit record saved successfully!', 'success');
+                        // Clear form and reset validation state
+                        form.reset();
+                        form.classList.remove('was-validated');
+                        // Reset progress bar
+                        document.querySelector('.progress-bar').style.width = '0%';
+                        // Optionally reload after delay
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        throw new Error(data.message || 'Error saving visit record');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert(error.message, 'danger');
+                });
+            });
+
+            // Patient Selection Handler
+            document.getElementById('patientSelect').addEventListener('change', function() {
+                const patientId = this.value;
+                // Update hidden input with selected patient ID
+                document.getElementById('selectedPatientId').value = patientId;
+            });
+
+            // Navbar scroll effect
+            window.addEventListener('scroll', function() {
+                const navbar = document.querySelector('.navbar');
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+
+            // Add this function to handle report links
+            document.querySelectorAll('[data-report-link]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    fetch(this.href)
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.json().then(data => {
+                                    throw new Error(data.message);
+                                });
+                            }
+                            window.location.href = this.href;
+                        })
+                        .catch(error => {
+                            showMessage(error.message, 'warning');
+                        });
+                });
+            });
+
+            function submitPatientData(formData) {
+                $.ajax({
+                    url: '/save-patient-data/',
+                    method: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            // Show ML predictions
+                            updateRiskDisplay(response.risks);
+                            updatePriorityScore(response.priority);
+                        }
+                    }
+                });
+            }
+
+            // Initialize risk trends chart
+            const ctx = document.getElementById('riskTrendsChart').getContext('2d');
+            let riskTrendsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Priority Score',
+                        data: [],
+                        borderColor: '#1A76D1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10
+                        }
+                    }
+                }
+            });
+
+            // Function to update ML predictions display
+            function updateRiskDisplay(risks) {
+                // Update risk scores
+                document.getElementById('fallRiskScore').textContent = risks.fall_risk_score.toFixed(1);
+                document.getElementById('deteriorationRiskScore').textContent = risks.deterioration_risk.toFixed(1);
+                document.getElementById('healthScore').textContent = risks.overall_health_score.toFixed(1);
+
+                // Update card colors based on risk levels
+                updateRiskCardColor('fallRiskScore', risks.fall_risk_score);
+                updateRiskCardColor('deteriorationRiskScore', risks.deterioration_risk);
+                updateRiskCardColor('healthScore', risks.overall_health_score);
+            }
+
+            // Function to update priority score
+            function updatePriorityScore(priority) {
+                const priorityScore = document.getElementById('priorityScore');
+                const recommendation = document.getElementById('visitRecommendation');
+                
+                priorityScore.textContent = priority.score.toFixed(1);
+                
+                // Set recommendation text
+                if (priority.next_visit === 1) {
+                    recommendation.textContent = "Recommended: Visit Tomorrow";
+                } else {
+                    recommendation.textContent = `Recommended: Visit in ${priority.next_visit} days`;
+                }
+
+                // Update card color
+                updateRiskCardColor('priorityScore', priority.score);
+            }
+
+            // Function to update risk card colors
+            function updateRiskCardColor(elementId, score) {
+                const card = document.getElementById(elementId).closest('.risk-score-card');
+                card.classList.remove('high-risk', 'medium-risk', 'low-risk');
+                
+                if (score >= 8.0) {
+                    card.classList.add('high-risk');
+                } else if (score >= 6.0) {
+                    card.classList.add('medium-risk');
+                } else {
+                    card.classList.add('low-risk');
+                }
+            }
+
+            // Function to update risk trends chart
+            function updateRiskTrends(trends) {
+                riskTrendsChart.data.labels = trends.dates;
+                riskTrendsChart.data.datasets[0].data = trends.priority_scores;
+                riskTrendsChart.update();
+            }
+
+            // Function to show alerts
+            function showAlert(message, type = 'info') {
+                const alertContainer = document.querySelector('.alert-container');
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+                alertDiv.innerHTML = `
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                alertContainer.appendChild(alertDiv);
+                
+                // Auto dismiss after 5 seconds
+                setTimeout(() => {
+                    alertDiv.classList.remove('show');
+                    setTimeout(() => alertDiv.remove(), 150);
+                }, 5000);
+            }
+
+            $(document).ready(function() {
+                // Initialize Select2
+                $('#patientSelect').select2({
+                    theme: 'bootstrap-5',
+                    placeholder: 'Search for a patient...',
+                    allowClear: true
+                });
+
+                // Form validation and progress tracking
+                const form = document.getElementById('patientDataForm');
+                const progressBar = document.querySelector('.progress-bar');
+                
+                function updateProgress() {
+                    const inputs = form.querySelectorAll('input:required, select:required, textarea:required');
+                    const filledInputs = Array.from(inputs).filter(input => input.value.trim() !== '');
+                    const progress = (filledInputs.length / inputs.length) * 100;
+                    progressBar.style.width = `${progress}%`;
+                }
+
+                form.addEventListener('input', updateProgress);
+
+                // Show alerts
+                function showAlert(message, type = 'success') {
+                    const alertHtml = `
+                        <div class="alert alert-${type} alert-dismissible fade show">
+                            ${message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
-                        <div class="col-md-3">
-                            <div class="form-floating">
-                                <input type="number" name="pulse_rate" class="form-control" id="pulseRate" required>
-                                <label for="pulseRate" class="required-field">Pulse Rate</label>
-                                <div class="invalid-feedback">
-                                    Please enter a valid pulse rate
-                                </div>
-                            </div>
+                    `;
+                    $('.alert-container').append(alertHtml);
+                    setTimeout(() => {
+                        $('.alert-container .alert:first-child').alert('close');
+                    }, 5000);
+                }
+
+                // Patient selection handler
+                $('#patientSelect').on('change', function() {
+                    const patientId = $(this).val();
+                    $('#selectedPatientId').val(patientId);
+                    if (patientId) {
+                        loadPatientData(patientId);
+                    }
+                });
+
+                // Form submission with validation
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    if (!form.checkValidity()) {
+                        e.stopPropagation();
+                        showAlert('Please fill in all required fields', 'danger');
+                    } else {
+                        submitForm();
+                    }
+                    form.classList.add('was-validated');
+                });
+
+                // Add your existing ML-related JavaScript here
+            });
+
+            // Add real-time validation
+            document.querySelectorAll('input[pattern]').forEach(input => {
+                input.addEventListener('input', function() {
+                    if (this.checkValidity()) {
+                        this.classList.remove('is-invalid');
+                        this.classList.add('is-valid');
+                    } else {
+                        this.classList.remove('is-valid');
+                        this.classList.add('is-invalid');
+                    }
+                });
+            });
+
+            // Add this to your existing JavaScript
+            function handleFormSubmission(event) {
+                event.preventDefault();
+                const form = event.target;
+                const formData = new FormData(form);
+
+                fetch('/save-patient-data/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'error') {
+                        if (data.code === 'SCHEDULE_EXPIRED') {
+                            // Show reschedule modal
+                            showRescheduleModal(data);
+                        } else {
+                            showAlert('error', data.message);
+                        }
+                    } else {
+                        showAlert('success', 'Visit record saved successfully');
+                        // Handle successful save
+                        handleSuccessfulSave(data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('error', 'An error occurred while saving the visit record');
+                });
+            }
+
+            // Add reschedule modal HTML
+            const rescheduleModalHtml = `
+            <div class="modal fade" id="rescheduleModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-warning">
+                            <h5 class="modal-title">Schedule Expired</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
-                        <div class="col-md-3">
-                            <div class="form-floating">
-                                <input type="number" name="temperature" class="form-control" id="temperature" step="0.1" required>
-                                <label for="temperature" class="required-field">Temperature (°C)</label>
-                                <div class="invalid-feedback">
-                                    Please enter a valid temperature
-                                </div>
-                            </div>
+                        <div class="modal-body">
+                            <p>The scheduled visit for <span id="patientName"></span> has expired.</p>
+                            <p>Original schedule: <span id="originalSchedule"></span></p>
+                            <p>Would you like to reschedule this visit?</p>
                         </div>
-                        <div class="col-md-3">
-                            <div class="form-floating">
-                                <input type="number" name="respiratory_rate" class="form-control" id="respiratoryRate" required>
-                                <label for="respiratoryRate" class="required-field">Respiratory Rate</label>
-                                <div class="invalid-feedback">
-                                    Please enter a valid respiratory rate
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mt-3">
-                            <div class="form-floating">
-                                <input type="number" name="oxygen_saturation" class="form-control" id="oxygenSaturation" required>
-                                <label for="oxygenSaturation" class="required-field">Oxygen Saturation (%)</label>
-                                <div class="invalid-feedback">
-                                    Please enter a valid oxygen saturation
-                                </div>
-                            </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary" id="rescheduleButton">
+                                Reschedule Visit
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
+            `;
 
-            <!-- Pain Assessment -->
-            <div class="card mb-4">
-                <div class="card-header bg-warning">
-                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Pain Assessment</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-floating">
-                                <input type="number" name="pain_score" class="form-control" id="painScore" min="0" max="10" required>
-                                <label for="painScore" class="required-field">Pain Score (0-10)</label>
-                                <div class="invalid-feedback">
-                                    Please enter a valid pain score between 0 and 10
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-floating">
-                                <input type="text" name="pain_location" class="form-control" id="painLocation" required>
-                                <label for="painLocation" class="required-field">Pain Location</label>
-                                <div class="invalid-feedback">
-                                    Please enter a valid pain location
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-floating">
-                                <input type="text" name="pain_character" class="form-control" id="painCharacter" required>
-                                <label for="painCharacter" class="required-field">Pain Character</label>
-                                <div class="invalid-feedback">
-                                    Please enter a valid pain character
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            // Add this to your document ready function
+            document.body.insertAdjacentHTML('beforeend', rescheduleModalHtml);
 
-            <!-- Medical Information -->
-            <div class="card mb-4">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-notes-medical me-2"></i>Medical Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-floating">
-                                <textarea name="medical_conditions" class="form-control" id="medicalConditions" rows="3" required></textarea>
-                                <label for="medicalConditions" class="required-field">Medical Conditions</label>
-                                <div class="invalid-feedback">
-                                    Please enter valid medical conditions
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-floating">
-                                <textarea name="symptoms" class="form-control" id="symptoms" rows="3" required></textarea>
-                                <label for="symptoms" class="required-field">Symptoms</label>
-                                <div class="invalid-feedback">
-                                    Please enter valid symptoms
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-12 mt-3">
-                            <div class="form-floating">
-                                <textarea name="medications" class="form-control" id="medications" rows="3" required></textarea>
-                                <label for="medications" class="required-field">Medications</label>
-                                <div class="invalid-feedback">
-                                    Please enter valid medications
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            function showRescheduleModal(data) {
+                const modal = new bootstrap.Modal(document.getElementById('rescheduleModal'));
+                document.getElementById('patientName').textContent = data.patient_name;
+                document.getElementById('originalSchedule').textContent = data.scheduled_date;
+                
+                document.getElementById('rescheduleButton').onclick = function() {
+                    window.location.href = data.reschedule_url;
+                };
+                
+                modal.show();
+            }
 
-            <!-- Activity & Mobility -->
-            <div class="card mb-4">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-walking me-2"></i>Activity & Mobility</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-floating">
-                                <select name="activity_level" class="form-select" id="activityLevel" required>
-                                    <option value="">Select Activity Level</option>
-                                    <option value="1">Bedbound</option>
-                                    <option value="2">Wheelchair bound</option>
-                                    <option value="3">Walks with assistance</option>
-                                    <option value="4">Walks independently</option>
-                                </select>
-                                <label for="activityLevel" class="required-field">Activity Level</label>
-                                <div class="invalid-feedback">
-                                    Please select a valid activity level
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-floating">
-                                <input type="number" name="weight" class="form-control" id="weight" step="0.01" required>
-                                <label for="weight" class="required-field">Weight (kg)</label>
-                                <div class="invalid-feedback">
-                                    Please enter a valid weight
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mental Status -->
-            <div class="card mb-4">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i class="fas fa-brain me-2"></i>Mental Status</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-floating">
-                                <input type="text" name="consciousness_level" class="form-control" id="consciousnessLevel" required>
-                                <label for="consciousnessLevel" class="required-field">Consciousness Level</label>
-                                <div class="invalid-feedback">
-                                    Please enter a valid consciousness level
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-floating">
-                                <select name="mood_status" class="form-select" id="moodStatus" required>
-                                    <option value="">Select Mood</option>
-                                    <option value="1">Depressed</option>
-                                    <option value="2">Anxious</option>
-                                    <option value="3">Normal</option>
-                                    <option value="4">Elevated</option>
-                                </select>
-                                <label for="moodStatus" class="required-field">Mood Status</label>
-                                <div class="invalid-feedback">
-                                    Please select a valid mood status
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Clinical Notes -->
-            <div class="card mb-4">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><i class="fas fa-file-medical me-2"></i>Clinical Notes</h5>
-                </div>
-                <div class="card-body">
-                    <div class="form-floating">
-                        <textarea name="clinical_notes" class="form-control" id="clinicalNotes" rows="4" required></textarea>
-                        <label for="clinicalNotes" class="required-field">Clinical Notes</label>
-                        <div class="invalid-feedback">
-                            Please enter valid clinical notes
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="text-center mb-4">
-                <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="fas fa-save me-2"></i>Save Visit Record
-                </button>
-            </div>
-        </form>
-
-        <!-- ML Predictions Display -->
-        <div id="mlPredictions" class="card mb-4 d-none">
-            <!-- ML predictions will be populated here -->
-        </div>
+            // Update your form submission handler
+            document.getElementById('patientDataForm').addEventListener('submit', handleFormSubmission);
+        </script>
     </div>
 
     <div id="message-container" class="message-container"></div>
@@ -951,399 +1150,5 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script>
-        // Function to show dismissible message
-        function showMessage(message, type = 'warning') {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type} alert-dismissible fade show message-alert`;
-            alertDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            `;
-            
-            // Add to message container
-            const messageContainer = document.getElementById('message-container');
-            messageContainer.appendChild(alertDiv);
-            
-            // Auto dismiss after 3 seconds
-            setTimeout(() => {
-                alertDiv.classList.remove('show');
-                setTimeout(() => alertDiv.remove(), 150);
-            }, 3000);
-        }
-
-        // Animation for pain value changes
-        const painScore = document.getElementById('painScore');
-        const painValue = document.getElementById('painScoreValue');
-
-        if(painScore && painValue) {
-            painScore.addEventListener('input', function() {
-                painValue.textContent = this.value;
-                painValue.classList.add('changing');
-                setTimeout(() => painValue.classList.remove('changing'), 300);
-            });
-        }
-
-        // Update the form submission handler
-        document.getElementById('patientDataForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            if (!this.checkValidity()) {
-                e.stopPropagation();
-                showAlert('Please fill in all required fields', 'danger');
-                this.classList.add('was-validated');
-                return;
-            }
-
-            // Get patient details for confirmation
-            const patientSelect = document.getElementById('patientSelect');
-            const patientName = patientSelect.options[patientSelect.selectedIndex].text;
-            const currentDate = new Date().toLocaleDateString();
-
-            // Update confirmation modal
-            document.getElementById('confirmPatientName').textContent = patientName;
-            document.getElementById('confirmVisitDate').textContent = currentDate;
-
-            // Show confirmation modal
-            const confirmationModal = new bootstrap.Modal(document.getElementById('saveConfirmationModal'));
-            confirmationModal.show();
-        });
-
-        // Handle confirmation save button click
-        document.getElementById('confirmSaveButton').addEventListener('click', function() {
-            const form = document.getElementById('patientDataForm');
-            const formData = new FormData(form);
-            
-            // Hide confirmation modal
-            bootstrap.Modal.getInstance(document.getElementById('saveConfirmationModal')).hide();
-            
-            // Show loading state
-            showAlert('Saving visit record...', 'info');
-            
-            fetch('/save-patient-data/', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    showAlert('Visit record saved successfully!', 'success');
-                    // Clear form and reset validation state
-                    form.reset();
-                    form.classList.remove('was-validated');
-                    // Reset progress bar
-                    document.querySelector('.progress-bar').style.width = '0%';
-                    // Optionally reload after delay
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
-                } else {
-                    throw new Error(data.message || 'Error saving visit record');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showAlert(error.message, 'danger');
-            });
-        });
-
-        // Patient Selection Handler
-        document.getElementById('patientSelect').addEventListener('change', function() {
-            const patientId = this.value;
-            // Update hidden input with selected patient ID
-            document.getElementById('selectedPatientId').value = patientId;
-        });
-
-        // Navbar scroll effect
-        window.addEventListener('scroll', function() {
-            const navbar = document.querySelector('.navbar');
-            if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-            }
-        });
-
-        // Add this function to handle report links
-        document.querySelectorAll('[data-report-link]').forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                fetch(this.href)
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(data => {
-                                throw new Error(data.message);
-                            });
-                        }
-                        window.location.href = this.href;
-                    })
-                    .catch(error => {
-                        showMessage(error.message, 'warning');
-                    });
-            });
-        });
-
-        function submitPatientData(formData) {
-            $.ajax({
-                url: '/save-patient-data/',
-                method: 'POST',
-                data: formData,
-                success: function(response) {
-                    if (response.status === 'success') {
-                        // Show ML predictions
-                        updateRiskDisplay(response.risks);
-                        updatePriorityScore(response.priority);
-                    }
-                }
-            });
-        }
-
-        // Initialize risk trends chart
-        const ctx = document.getElementById('riskTrendsChart').getContext('2d');
-        let riskTrendsChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Priority Score',
-                    data: [],
-                    borderColor: '#1A76D1'
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 10
-                    }
-                }
-            }
-        });
-
-        // Function to update ML predictions display
-        function updateRiskDisplay(risks) {
-            // Update risk scores
-            document.getElementById('fallRiskScore').textContent = risks.fall_risk_score.toFixed(1);
-            document.getElementById('deteriorationRiskScore').textContent = risks.deterioration_risk.toFixed(1);
-            document.getElementById('healthScore').textContent = risks.overall_health_score.toFixed(1);
-
-            // Update card colors based on risk levels
-            updateRiskCardColor('fallRiskScore', risks.fall_risk_score);
-            updateRiskCardColor('deteriorationRiskScore', risks.deterioration_risk);
-            updateRiskCardColor('healthScore', risks.overall_health_score);
-        }
-
-        // Function to update priority score
-        function updatePriorityScore(priority) {
-            const priorityScore = document.getElementById('priorityScore');
-            const recommendation = document.getElementById('visitRecommendation');
-            
-            priorityScore.textContent = priority.score.toFixed(1);
-            
-            // Set recommendation text
-            if (priority.next_visit === 1) {
-                recommendation.textContent = "Recommended: Visit Tomorrow";
-            } else {
-                recommendation.textContent = `Recommended: Visit in ${priority.next_visit} days`;
-            }
-
-            // Update card color
-            updateRiskCardColor('priorityScore', priority.score);
-        }
-
-        // Function to update risk card colors
-        function updateRiskCardColor(elementId, score) {
-            const card = document.getElementById(elementId).closest('.risk-score-card');
-            card.classList.remove('high-risk', 'medium-risk', 'low-risk');
-            
-            if (score >= 8.0) {
-                card.classList.add('high-risk');
-            } else if (score >= 6.0) {
-                card.classList.add('medium-risk');
-            } else {
-                card.classList.add('low-risk');
-            }
-        }
-
-        // Function to update risk trends chart
-        function updateRiskTrends(trends) {
-            riskTrendsChart.data.labels = trends.dates;
-            riskTrendsChart.data.datasets[0].data = trends.priority_scores;
-            riskTrendsChart.update();
-        }
-
-        // Function to show alerts
-        function showAlert(message, type = 'info') {
-            const alertContainer = document.querySelector('.alert-container');
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-            alertDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            alertContainer.appendChild(alertDiv);
-            
-            // Auto dismiss after 5 seconds
-            setTimeout(() => {
-                alertDiv.classList.remove('show');
-                setTimeout(() => alertDiv.remove(), 150);
-            }, 5000);
-        }
-
-        $(document).ready(function() {
-            // Initialize Select2
-            $('#patientSelect').select2({
-                theme: 'bootstrap-5',
-                placeholder: 'Search for a patient...',
-                allowClear: true
-            });
-
-            // Form validation and progress tracking
-            const form = document.getElementById('patientDataForm');
-            const progressBar = document.querySelector('.progress-bar');
-            
-            function updateProgress() {
-                const inputs = form.querySelectorAll('input:required, select:required, textarea:required');
-                const filledInputs = Array.from(inputs).filter(input => input.value.trim() !== '');
-                const progress = (filledInputs.length / inputs.length) * 100;
-                progressBar.style.width = `${progress}%`;
-            }
-
-            form.addEventListener('input', updateProgress);
-
-            // Show alerts
-            function showAlert(message, type = 'success') {
-                const alertHtml = `
-                    <div class="alert alert-${type} alert-dismissible fade show">
-                        ${message}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                `;
-                $('.alert-container').append(alertHtml);
-                setTimeout(() => {
-                    $('.alert-container .alert:first-child').alert('close');
-                }, 5000);
-            }
-
-            // Patient selection handler
-            $('#patientSelect').on('change', function() {
-                const patientId = $(this).val();
-                $('#selectedPatientId').val(patientId);
-                if (patientId) {
-                    loadPatientData(patientId);
-                }
-            });
-
-            // Form submission with validation
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (!form.checkValidity()) {
-                    e.stopPropagation();
-                    showAlert('Please fill in all required fields', 'danger');
-                } else {
-                    submitForm();
-                }
-                form.classList.add('was-validated');
-            });
-
-            // Add your existing ML-related JavaScript here
-        });
-
-        // Add real-time validation
-        document.querySelectorAll('input[pattern]').forEach(input => {
-            input.addEventListener('input', function() {
-                if (this.checkValidity()) {
-                    this.classList.remove('is-invalid');
-                    this.classList.add('is-valid');
-                } else {
-                    this.classList.remove('is-valid');
-                    this.classList.add('is-invalid');
-                }
-            });
-        });
-
-        // Add this to your existing JavaScript
-        function handleFormSubmission(event) {
-            event.preventDefault();
-            const form = event.target;
-            const formData = new FormData(form);
-
-            fetch('/save-patient-data/', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'error') {
-                    if (data.code === 'SCHEDULE_EXPIRED') {
-                        // Show reschedule modal
-                        showRescheduleModal(data);
-                    } else {
-                        showAlert('error', data.message);
-                    }
-                } else {
-                    showAlert('success', 'Visit record saved successfully');
-                    // Handle successful save
-                    handleSuccessfulSave(data);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showAlert('error', 'An error occurred while saving the visit record');
-            });
-        }
-
-        // Add reschedule modal HTML
-        const rescheduleModalHtml = `
-        <div class="modal fade" id="rescheduleModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header bg-warning">
-                        <h5 class="modal-title">Schedule Expired</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>The scheduled visit for <span id="patientName"></span> has expired.</p>
-                        <p>Original schedule: <span id="originalSchedule"></span></p>
-                        <p>Would you like to reschedule this visit?</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" id="rescheduleButton">
-                            Reschedule Visit
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        `;
-
-        // Add this to your document ready function
-        document.body.insertAdjacentHTML('beforeend', rescheduleModalHtml);
-
-        function showRescheduleModal(data) {
-            const modal = new bootstrap.Modal(document.getElementById('rescheduleModal'));
-            document.getElementById('patientName').textContent = data.patient_name;
-            document.getElementById('originalSchedule').textContent = data.scheduled_date;
-            
-            document.getElementById('rescheduleButton').onclick = function() {
-                window.location.href = data.reschedule_url;
-            };
-            
-            modal.show();
-        }
-
-        // Update your form submission handler
-        document.getElementById('patientDataForm').addEventListener('submit', handleFormSubmission);
-    </script>
 </body>
 </html>

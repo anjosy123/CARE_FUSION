@@ -263,5 +263,6 @@ urlpatterns = [
     path('api/rental/<int:rental_id>/usage-details/', views.get_rental_usage_details, name='rental_usage_details'),
     path('api/rental/<int:rental_id>/end-service/', views.end_rental_service, name='end_rental_service'),
     path('api/rental/<int:rental_id>/org-details/', views.get_rental_org_details, name='rental_org_details'),
+    path('team/visit/<int:visit_id>/record/', views.record_visit, name='record_visit'),
 ]
 

@@ -3738,44 +3738,45 @@ from django.views.decorators.csrf import csrf_protect
 @team_login_required
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def team_dashboard(request):
-    """Display team dashboard with patient locations"""
+    """Display team dashboard with patient visits and data"""
     try:
         current_time = timezone.now()
-        
-        # Get assigned patients with their locations
-        assigned_patients = User.objects.filter(
-            team_visits__team=request.team_membership.team,
-            team_visits__status='SCHEDULED',
-            team_visits__scheduled_date__gte=current_time,
-            is_active=True
-        ).select_related(
-            'userlocation'
-        ).distinct().order_by(
-            '-visit_priority_score'
-        )
+        team = request.team_membership.team
 
-        # Prepare patient data for map
-        patient_locations = []
-        for patient in assigned_patients:
-            if hasattr(patient, 'userlocation') and patient.userlocation:
-                patient_locations.append({
-                    'id': patient.id,
-                    'name': patient.get_full_name(),
-                    'latitude': patient.userlocation.latitude,
-                    'longitude': patient.userlocation.longitude,
-                    'priority_score': patient.visit_priority_score,
-                    'next_visit': patient.team_visits.filter(
-                        status='SCHEDULED'
-                    ).first().scheduled_date
-                })
+        # Get all scheduled visits for the team
+        scheduled_visits = TeamVisit.objects.filter(
+            team=team,
+            status='SCHEDULED',
+            scheduled_date__gte=current_time.date()
+        ).select_related(
+            'patient'
+        ).order_by('scheduled_date', 'start_time')
+
+        # Get completed visits for reports
+        completed_visits = TeamVisit.objects.filter(
+            team=team,
+            status='COMPLETED'
+        ).select_related(
+            'patient'
+        ).order_by('-scheduled_date')[:10]  # Get last 10 completed visits
+
+        # Get all patients with scheduled visits
+        patients = User.objects.filter(
+            team_visits__team=team,
+            team_visits__status='SCHEDULED',
+            team_visits__scheduled_date__gte=current_time.date()
+        ).distinct().prefetch_related(
+            'visit_records',
+            'team_visits'
+        ).order_by('team_visits__scheduled_date')
 
         context = {
             'staff': request.team_membership.staff,
-            'team': request.team_membership.team,
+            'team': team,
             'role': request.team_membership.role,
-            'assigned_patients': assigned_patients,
-            'patient_locations': patient_locations,
-            'api_key': settings.MAPS_API_KEY,  # For maps integration
+            'scheduled_visits': scheduled_visits,
+            'completed_visits': completed_visits,
+            'patients': patients,
         }
 
         return render(request, 'teams/dashboard.html', context)
@@ -6026,3 +6027,61 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     distance = R * c
 
     return distance
+
+@team_login_required
+def record_visit(request, visit_id):
+    """Handle recording of patient visit data"""
+    try:
+        # Get the team visit and related data
+        visit = get_object_or_404(
+            TeamVisit.objects.select_related('patient', 'team'),
+            id=visit_id,
+            team=request.team_membership.team
+        )
+        
+        if request.method == 'POST':
+            try:
+                with transaction.atomic():
+                    # Create visit record
+                    visit_record = PatientVisitRecord.objects.create(
+                        patient=visit.patient,
+                        visit_date=timezone.now(),
+                        blood_pressure=request.POST.get('blood_pressure'),
+                        pulse_rate=request.POST.get('pulse_rate'),
+                        temperature=request.POST.get('temperature'),
+                        respiratory_rate=request.POST.get('respiratory_rate'),
+                        oxygen_saturation=request.POST.get('oxygen_saturation'),
+                        pain_score=request.POST.get('pain_score'),
+                        activity_level=request.POST.get('activity_level'),
+                        appetite=request.POST.get('appetite'),
+                        mood_status=request.POST.get('mood_status'),
+                        fall_risk_score=request.POST.get('fall_risk_score'),
+                        pressure_ulcer_risk=request.POST.get('pressure_ulcer_risk'),
+                        deterioration_risk=request.POST.get('deterioration_risk'),
+                        overall_health_score=request.POST.get('overall_health_score'),
+                        notes=request.POST.get('notes'),
+                        recorded_by=request.team_membership.staff
+                    )
+                    
+                    # Update visit status
+                    visit.status = 'COMPLETED'
+                    visit.save()
+                    
+                    messages.success(request, 'Visit data recorded successfully.')
+                    return redirect('team_dashboard')
+                    
+            except Exception as e:
+                messages.error(request, f'Error saving visit data: {str(e)}')
+                
+        context = {
+            'visit': visit,
+            'patient': visit.patient,
+            'team': visit.team,
+            'staff': request.team_membership.staff,
+        }
+        
+        return render(request, 'teams/record_visit.html', context)
+        
+    except Exception as e:
+        messages.error(request, f"Error loading visit form: {str(e)}")
+        return redirect('team_dashboard')

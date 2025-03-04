@@ -1,0 +1,332 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record Visit Data - {{ patient.get_full_name }}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f5f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .required-field::after {
+            content: "*";
+            color: red;
+            margin-left: 4px;
+        }
+
+        .form-floating > label {
+            font-size: 0.9rem;
+        }
+
+        .progress {
+            height: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'team_dashboard' %}">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+            <div class="navbar-text text-white">
+                Recording Visit Data for {{ patient.get_full_name }}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <!-- Patient Info Card -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Patient Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Name:</strong> {{ patient.get_full_name }}</p>
+                                <p><strong>Visit Date:</strong> {{ visit.scheduled_date|date:"F d, Y" }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Team:</strong> {{ team.name }}</p>
+                                <p><strong>Staff:</strong> {{ staff.get_full_name }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress mb-4">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+
+                <!-- Visit Data Form -->
+                <form method="post" id="visitDataForm" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Vital Signs Section -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>Vital Signs</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="blood_pressure" name="blood_pressure" 
+                                               placeholder="Blood Pressure" pattern="\d{2,3}\/\d{2,3}" required>
+                                        <label for="blood_pressure" class="required-field">Blood Pressure (mmHg)</label>
+                                        <div class="form-text">Format: 120/80</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="pulse_rate" name="pulse_rate" 
+                                               placeholder="Pulse Rate" min="40" max="200" required>
+                                        <label for="pulse_rate" class="required-field">Pulse Rate (bpm)</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="temperature" name="temperature" 
+                                               step="0.1" min="35" max="42" required>
+                                        <label for="temperature" class="required-field">Temperature (°C)</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="respiratory_rate" name="respiratory_rate" 
+                                               min="8" max="40" required>
+                                        <label for="respiratory_rate" class="required-field">Respiratory Rate</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="oxygen_saturation" name="oxygen_saturation" 
+                                               min="70" max="100" required>
+                                        <label for="oxygen_saturation" class="required-field">Oxygen Saturation (%)</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pain Assessment Section -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-white">
+                            <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Pain Assessment</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="pain_score" name="pain_score" 
+                                               min="0" max="10" required>
+                                        <label for="pain_score" class="required-field">Pain Score (0-10)</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="pain_location" name="pain_location">
+                                        <label for="pain_location">Pain Location</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="pain_character" name="pain_character">
+                                            <option value="">Select type</option>
+                                            <option value="sharp">Sharp</option>
+                                            <option value="dull">Dull</option>
+                                            <option value="throbbing">Throbbing</option>
+                                            <option value="burning">Burning</option>
+                                            <option value="cramping">Cramping</option>
+                                        </select>
+                                        <label for="pain_character">Pain Character</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medical Information Section -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-notes-medical me-2"></i>Medical Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <div class="form-floating">
+                                        <textarea class="form-control" id="medical_conditions" name="medical_conditions" 
+                                                  style="height: 100px"></textarea>
+                                        <label for="medical_conditions">Medical Conditions</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <div class="form-floating">
+                                        <textarea class="form-control" id="symptoms" name="symptoms" 
+                                                  style="height: 100px"></textarea>
+                                        <label for="symptoms">Symptoms</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <div class="form-floating">
+                                        <textarea class="form-control" id="medications" name="medications" 
+                                                  style="height: 100px"></textarea>
+                                        <label for="medications">Medications</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activity & Mobility Section -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-walking me-2"></i>Activity & Mobility</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="activity_level" name="activity_level" required>
+                                            <option value="">Select level</option>
+                                            <option value="1">Bedbound</option>
+                                            <option value="2">Chair bound</option>
+                                            <option value="3">Walks with assistance</option>
+                                            <option value="4">Walks independently</option>
+                                            <option value="5">Fully mobile</option>
+                                        </select>
+                                        <label for="activity_level" class="required-field">Activity Level</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="weight" name="weight" 
+                                               step="0.1" min="20" max="300">
+                                        <label for="weight">Weight (kg)</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mental Status Section -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0"><i class="fas fa-brain me-2"></i>Mental Status</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="consciousness_level" name="consciousness_level" required>
+                                            <option value="">Select level</option>
+                                            <option value="alert">Alert</option>
+                                            <option value="drowsy">Drowsy</option>
+                                            <option value="confused">Confused</option>
+                                            <option value="unresponsive">Unresponsive</option>
+                                        </select>
+                                        <label for="consciousness_level" class="required-field">Consciousness Level</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="mood_status" name="mood_status" required>
+                                            <option value="">Select mood</option>
+                                            <option value="1">Calm</option>
+                                            <option value="2">Anxious</option>
+                                            <option value="3">Depressed</option>
+                                            <option value="4">Agitated</option>
+                                            <option value="5">Irritable</option>
+                                        </select>
+                                        <label for="mood_status" class="required-field">Mood Status</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Clinical Notes Section -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0"><i class="fas fa-file-medical-alt me-2"></i>Clinical Notes</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-floating">
+                                <textarea class="form-control" id="notes" name="notes" style="height: 150px" required></textarea>
+                                <label for="notes" class="required-field">Clinical Notes</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'team_dashboard' %}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Save Visit Data
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Form validation and progress tracking
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('visitDataForm');
+            const progressBar = document.querySelector('.progress-bar');
+            const requiredFields = form.querySelectorAll('[required]');
+            const totalFields = requiredFields.length;
+
+            function updateProgress() {
+                const filledFields = Array.from(requiredFields).filter(field => field.value.trim() !== '').length;
+                const progress = (filledFields / totalFields) * 100;
+                progressBar.style.width = progress + '%';
+            }
+
+            form.addEventListener('input', updateProgress);
+
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            });
+        });
+    </script>
+</body>
+</html> 
