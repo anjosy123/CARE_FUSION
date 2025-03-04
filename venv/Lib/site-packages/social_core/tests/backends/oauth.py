@@ -1,3 +1,6 @@
+# pyright: reportAttributeAccessIssue=false
+
+from unittest.mock import patch
 from urllib.parse import urlparse
 
 import requests
@@ -20,6 +23,7 @@ class BaseOAuthTest(BaseBackendTest):
     expected_username = ""
 
     def extra_settings(self):
+        assert self.name, "Subclasses must set the name attribute"
         return {
             "SOCIAL_AUTH_" + self.name + "_KEY": "a-key",
             "SOCIAL_AUTH_" + self.name + "_SECRET": "a-secret-key",
@@ -87,9 +91,10 @@ class BaseOAuthTest(BaseBackendTest):
 
 class OAuth1Test(BaseOAuthTest):
     request_token_body = None
-    raw_complete_url = "/complete/{0}/?oauth_verifier=bazqux&" "oauth_token=foobar"
+    raw_complete_url = "/complete/{0}/?oauth_verifier=bazqux&oauth_token=foobar"
 
     def request_token_handler(self):
+        assert self.request_token_body, "Subclasses must set request_token_body"
         HTTPretty.register_uri(
             self._method(self.backend.REQUEST_TOKEN_METHOD),
             self.backend.REQUEST_TOKEN_URL,
@@ -117,7 +122,7 @@ class OAuth2Test(BaseOAuthTest):
             status=200,
             body=self.refresh_token_body,
         )
-        user = list(User.cache.values())[0]
+        user = next(iter(User.cache.values()))
         social = user.social[0]
         social.refresh_token(strategy=self.strategy, **self.refresh_token_arguments())
         return user, social
@@ -135,17 +140,17 @@ class OAuth2PkcePlainTest(OAuth2Test):
         user = super().do_login()
 
         requests = latest_requests()
-        auth_request = [
+        auth_request = next(
             r for r in requests if self.backend.authorization_url() in r.url
-        ][0]
+        )
         code_challenge = auth_request.querystring.get("code_challenge")[0]
         code_challenge_method = auth_request.querystring.get("code_challenge_method")[0]
         self.assertIsNotNone(code_challenge)
         self.assertEqual(code_challenge_method, "plain")
 
-        auth_complete = [
+        auth_complete = next(
             r for r in requests if self.backend.access_token_url() in r.url
-        ][0]
+        )
         code_verifier = auth_complete.parsed_body.get("code_verifier")[0]
         self.assertEqual(code_challenge, code_verifier)
 
@@ -158,17 +163,17 @@ class OAuth2PkceS256Test(OAuth2Test):
         user = super().do_login()
 
         requests = latest_requests()
-        auth_request = [
+        auth_request = next(
             r for r in requests if self.backend.authorization_url() in r.url
-        ][0]
+        )
         code_challenge = auth_request.querystring.get("code_challenge")[0]
         code_challenge_method = auth_request.querystring.get("code_challenge_method")[0]
         self.assertIsNotNone(code_challenge)
         self.assertTrue(code_challenge_method in ["s256", "S256"])
 
-        auth_complete = [
+        auth_complete = next(
             r for r in requests if self.backend.access_token_url() in r.url
-        ][0]
+        )
         code_verifier = auth_complete.parsed_body.get("code_verifier")[0]
         self.assertEqual(
             self.backend.generate_code_challenge(code_verifier, code_challenge_method),
@@ -176,3 +181,39 @@ class OAuth2PkceS256Test(OAuth2Test):
         )
 
         return user
+
+
+class BaseAuthUrlTestMixin:
+    def check_parameters_in_authorization_url(self, auth_url_key="AUTHORIZATION_URL"):
+        """
+        Check the parameters in authorization url
+
+        When inserting parameters directly into AUTHORIZATION_URL, we expect the
+        other parameters to be added to the end of the url
+        """
+        original_url = (
+            self.backend.AUTHORIZATION_URL or self.backend.authorization_url()
+        )
+        with (
+            patch.object(
+                self.backend,
+                "authorization_url",
+                return_value=original_url + "?param1=value1&param2=value2",
+            ),
+            patch.object(
+                self.backend,
+                auth_url_key,
+                original_url + "?param1=value1&param2=value2",
+            ),
+        ):
+            # we expect an & symbol to join the different parameters
+            assert "?param1=value1&param2=value2&" in self.backend.auth_url()
+
+    def test_auth_url_parameters(self):
+        self.check_parameters_in_authorization_url()
+
+
+class OAuth1AuthUrlTestMixin(BaseAuthUrlTestMixin):
+    def test_auth_url_parameters(self):
+        self.request_token_handler()
+        self.check_parameters_in_authorization_url()

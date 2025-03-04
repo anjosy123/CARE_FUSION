@@ -19,8 +19,7 @@ class BaseTemplateStrategy:
         context = context or {}
         if tpl:
             return self.render_template(tpl, context)
-        else:
-            return self.render_string(html, context)
+        return self.render_string(html, context)
 
     def render_template(self, tpl, context):
         raise NotImplementedError("Implement in subclass")
@@ -30,9 +29,7 @@ class BaseTemplateStrategy:
 
 
 class BaseStrategy:
-    ALLOWED_CHARS = (
-        "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789"
-    )
+    ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     DEFAULT_TEMPLATE_STRATEGY = BaseTemplateStrategy
 
     def __init__(self, storage=None, tpl=None):
@@ -137,13 +134,12 @@ class BaseStrategy:
         verification_code = self.storage.code.get_code(code)
         if not verification_code or verification_code.code != code:
             return False
-        elif verification_code.email != email:
+        if verification_code.email != email:
             return False
-        elif verification_code.verified:
+        if verification_code.verified:
             return False
-        else:
-            verification_code.verify()
-            return True
+        verification_code.verify()
+        return True
 
     def render_html(self, tpl=None, html=None, context=None):
         """Render given template or raw html with given context"""

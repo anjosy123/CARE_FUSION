@@ -31,7 +31,7 @@ import jwt
 from httpretty import HTTPretty
 from jwt.algorithms import RSAAlgorithm
 
-from .oauth import OAuth2Test
+from .oauth import BaseAuthUrlTestMixin, OAuth2Test
 
 # Dummy private and private keys:
 RSA_PUBLIC_JWT_KEY = {
@@ -84,7 +84,7 @@ RSA_PRIVATE_JWT_KEY = {
 }
 
 
-class AzureADB2COAuth2Test(OAuth2Test):
+class AzureADB2COAuth2Test(OAuth2Test, BaseAuthUrlTestMixin):
     AUTH_KEY = "abcdef12-1234-9876-0000-abcdef098765"
     EXPIRES_IN = 3600
     AUTH_TIME = int(time())
@@ -107,7 +107,7 @@ class AzureADB2COAuth2Test(OAuth2Test):
             "access_token": "foobar",
             "token_type": "bearer",
             "id_token": jwt.encode(
-                key=RSAAlgorithm.from_jwk(json.dumps(RSA_PRIVATE_JWT_KEY)),
+                key=RSAAlgorithm.from_jwk(json.dumps(RSA_PRIVATE_JWT_KEY)),  # type: ignore reportOperatorIssue
                 headers={
                     "kid": RSA_PRIVATE_JWT_KEY["kid"],
                 },
@@ -139,6 +139,7 @@ class AzureADB2COAuth2Test(OAuth2Test):
 
     def extra_settings(self):
         settings = super().extra_settings()
+        assert self.name, "Name must be set in subclasses"
         settings.update(
             {
                 "SOCIAL_AUTH_" + self.name + "_POLICY": "b2c_1_signin",

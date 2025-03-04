@@ -3,7 +3,7 @@ Ping Auth OpenID Connect backend
 """
 
 from jose import jwk, jwt
-from jose.jwt import ExpiredSignatureError, JWTClaimsError, JWTError
+from jose.exceptions import ExpiredSignatureError, JWTClaimsError, JWTError
 from jose.utils import base64url_decode
 
 from social_core.backends.open_id_connect import OpenIdConnectAuth
@@ -26,6 +26,7 @@ class PingOpenIdConnect(OpenIdConnectAuth):
             decoded_sig = base64url_decode(encoded_sig.encode("utf-8"))
             if rsakey.verify(message.encode("utf-8"), decoded_sig):
                 return key
+        return None
 
     def validate_and_return_id_token(self, id_token, access_token):
         """

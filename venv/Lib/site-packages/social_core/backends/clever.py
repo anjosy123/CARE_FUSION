@@ -21,7 +21,7 @@ class CleverOAuth2(BaseOAuth2):
         return response.get("data", {}).get("id")
 
     def get_user_type(self, data):
-        return list(data.get("data", {}).get("roles", {}).keys())[0]
+        return next(iter(data.get("data", {}).get("roles", {}).keys()))
 
     def get_user_details(self, response):
         """Return user details from Classlink account"""
@@ -50,11 +50,11 @@ class CleverOAuth2(BaseOAuth2):
         """Loads user data from service"""
         identity_url = "https://api.clever.com/v3.0/me"
         user_details_url = "https://api.clever.com/v3.0/users"
-        auth_header = {"Authorization": "Bearer %s" % token}
+        auth_header = {"Authorization": f"Bearer {token}"}
         try:
             response = self.get_json(identity_url, headers=auth_header)
             user_id = response.get("data", {}).get("id")
-            user_details_url = "https://api.clever.com/v3.0/users/%s" % user_id
+            user_details_url = f"https://api.clever.com/v3.0/users/{user_id}"
             return self.get_json(user_details_url, headers=auth_header)
         except ValueError:
             return None

@@ -1,3 +1,5 @@
+# pyright: reportAttributeAccessIssue=false
+
 import base64
 import datetime
 import json
@@ -13,7 +15,7 @@ from social_core.backends.open_id_connect import OpenIdConnectAuth
 
 from ...exceptions import AuthTokenError
 from ...utils import parse_qs
-from .oauth import OAuth2Test
+from .oauth import BaseAuthUrlTestMixin, OAuth2Test
 
 sys.path.insert(0, "..")
 
@@ -64,6 +66,8 @@ class OpenIdConnectTestMixin:
         super().setUp()
         self.key = JWK_KEY.copy()
         self.public_key = JWK_PUBLIC_KEY.copy()
+
+        assert self.openid_config_body, "openid_config_body must be set"
 
         HTTPretty.register_uri(
             HTTPretty.GET,
@@ -136,7 +140,7 @@ class OpenIdConnectTestMixin:
 
         body = {"access_token": "foobar", "token_type": "bearer"}
         client_key = client_key or self.client_key
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         expiration_datetime = expiration_datetime or (
             now + datetime.timedelta(seconds=30)
         )
@@ -145,8 +149,8 @@ class OpenIdConnectTestMixin:
         issuer = issuer or self.issuer
         id_token = self.get_id_token(
             client_key,
-            timegm(expiration_datetime.utctimetuple()),
-            timegm(issue_datetime.utctimetuple()),
+            timegm(expiration_datetime.timetuple()),
+            timegm(issue_datetime.timetuple()),
             nonce,
             issuer,
         )
@@ -156,17 +160,17 @@ class OpenIdConnectTestMixin:
         body["id_token"] = jwt.encode(
             id_token,
             key=jwt.PyJWK(
-                dict(self.key, iat=timegm(issue_datetime.utctimetuple()), nonce=nonce)
+                dict(self.key, iat=timegm(issue_datetime.timetuple()), nonce=nonce)  # type: ignore reportCallIssue
             ).key,
             algorithm="RS256",
-            headers=dict(kid=kid) if kid else None,
+            headers={"kid": kid} if kid else None,
         )
 
         if tamper_message:
             header, msg, sig = body["id_token"].split(".")
             id_token["sub"] = "1235"
             msg = base64.encodebytes(json.dumps(id_token).encode()).decode()
-            body["id_token"] = ".".join([header, msg, sig])
+            body["id_token"] = f"{header}.{msg}.{sig}"
 
         return json.dumps(body)
 
@@ -190,9 +194,9 @@ class OpenIdConnectTestMixin:
         )
 
     def test_expired_signature(self):
-        expiration_datetime = datetime.datetime.utcnow() - datetime.timedelta(
-            seconds=30
-        )
+        expiration_datetime = datetime.datetime.now(
+            datetime.timezone.utc
+        ) - datetime.timedelta(seconds=30)
         self.authtoken_raised(
             "Token error: Signature has expired",
             expiration_datetime=expiration_datetime,
@@ -207,9 +211,9 @@ class OpenIdConnectTestMixin:
         )
 
     def test_invalid_issue_time(self):
-        expiration_datetime = datetime.datetime.utcnow() - datetime.timedelta(
-            seconds=self.backend.ID_TOKEN_MAX_AGE * 2
-        )
+        expiration_datetime = datetime.datetime.now(
+            datetime.timezone.utc
+        ) - datetime.timedelta(seconds=self.backend.ID_TOKEN_MAX_AGE * 2)
         self.authtoken_raised(
             "Token error: Incorrect id_token: iat", issue_datetime=expiration_datetime
         )
@@ -227,7 +231,7 @@ class OpenIdConnectTestMixin:
         )
 
 
-class BaseOpenIdConnectTest(OpenIdConnectTestMixin, OAuth2Test):
+class BaseOpenIdConnectTest(OpenIdConnectTestMixin, OAuth2Test, BaseAuthUrlTestMixin):
     backend_path = "social_core.backends.open_id_connect.OpenIdConnectAuth"
     issuer = "https://example.com"
     openid_config_body = json.dumps(

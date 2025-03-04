@@ -1,9 +1,10 @@
 import time
+from typing import Any
 
 from requests import ConnectionError, request
 
 from ..exceptions import AuthFailed
-from ..utils import SSLHttpAdapter, module_member, parse_qs, user_agent
+from ..utils import module_member, parse_qs, user_agent
 
 
 class BaseAuth:
@@ -17,7 +18,6 @@ class BaseAuth:
     GET_ALL_EXTRA_DATA = False
     REQUIRES_EMAIL_VALIDATION = False
     SEND_USER_AGENT = False
-    SSL_PROTOCOL = None
 
     def __init__(self, strategy, redirect_uri=None):
         self.strategy = strategy
@@ -32,8 +32,7 @@ class BaseAuth:
     def start(self):
         if self.uses_redirect():
             return self.strategy.redirect(self.auth_url())
-        else:
-            return self.strategy.html(self.auth_html())
+        return self.strategy.html(self.auth_html())
 
     def complete(self, *args, **kwargs):
         return self.auth_complete(*args, **kwargs)
@@ -53,7 +52,6 @@ class BaseAuth:
     def process_error(self, data):
         """Process data for errors, raise exception if needed.
         Call this method on any override of auth_complete."""
-        pass
 
     def authenticate(self, *args, **kwargs):
         """Authenticate user using social credentials
@@ -121,10 +119,12 @@ class BaseAuth:
             out.update(result)
         return out
 
-    def extra_data(self, user, uid, response, details=None, *args, **kwargs):
+    def extra_data(
+        self, user, uid, response, details=None, *args, **kwargs
+    ) -> dict[str, Any]:
         """Return default extra data to store in extra_data field"""
         data = {
-            # store the last time authentication toke place
+            # store the last time authentication took place
             "auth_time": int(time.time())
         }
         extra_data_entries = []
@@ -140,9 +140,9 @@ class BaseAuth:
             size = len(entry)
             if size >= 1 and size <= 3:
                 if size == 3:
-                    name, alias, discard = entry
+                    name, alias, discard = entry  # type: ignore[reportAssignmentType]
                 elif size == 2:
-                    (name, alias), discard = entry, False
+                    (name, alias), discard = entry, False  # type: ignore[reportAssignmentType]
                 elif size == 1:
                     name = alias = entry[0]
                     discard = False
@@ -191,7 +191,7 @@ class BaseAuth:
             except ValueError:
                 first_name = first_name or fullname or ""
                 last_name = last_name or ""
-        fullname = fullname or " ".join((first_name, last_name))
+        fullname = fullname or f"{first_name} {last_name}"
         return fullname.strip(), first_name.strip(), last_name.strip()
 
     def get_user(self, user_id):
@@ -216,7 +216,7 @@ class BaseAuth:
         )
         return extra_arguments
 
-    def uses_redirect(self):
+    def uses_redirect(self) -> bool:
         """Return True if this provider uses redirect url method,
         otherwise return false."""
         return True
@@ -236,11 +236,7 @@ class BaseAuth:
             kwargs["headers"]["User-Agent"] = self.setting("USER_AGENT") or user_agent()
 
         try:
-            if self.SSL_PROTOCOL:
-                session = SSLHttpAdapter.ssl_adapter_session(self.SSL_PROTOCOL)
-                response = session.request(method, url, *args, **kwargs)
-            else:
-                response = request(method, url, *args, **kwargs)
+            response = request(method, url, *args, **kwargs)
         except ConnectionError as err:
             raise AuthFailed(self, str(err))
         response.raise_for_status()

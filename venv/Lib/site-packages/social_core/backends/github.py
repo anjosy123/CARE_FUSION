@@ -23,9 +23,14 @@ class GithubOAuth2(BaseOAuth2):
     REDIRECT_STATE = False
     STATE_PARAMETER = True
     SEND_USER_AGENT = True
-    EXTRA_DATA = [("id", "id"), ("expires", "expires"), ("login", "login")]
+    EXTRA_DATA = [
+        ("id", "id"),
+        ("expires_in", "expires"),
+        ("login", "login"),
+        ("refresh_token", "refresh_token"),
+    ]
 
-    def api_url(self):
+    def api_url(self) -> str:
         return self.API_URL
 
     def get_user_details(self, response):

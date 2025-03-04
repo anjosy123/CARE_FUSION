@@ -1,7 +1,7 @@
 """
-Professionaly OAuth 2.0 support.
+Professionali OAuth 2.0 support.
 
-This contribution adds support for professionaly.ru OAuth 2.0.
+This contribution adds support for professionali.ru OAuth 2.0.
 Username is retrieved from the identity returned by server.
 """
 
@@ -34,10 +34,13 @@ class ProfessionaliOAuth2(BaseOAuth2):
     def user_data(self, access_token, response, *args, **kwargs):
         url = "https://api.professionali.ru/v6/users/get.json"
         fields = list(
-            set(
-                ["firstname", "lastname", "avatar_big", "link"]
-                + self.setting("EXTRA_DATA", [])
-            )
+            {
+                "firstname",
+                "lastname",
+                "avatar_big",
+                "link",
+                *self.setting("EXTRA_DATA", []),
+            }
         )
         params = {
             "fields": ",".join(fields),

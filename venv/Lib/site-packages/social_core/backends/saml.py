@@ -10,8 +10,10 @@ Terminology:
 
 import json
 
-from onelogin.saml2.auth import OneLogin_Saml2_Auth
-from onelogin.saml2.settings import OneLogin_Saml2_Settings
+from onelogin.saml2.auth import OneLogin_Saml2_Auth  # type: ignore reportMissingImports
+from onelogin.saml2.settings import (  # type: ignore reportMissingImports
+    OneLogin_Saml2_Settings,
+)
 
 from ..exceptions import AuthFailed, AuthMissingParameter
 from .base import BaseAuth
@@ -34,9 +36,9 @@ class SAMLIdentityProvider:
         self.name = name
         # name should be a slug and must not contain a colon, which
         # could conflict with uid prefixing:
-        assert (
-            ":" not in self.name and " " not in self.name
-        ), 'IdP "name" should be a slug (short, no spaces)'
+        assert ":" not in self.name and " " not in self.name, (
+            'IdP "name" should be a slug (short, no spaces)'
+        )
         self.conf = kwargs
 
     def get_user_permanent_id(self, attributes):
@@ -74,7 +76,7 @@ class SAMLIdentityProvider:
         another attribute to use.
         """
         key = self.conf.get(conf_key, default_attribute)
-        value = attributes[key] if key in attributes else None
+        value = attributes.get(key, None)
         if isinstance(value, list):
             value = value[0] if value else None
         return value
@@ -386,4 +388,3 @@ class SAMLAuth(BaseAuth):
         be authenticated, or do nothing to allow the login pipeline to
         continue.
         """
-        pass

@@ -63,7 +63,8 @@ class OpenIdAuth(BaseAuth):
 
         # Use Simple Registration attributes if provided
         if sreg_names:
-            resp = sreg.SRegResponse.fromSuccessResponse(response)
+            # pyright does not detect the classmethod correctly
+            resp = sreg.SRegResponse.fromSuccessResponse(response)  # type: ignore[reportCallIssue]
             if resp:
                 values.update(
                     (alias, resp.get(name) or "") for name, alias in sreg_names
@@ -71,11 +72,13 @@ class OpenIdAuth(BaseAuth):
 
         # Use Attribute Exchange attributes if provided
         if ax_names:
-            resp = ax.FetchResponse.fromSuccessResponse(response)
+            # pyright does not detect the classmethod correctly
+            resp = ax.FetchResponse.fromSuccessResponse(response)  # type: ignore[reportCallIssue]
             if resp:
                 for src, alias in ax_names:
                     name = alias.replace("old_", "")
                     values[name] = resp.getSingle(src, "") or values.get(name)
+
         return values
 
     def get_user_details(self, response):
@@ -183,11 +186,11 @@ class OpenIdAuth(BaseAuth):
     def process_error(self, data):
         if not data:
             raise AuthException(self, "OpenID relying party endpoint")
-        elif data.status == FAILURE:
+        if data.status == FAILURE:
             raise AuthFailed(self, data.message)
-        elif data.status == CANCEL:
+        if data.status == CANCEL:
             raise AuthCanceled(self)
-        elif data.status != SUCCESS:
+        if data.status != SUCCESS:
             raise AuthUnknownError(self, data.status)
 
     def setup_request(self, params=None):
@@ -253,7 +256,6 @@ class OpenIdAuth(BaseAuth):
         provider URL."""
         if self.URL:
             return self.URL
-        elif OPENID_ID_FIELD in self.data:
+        if OPENID_ID_FIELD in self.data:
             return self.data[OPENID_ID_FIELD]
-        else:
-            raise AuthMissingParameter(self, OPENID_ID_FIELD)
+        raise AuthMissingParameter(self, OPENID_ID_FIELD)

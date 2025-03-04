@@ -1,6 +1,6 @@
 """
-    ORCID OAuth2 Application backend, docs at:
-    https://python-social-auth.readthedocs.io/en/latest/backends/orcid.html
+ORCID OAuth2 Application backend, docs at:
+https://python-social-auth.readthedocs.io/en/latest/backends/orcid.html
 """
 
 from .oauth import BaseOAuth2
@@ -24,8 +24,7 @@ class ORCIDOAuth2(BaseOAuth2):
     ]
 
     def auth_params(self, state=None):
-        params = super().auth_params(state)
-        return params
+        return super().auth_params(state)
 
     def get_user_details(self, response):
         """Return user details from ORCID account"""
@@ -76,7 +75,8 @@ class ORCIDOAuth2(BaseOAuth2):
 
             if name:
                 first_name = name.get("given-names", {}).get("value", "")
-                last_name = name.get("family-name", {}).get("value", "")
+                if (family_name := name.get("family-name", None)) is not None:
+                    last_name = family_name.get("value", "")
 
             emails = person.get("emails")
             if emails:
@@ -120,7 +120,7 @@ class ORCIDOAuth2(BaseOAuth2):
                 self.USER_ID_URL,
                 headers={
                     "Content-Type": "application/json",
-                    "Authorization": f"Bearer {str(access_token)}",
+                    "Authorization": f"Bearer {access_token!s}",
                 },
             )
 

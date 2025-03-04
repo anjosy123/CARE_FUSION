@@ -106,7 +106,8 @@ class VKOAuth2(BaseOAuth2):
             "screen_name",
             "nickname",
             "photo",
-        ] + self.setting("EXTRA_DATA", [])
+            *self.setting("EXTRA_DATA", []),
+        ]
 
         fields = ",".join(set(request_data))
         data = vk_api(
@@ -123,8 +124,7 @@ class VKOAuth2(BaseOAuth2):
             msg = error.get("error_msg", "Unknown error")
             if error.get("error_code") == 5:
                 raise AuthTokenRevoked(self, msg)
-            else:
-                raise AuthException(self, msg)
+            raise AuthException(self, msg)
 
         if data:
             data = data.get("response")[0]
@@ -151,7 +151,7 @@ class VKAppOAuth2(VKOAuth2):
                 "_".join([key, self.data.get("viewer_id"), secret]).encode("utf-8")
             ).hexdigest()
             if check_key != auth_key:
-                raise ValueError("VK.com authentication failed: invalid " "auth key")
+                raise ValueError("VK.com authentication failed: invalid auth key")
 
         user_check = self.setting("USERMODE")
         user_id = self.data.get("viewer_id")
@@ -196,7 +196,7 @@ def vk_api(backend, method, data):
         data["method"] = method
         data["format"] = "json"
         url = "https://api.vk.com/api.php"
-        param_list = sorted(list(item + "=" + data[item] for item in data))
+        param_list = sorted(item + "=" + data[item] for item in data)
         data["sig"] = md5(("".join(param_list) + secret).encode("utf-8")).hexdigest()
     else:
         url = "https://api.vk.com/method/" + method

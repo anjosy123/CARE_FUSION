@@ -53,7 +53,7 @@ class OpenIdConnectAuth(BaseOAuth2):
     ID_KEY = "sub"
     USERNAME_KEY = "preferred_username"
     JWT_ALGORITHMS = ["RS256"]
-    JWT_DECODE_OPTIONS = dict()
+    JWT_DECODE_OPTIONS = {}
     # When these options are unspecified, server will choose via openid autoconfiguration
     ID_TOKEN_ISSUER = ""
     ACCESS_TOKEN_URL = ""
@@ -115,12 +115,11 @@ class OpenIdConnectAuth(BaseOAuth2):
 
     @cache(ttl=86400)
     def get_jwks_keys(self):
-        keys = self.get_remote_jwks_keys()
+        return self.get_remote_jwks_keys()
 
         # Add client secret as oct key so it can be used for HMAC signatures
         # client_id, client_secret = self.get_key_and_secret()
         # keys.append({'key': client_secret, 'kty': 'oct'})
-        return keys
 
     def get_remote_jwks_keys(self):
         response = self.request(self.jwks_uri())
@@ -152,7 +151,7 @@ class OpenIdConnectAuth(BaseOAuth2):
         self.strategy.storage.association.remove([nonce_id])
 
     def validate_claims(self, id_token):
-        utc_timestamp = timegm(datetime.datetime.utcnow().utctimetuple())
+        utc_timestamp = timegm(datetime.datetime.now(datetime.timezone.utc).timetuple())
 
         if "nbf" in id_token and utc_timestamp < id_token["nbf"]:
             raise AuthTokenError(self, "Incorrect id_token: nbf")
@@ -185,7 +184,7 @@ class OpenIdConnectAuth(BaseOAuth2):
                 # In case the key id is not found in the cached keys, just
                 # reload the JWKS keys. Ideally this should be done by
                 # invalidating the cache.
-                self.get_jwks_keys.invalidate()
+                self.get_jwks_keys.invalidate()  # type: ignore[reportFunctionMemberAccess]
                 keys = self.get_jwks_keys()
 
         for key in keys:

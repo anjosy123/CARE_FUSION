@@ -3,7 +3,7 @@ import time
 
 import jwt
 
-from .oauth import OAuth2Test
+from .oauth import BaseAuthUrlTestMixin, OAuth2Test
 
 _PRIVATE_KEY_HEADERLESS = """
 MIIEowIBAAKCAQEAvyo2hx1L3ALHeUd/6xk/lIhTyZ/HJZ+Sss/ge6T6gPdES4Dw
@@ -33,13 +33,11 @@ mSNns0AssDwr4TheET7klb7AvbBKrNSP/Tz9AzkwMz148T2ffkPFMZRuvRT+eQ5Z
 ey4gIBKESJF6X9fefiawCrI3+PC7x9x0ngP9R4t/OzDWVAYn9gmd
 """.strip()
 
-_PRIVATE_KEY = """
+_PRIVATE_KEY = f"""
 -----BEGIN RSA PRIVATE KEY-----
 {_PRIVATE_KEY_HEADERLESS}
 -----END RSA PRIVATE KEY-----
-""".format(
-    _PRIVATE_KEY_HEADERLESS=_PRIVATE_KEY_HEADERLESS
-)
+"""
 
 _PUBLIC_KEY_HEADERLESS = """
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvyo2hx1L3ALHeUd/6xk/
@@ -51,13 +49,11 @@ hXI5SIHB1lS88SJ9/+E/flJJPD2NNzv2z3HAVuTUOYi48fnXFHpJLGv+mGLNtE77
 hwIDAQAB
 """.strip()
 
-_PUBLIC_KEY = """
+_PUBLIC_KEY = f"""
 -----BEGIN PUBLIC KEY-----
 {_PUBLIC_KEY_HEADERLESS}
 -----END PUBLIC KEY-----
-""".format(
-    _PUBLIC_KEY_HEADERLESS=_PUBLIC_KEY_HEADERLESS
-)
+"""
 
 _KEY = "example"
 _SECRET = "1234abcd-1234-abcd-1234-abcd1234adcd"
@@ -93,7 +89,7 @@ def _decode(token, key=_PUBLIC_KEY, algorithms=[_ALGORITHM], audience=_KEY):
     return jwt.decode(token, key=key, algorithms=algorithms, audience=audience)
 
 
-class KeycloakOAuth2Test(OAuth2Test):
+class KeycloakOAuth2Test(OAuth2Test, BaseAuthUrlTestMixin):
     backend_path = "social_core.backends.keycloak.KeycloakOAuth2"
     expected_username = "john.doe"
     access_token_body = json.dumps(

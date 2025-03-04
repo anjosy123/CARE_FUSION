@@ -10,9 +10,7 @@ def migrate_json_field(apps, schema_editor):
     Partial = apps.get_model("social_django", "Partial")
     db_alias = schema_editor.connection.alias
     to_be_updated = []
-    for auth in (
-        UserSocialAuth.objects.using(db_alias).exclude(extra_data='""').iterator()
-    ):
+    for auth in UserSocialAuth.objects.using(db_alias).exclude(extra_data='""').iterator():
         old_value = auth.extra_data
         if isinstance(old_value, str):
             try:
@@ -67,7 +65,7 @@ def migrate_json_field_backwards(apps, schema_editor):
         to_be_updated.clear()
 
     is_text_field = issubclass(
-        Partial._meta.get_field("data"),
+        type(Partial._meta.get_field("data")),
         models.TextField,
     )
     for auth in Partial.objects.using(db_alias).all():
@@ -84,7 +82,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(
-            migrate_json_field, migrate_json_field_backwards, elidable=True
-        ),
+        migrations.RunPython(migrate_json_field, migrate_json_field_backwards, elidable=True),
     ]

@@ -1,9 +1,11 @@
+# pyright: reportAttributeAccessIssue=false
+
 import json
 
-from .oauth import OAuth2Test
+from .oauth import BaseAuthUrlTestMixin, OAuth2Test
 
 
-class CognitoAuth2Test(OAuth2Test):
+class CognitoAuth2Test(OAuth2Test, BaseAuthUrlTestMixin):
     backend_path = "social_core.backends.cognito.CognitoOAuth2"
     pool_domain = "https://social_core.auth.eu-west-1.amazoncognito.com"
     expected_username = "cognito.account.ABCDE1234"
@@ -23,6 +25,7 @@ class CognitoAuth2Test(OAuth2Test):
 
     def extra_settings(self):
         settings = super().extra_settings()
+        assert self.name, "subclasses must set the name attribute"
         settings.update(
             {
                 "SOCIAL_AUTH_" + self.name + "_POOL_DOMAIN": self.pool_domain,
