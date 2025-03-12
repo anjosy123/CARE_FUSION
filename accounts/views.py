@@ -837,9 +837,9 @@ def palliatives_dashboard(request):
         messages.error(request, "Please login to access the dashboard")
         return redirect('login')
     
-    org_id = request.session.get('org_id')
-    
     try:
+        org_id = request.session.get('org_id')
+        
         # Get available equipment count
         available_equipment_count = MedicalEquipment.objects.filter(
             organization_id=org_id,
@@ -2527,40 +2527,6 @@ def schedule_team_visit(request):
         medium_priority = []
         low_priority = []
 
-        for patient in patients:
-            # Get latest visit record
-            latest_record = patient.visit_records.order_by('-visit_date').first()
-            
-            if latest_record:
-                # Calculate priority score using the same formula as priority dashboard
-                priority_score = (
-                    float(latest_record.fall_risk_score or 0) * 0.3 +
-                    float(latest_record.deterioration_risk or 0) * 0.4 +
-                    float(latest_record.overall_health_score or 0) * 0.3
-                )
-                patient.visit_priority_score = priority_score
-            else:
-                # If no visit record exists, use default priority score
-                patient.visit_priority_score = 0.0
-
-            # Group based on priority score
-            if patient.visit_priority_score >= 7.0:
-                high_priority.append(patient)
-            elif patient.visit_priority_score >= 4.0:
-                medium_priority.append(patient)
-            else:
-                low_priority.append(patient)
-
-        # Sort each group by priority score in descending order
-        high_priority.sort(key=lambda x: x.visit_priority_score, reverse=True)
-        medium_priority.sort(key=lambda x: x.visit_priority_score, reverse=True)
-        low_priority.sort(key=lambda x: x.visit_priority_score, reverse=True)
-
-        # Get team if selected
-        team = None
-        if selected_team:
-            team = get_object_or_404(Team, id=selected_team, organization=organization)
-
         # Handle form submission
         if request.method == 'POST':
             team_id = request.POST.get('team')
@@ -2589,7 +2555,7 @@ def schedule_team_visit(request):
                 return redirect('team_visit_list')
             else:
                 messages.error(request, 'Please fill all required fields.')
-
+        
         context = {
             'organization': organization,
             'teams': teams,
@@ -2747,46 +2713,46 @@ def get_available_slots(request, team_id, date):
     
     return JsonResponse({'available_slots': available_slots})
 
-def team_communication(request, team_id):
-    role = request.session.get('role')
-    org_id = request.session.get('org_id')
+# def team_communication(request, team_id):
+#     role = request.session.get('role')
+#     org_id = request.session.get('org_id')
 
-    if not role or not org_id:
-        messages.error(request, "Please log in to access this page.")
-        return redirect('login')
+#     if not role or not org_id:
+#         messages.error(request, "Please log in to access this page.")
+#         return redirect('login')
 
-    organization = get_object_or_404(Organizations, id=org_id)
-    team = get_object_or_404(Team, id=team_id, organization=organization)
+#     organization = get_object_or_404(Organizations, id=org_id)
+#     team = get_object_or_404(Team, id=team_id, organization=organization)
 
-    if role == 'staff':
-        staff_id = request.session.get('staff_id')
-        if not staff_id:
-            messages.error(request, "Staff information not found. Please log in again.")
-            return redirect('login')
+#     if role == 'staff':
+#         staff_id = request.session.get('staff_id')
+#         if not staff_id:
+#             messages.error(request, "Staff information not found. Please log in again.")
+#             return redirect('login')
 
-        staff = get_object_or_404(Staff, id=staff_id)
-        if staff not in team.members.all():
-            messages.error(request, "You are not a member of this team.")
-            return redirect('team_list')
+#         staff = get_object_or_404(Staff, id=staff_id)
+#         if staff not in team.members.all():
+#             messages.error(request, "You are not a member of this team.")
+#             return redirect('team_list')
 
-        sender_id = staff_id
-        sender_type = 'staff'
-    elif role == 'organization':
-        sender_id = org_id
-        sender_type = 'organization'
-    else:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('login')
+#         sender_id = staff_id
+#         sender_type = 'staff'
+#     elif role == 'organization':
+#         sender_id = org_id
+#         sender_type = 'organization'
+#     else:
+#         messages.error(request, "You don't have permission to access this page.")
+#         return redirect('login')
 
-    team_messages = TeamMessage.objects.filter(team=team)
+#     team_messages = TeamMessage.objects.filter(team=team)
 
-    context = {
-        'team': team,
-        'team_messages': team_messages,
-        'sender_id': sender_id,
-        'sender_type': sender_type,
-    }
-    return render(request, 'Organizations/team_communication.html', context)
+#     context = {
+#         'team': team,
+#         'team_messages': team_messages,
+#         'sender_id': sender_id,
+#         'sender_type': sender_type,
+#     }
+#     return render(request, 'Organizations/team_communication.html', context)
 
 def visit_checklist_notes(request, visit_id):
     org_id = request.session.get('org_id')
@@ -2853,28 +2819,28 @@ def team_dashboard(request):
     
     return render(request, 'staff/team_dashboard.html', context)
 
-def get_team_messages(request, team_id):
-    staff_id = request.session.get('staff_id')
-    if not staff_id:
-        return JsonResponse({'error': 'Not authenticated'}, status=401)
+# def get_team_messages(request, team_id):
+#     staff_id = request.session.get('staff_id')
+#     if not staff_id:
+#         return JsonResponse({'error': 'Not authenticated'}, status=401)
     
-    staff = get_object_or_404(Staff, id=staff_id)
-    team = get_object_or_404(Team, id=team_id)
+#     staff = get_object_or_404(Staff, id=staff_id)
+#     team = get_object_or_404(Team, id=team_id)
     
-    if staff not in team.members.all():
-        return JsonResponse({'error': 'Not a member of this team'}, status=403)
+#     if staff not in team.members.all():
+#         return JsonResponse({'error': 'Not a member of this team'}, status=403)
     
-    messages = TeamMessage.objects.filter(team=team).order_by('created_at')
-    message_data = [
-        {
-            'sender_name': msg.sender.get_full_name() if msg.sender else msg.organization.org_name,
-            'content': msg.content,
-            'created_at': msg.created_at.strftime('%Y-%m-%d %H:%M:%S')
-        }
-        for msg in messages
-    ]
+#     messages = TeamMessage.objects.filter(team=team).order_by('created_at')
+#     message_data = [
+#         {
+#             'sender_name': msg.sender.get_full_name() if msg.sender else msg.organization.org_name,
+#             'content': msg.content,
+#             'created_at': msg.created_at.strftime('%Y-%m-%d %H:%M:%S')
+#         }
+#         for msg in messages
+#     ]
     
-    return JsonResponse({'messages': message_data})
+#     return JsonResponse({'messages': message_data})
 
 @staff_login_required
 def team_dashboard_change_password(request):

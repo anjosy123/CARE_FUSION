@@ -538,6 +538,74 @@
         .progress-bar {
             transition: width 0.3s ease;
         }
+
+        /* Chat widget additional styles */
+        .chat-widget {
+            transition: all 0.3s ease;
+        }
+
+        .chat-widget.minimized .chat-body {
+            display: none;
+        }
+
+        .btn-minimize {
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 5px;
+            transition: transform 0.2s;
+        }
+
+        .btn-minimize:hover {
+            transform: scale(1.1);
+        }
+
+        .typing-indicator {
+            padding: 8px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            word-break: break-word;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        .message-text {
+            line-height: 1.4;
+        }
+
+        /* Improve scrollbar appearance */
+        .messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .messages::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
     </style>
 </head>
 <body>
@@ -1145,6 +1213,66 @@
             </div>
         </div>
     </div>
+
+    <!-- Add this before the closing body tag -->
+    {% include 'staff/shared/team_chat.html' %}
+
+    <!-- Add this before the closing body tag, after including team_chat.html -->
+    <script src="{% static 'js/chat.js' %}"></script>
+    <script>
+        // Initialize chat for team members
+        const staffId = '{{ request.session.staff_id }}';
+        const teamId = '{{ team.id }}';
+        let chatSocket;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            chatSocket = initializeWebSocket();
+            
+            // Add any existing team-specific chat initialization
+            if (teamId) {
+                loadTeamMessages();
+            }
+        });
+
+        function loadTeamMessages() {
+            fetch(`/api/team/${teamId}/messages/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const messageContainer = document.getElementById('messageContainer');
+                        messageContainer.innerHTML = ''; // Clear existing messages
+                        
+                        data.messages.forEach(message => {
+                            appendMessage({
+                                message: message.content,
+                                sender: message.sender_name,
+                                timestamp: message.timestamp,
+                                is_self: message.sender_id === staffId
+                            });
+                        });
+                        
+                        scrollToBottom();
+                    }
+                });
+        }
+
+        // Add typing indicator functions
+        function showTypingIndicator(sender) {
+            const indicator = document.getElementById('typingIndicator');
+            indicator.querySelector('.typing-text').textContent = `${sender} is typing...`;
+            indicator.style.display = 'block';
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'none';
+        }
+
+        // Add scroll to bottom function
+        function scrollToBottom() {
+            const messageContainer = document.getElementById('messageContainer');
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

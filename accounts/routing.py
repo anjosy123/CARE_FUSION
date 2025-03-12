@@ -1,7 +1,8 @@
 from django.urls import re_path
 from . import consumers
 
+# Define WebSocket URL patterns
 websocket_urlpatterns = [
-    re_path(r'ws/team/(?P<team_id>\w+)/$', consumers.TeamChatConsumer.as_asgi()),
+    re_path(r'^ws/patient/chat/$', consumers.PatientChatConsumer.as_asgi()),
 ]
 

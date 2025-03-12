@@ -2,6 +2,9 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import Team, TeamMessage, Staff, Organizations
+from .services.gemini_service import GeminiService
+from .services.chat_service import MedicalChatService
+import asyncio
 
 class TeamChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -64,3 +67,63 @@ class TeamChatConsumer(AsyncWebsocketConsumer):
         elif sender_type == 'organization':
             organization = Organizations.objects.get(id=sender_id)
             TeamMessage.objects.create(team=team, organization=organization, content=message)
+
+class PatientChatConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        try:
+            self.chat_service = MedicalChatService()
+            await self.accept()
+            
+            # Send welcome message
+            await self.send(json.dumps({
+                'type': 'chat_message',
+                'message': "Hello! I'm your medical assistant. I can help you with medical information, understanding treatments, and general health questions. How can I assist you today?",
+                'is_bot': True
+            }))
+            
+        except Exception as e:
+            print(f"Connection error: {str(e)}")
+            await self.close()
+
+    async def disconnect(self, close_code):
+        pass
+
+    async def receive(self, text_data):
+        try:
+            data = json.loads(text_data)
+            message = data.get('message', '').strip()
+            
+            if not message:
+                return
+            
+            # Show typing indicator
+            await self.send(json.dumps({
+                'type': 'typing_indicator',
+                'show': True
+            }))
+            
+            # Get response from Gemini
+            response = await self.chat_service.get_response(message)
+            
+            # Add small delay to simulate natural typing
+            await asyncio.sleep(1)
+            
+            # Hide typing indicator
+            await self.send(json.dumps({
+                'type': 'typing_indicator',
+                'show': False
+            }))
+            
+            # Send response
+            await self.send(json.dumps({
+                'type': 'chat_message',
+                'message': response,
+                'is_bot': True
+            }))
+            
+        except Exception as e:
+            print(f"Error in receive: {str(e)}")
+            await self.send(json.dumps({
+                'type': 'error',
+                'message': 'I apologize, but I encountered an error. Please try again.'
+            }))

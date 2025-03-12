@@ -56,6 +56,7 @@ RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET')
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -74,9 +75,12 @@ INSTALLED_APPS = [
 ASGI_APPLICATION = 'care_fusion.asgi.application'
 
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+        "CONFIG": {
+            "capacity": 1500,
+        },
+    }
 }
 
 CACHES = {
@@ -295,8 +299,20 @@ RECEIPT_ROOT = os.path.join(MEDIA_ROOT, 'receipts')
 os.makedirs(RECEIPT_ROOT, exist_ok=True)
 
 # API Ninjas Configuration
-API_NINJAS_KEY = 'YOUR_API_NINJAS_KEY'  # Replace with your actual API key
+# API_NINJAS_KEY = 'YOUR_API_NINJAS_KEY'  # Replace with your actual API key
 
-# Add this with your other configuration settings
-MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '')  # Get from environment variable
+# # Add this with your other configuration settings
+# MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '')  # Get from environment variable
+
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
+# Add WebSocket settings
+WEBSOCKET_TIMEOUT = 30  # 30 seconds timeout
+WEBSOCKET_ACCEPT_ALL = True  # Accept all connections
+
+# Increase the timeout for ASGI
+ASGI_TIMEOUT = 60  # 60 seconds timeout
+
+# Add Daphne to the list of INSTALLED_SERVERS
+INSTALLED_SERVERS = ['daphne']
 

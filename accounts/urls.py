@@ -6,6 +6,7 @@ from .views import (
     verify_email
 )
 from django.contrib.auth import views as auth_views
+from . import consumers
 
 urlpatterns = [
     # Social Auth
@@ -146,10 +147,8 @@ urlpatterns = [
     path('team-visit-calendar/', views.team_visit_calendar, name='team_visit_calendar'),
     path('reschedule-team-visit/<int:visit_id>/', views.reschedule_team_visit, name='reschedule_team_visit'),
     path('get-available-slots/<int:team_id>/<str:date>/', views.get_available_slots, name='get_available_slots'),
-    path('team-communication/<int:team_id>/', views.team_communication, name='team_communication'),
     path('visit-checklist-notes/<int:visit_id>/', views.visit_checklist_notes, name='visit_checklist_notes'),
     path('team/dashboard/', views.team_dashboard, name='team_dashboard'),
-    path('api/team-messages/<int:team_id>/', views.get_team_messages, name='get_team_messages'),
     path('team-dashboard/change-password/', views.team_dashboard_change_password, name='team_dashboard_change_password'),
     path('team/<int:team_id>/', views.team_detail, name='team_detail'),
     path('request-appointment/', views.request_appointment, name='request_appointment'),
@@ -177,28 +176,6 @@ urlpatterns = [
     path('team-visit/<int:visit_id>/cancel/', views.cancel_team_visit, name='cancel_team_visit'),
     path('toggle-staff-status/<int:staff_id>/', views.toggle_staff_status, name='toggle_staff_status'),
 
-    # path('manage-taxi-drivers/', views.manage_taxi_drivers, name='manage_taxi_drivers'),
-    # path('request-emergency-taxi/', views.request_emergency_taxi, name='request_emergency_taxi'),
-    # path('approve-taxi-request/<int:booking_id>/', views.approve_taxi_request, name='approve_taxi_request'),
-    # path('view-taxi-bookings/', views.view_taxi_bookings, name='view_taxi_bookings'),
-    # path('taxi-payment-callback/', views.taxi_payment_callback, name='taxi_payment_callback'),
-    
-    # Add these to your urlpatterns
-    # path('driver/dashboard/', views.driver_dashboard, name='driver_dashboard'),
-    # path('driver/earnings/', views.driver_earnings, name='driver_earnings'),
-    # path('driver/leave/', views.driver_leave, name='driver_leave'),
-    # path('driver/toggle-availability/', views.toggle_driver_availability, name='toggle_driver_availability'),
-
-    # Add these to your urlpatterns
-    # path('organization/leaves/', views.manage_leaves, name='manage_leaves'),
-    # path('organization/handle-leave/', views.handle_leave_request, name='handle_leave_request'),
-    # path('password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
-    # path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
-    # path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
-    # path('reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
-    # path('verify-driver/<str:token>/', views.verify_driver_email, name='verify_driver_email'),
-    # path('driver/forgot-password/', views.driver_forgot_password, name='driver_forgot_password'),
-    # path('driver/reset-password/<str:token>/', views.driver_reset_password, name='driver_reset_password'),
     path('request-service/<int:org_id>/', views.service_request_form, name='service_request_form'),
     path('upcoming-team-visits/', views.upcoming_team_visits, name='upcoming_team_visits'),
     path('save-patient-data/', views.save_patient_data, name='save_patient_data'),
@@ -264,5 +241,9 @@ urlpatterns = [
     path('api/rental/<int:rental_id>/end-service/', views.end_rental_service, name='end_rental_service'),
     path('api/rental/<int:rental_id>/org-details/', views.get_rental_org_details, name='rental_org_details'),
     path('team/visit/<int:visit_id>/record/', views.record_visit, name='record_visit'),
+]
+
+websocket_urlpatterns = [
+    path('ws/patient/chat/', consumers.PatientChatConsumer.as_asgi()),
 ]
 
