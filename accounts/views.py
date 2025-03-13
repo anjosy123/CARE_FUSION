@@ -41,7 +41,8 @@ from .utils import (
     generate_rental_receipt, send_rental_rejection_notification, 
     send_rental_request_notification, send_rental_approval_notification,
     create_monthly_rental_order, calculate_monthly_rent,
-    create_refund_order, send_rental_end_notification
+    create_refund_order, send_rental_end_notification,
+    send_delivery_otp
 )
 from django.db.models import Q, Sum, Count, Avg, F
 from django.contrib.auth.tokens import default_token_generator
@@ -65,6 +66,13 @@ from math import radians, sin, cos, sqrt, atan2
 import requests
 from django.core.cache import cache
 from datetime import timedelta
+
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+from .models import User, NotificationPreferences
+from math import radians, sin, cos, sqrt, atan2
 
 def send_appointment_email(appointment, action, recipient='patient'):
     subject = f'Appointment {action.capitalize()}'
@@ -837,9 +845,9 @@ def palliatives_dashboard(request):
         messages.error(request, "Please login to access the dashboard")
         return redirect('login')
     
+    org_id = request.session.get('org_id')
+    
     try:
-        org_id = request.session.get('org_id')
-        
         # Get available equipment count
         available_equipment_count = MedicalEquipment.objects.filter(
             organization_id=org_id,
@@ -890,6 +898,9 @@ def palliatives_dashboard(request):
     except Exception as e:
         messages.error(request, f"Error loading dashboard: {str(e)}")
         return redirect('login')
+
+
+
 
 def get_dashboard_context(organization):
     return {
@@ -2516,10 +2527,13 @@ def schedule_team_visit(request):
         # Get all active teams for the organization
         teams = Team.objects.filter(organization=organization, is_active=True)
         
-        # Get all approved patients with their latest visit records
+        # Get approved patients excluding those with scheduled visits
         patients = User.objects.filter(
             servicerequest__organization=organization,
             servicerequest__status='approved'
+        ).exclude(
+            # Exclude patients who already have scheduled visits
+            team_visits__status='SCHEDULED'
         ).prefetch_related('visit_records').distinct()
 
         # Group patients by priority based on their latest visit records
@@ -2527,7 +2541,33 @@ def schedule_team_visit(request):
         medium_priority = []
         low_priority = []
 
-        # Handle form submission
+        for patient in patients:
+            # Get latest visit record
+            latest_record = patient.visit_records.order_by('-visit_date').first()
+            
+            if latest_record:
+                priority_score = (
+                    float(latest_record.fall_risk_score or 0) * 0.3 +
+                    float(latest_record.deterioration_risk or 0) * 0.4 +
+                    float(latest_record.overall_health_score or 0) * 0.3
+                )
+                patient.visit_priority_score = priority_score
+            else:
+                patient.visit_priority_score = 0.0
+
+            # Group based on priority score
+            if patient.visit_priority_score >= 7.0:
+                high_priority.append(patient)
+            elif patient.visit_priority_score >= 4.0:
+                medium_priority.append(patient)
+            else:
+                low_priority.append(patient)
+
+        # Sort each group by priority score
+        high_priority.sort(key=lambda x: x.visit_priority_score, reverse=True)
+        medium_priority.sort(key=lambda x: x.visit_priority_score, reverse=True)
+        low_priority.sort(key=lambda x: x.visit_priority_score, reverse=True)
+
         if request.method == 'POST':
             team_id = request.POST.get('team')
             patient_id = request.POST.get('patient')
@@ -2536,26 +2576,42 @@ def schedule_team_visit(request):
             end_time = request.POST.get('end_time')
             purpose = request.POST.get('purpose', '')
 
-            # Validate and create visit
-            if team_id and patient_id and scheduled_date and start_time and end_time:
-                team = get_object_or_404(Team, id=team_id)
-                patient = get_object_or_404(User, id=patient_id)
-                
-                visit = TeamVisit.objects.create(
-                    team=team,
-                    patient=patient,
-                    scheduled_date=scheduled_date,
-                    start_time=start_time,
-                    end_time=end_time,
-                    purpose=purpose,
-                    status='SCHEDULED'
-                )
-                
-                messages.success(request, 'Team visit scheduled successfully.')
-                return redirect('team_visit_list')
-            else:
-                messages.error(request, 'Please fill all required fields.')
-        
+            # Validate time range (8 AM to 6 PM)
+            start_hour = int(start_time.split(':')[0])
+            end_hour = int(end_time.split(':')[0])
+            
+            if start_hour < 8 or end_hour > 18:
+                messages.error(request, 'Visits can only be scheduled between 8:00 AM and 6:00 PM')
+                return redirect('schedule_team_visit')
+
+            # Check for scheduling conflicts
+            if TeamVisit.objects.filter(
+                team_id=team_id,
+                scheduled_date=scheduled_date,
+                status='SCHEDULED'
+            ).filter(
+                Q(start_time__lt=end_time, end_time__gt=start_time)
+            ).exists():
+                messages.error(request, 'This time slot is already booked')
+                return redirect('schedule_team_visit')
+
+            # Create the visit if validation passes
+            team = get_object_or_404(Team, id=team_id)
+            patient = get_object_or_404(User, id=patient_id)
+            
+            visit = TeamVisit.objects.create(
+                team=team,
+                patient=patient,
+                scheduled_date=scheduled_date,
+                start_time=start_time,
+                end_time=end_time,
+                purpose=purpose,
+                status='SCHEDULED'
+            )
+            
+            messages.success(request, 'Team visit scheduled successfully.')
+            return redirect('team_visit_list')
+
         context = {
             'organization': organization,
             'teams': teams,
@@ -2570,7 +2626,7 @@ def schedule_team_visit(request):
         return render(request, 'Organizations/schedule_team_visit.html', context)
         
     except Exception as e:
-        messages.error(request, f"Error scheduling visit: {str(e)}")
+        messages.error(request, f'Error scheduling visit: {str(e)}')
         return redirect('team_visit_list')
 
 
@@ -6051,3 +6107,30 @@ def record_visit(request, visit_id):
     except Exception as e:
         messages.error(request, f"Error loading visit form: {str(e)}")
         return redirect('team_dashboard')
+
+
+
+def track_patient_location(request, visit_id):
+    visit = get_object_or_404(TeamVisit, id=visit_id)
+    
+    # Get patient's location
+    try:
+        patient_location = UserLocation.objects.get(user=visit.patient)
+        
+        context = {
+            'visit': visit,
+            'patient_location': {
+                'lat': patient_location.latitude,
+                'lng': patient_location.longitude
+            },
+            'staff_location': {
+                'lat': request.GET.get('staff_lat'),
+                'lng': request.GET.get('staff_lng')
+            } if request.GET.get('staff_lat') and request.GET.get('staff_lng') else None
+        }
+        
+        return render(request, 'teams/track_location.html', context)
+        
+    except UserLocation.DoesNotExist:
+        messages.error(request, "Patient location not found")
+        return redirect('staff_dashboard')

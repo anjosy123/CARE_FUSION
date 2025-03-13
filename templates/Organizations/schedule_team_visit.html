@@ -11,6 +11,12 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css" rel="stylesheet">
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <!-- jQuery Timepicker CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-timepicker/1.13.18/jquery.timepicker.min.css">
     
     <style>
         body {
@@ -208,6 +214,16 @@
             font-weight: bold;
         }
     </style>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- jQuery Timepicker -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-timepicker/1.13.18/jquery.timepicker.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-timepicker/1.13.18/jquery.timepicker.min.js"></script>
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <div class="topbar">
@@ -269,7 +285,7 @@
         </div>
         {% endif %}
 
-        <form method="post" action="{% url 'schedule_team_visit' %}">
+        <form id="scheduleVisitForm" method="POST">
             {% csrf_token %}
             
             <div id="customErrorMessages" class="mb-4" style="display: none;">
@@ -340,17 +356,27 @@
                        required min="{{ min_date|date:'Y-m-d' }}" max="{{ max_date|date:'Y-m-d' }}">
             </div>
 
-            <div class="row">
+            <div class="row mb-3">
                 <div class="col-md-6">
-                    <div class="form-group mb-3">
-                        <label for="start_time" class="form-label">Start Time</label>
-                        <input type="time" class="form-control" id="start_time" name="start_time" required>
+                    <div class="form-group">
+                        <label for="start_time" class="form-label required-field">Start Time</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="start_time" name="start_time" 
+                                   placeholder="Select start time" required>
+                            <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                        </div>
+                        <small class="form-text text-muted">Available between 8:00 AM and 6:00 PM</small>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="form-group mb-3">
-                        <label for="end_time" class="form-label">End Time</label>
-                        <input type="time" class="form-control" id="end_time" name="end_time" required>
+                    <div class="form-group">
+                        <label for="end_time" class="form-label required-field">End Time</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="end_time" name="end_time" 
+                                   placeholder="Select end time" required>
+                            <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                        </div>
+                        <small class="form-text text-muted">Visit duration: 30 min - 4 hours</small>
                     </div>
                 </div>
             </div>
@@ -361,7 +387,7 @@
             </div>
 
             <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" id="submitBtn" class="btn btn-primary">
                     <i class="fas fa-calendar-plus"></i> Schedule Visit
                 </button>
                 <a href="{% url 'team_visit_list' %}" class="btn btn-secondary">
@@ -375,213 +401,103 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const dateInput = document.querySelector('input[name="scheduled_date"]');
-            const startTimeSelect = document.querySelector('select[name="start_time"]');
-            const durationSelect = document.querySelector('select[name="duration"]');
-            const errorDiv = document.getElementById('customErrorMessages');
-            const errorText = document.getElementById('errorMessageText');
-
-            function showError(message) {
-                errorText.textContent = message;
-                errorDiv.style.display = 'block';
-                
-                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                setTimeout(() => {
-                    const alertElement = errorDiv.querySelector('.btn-close');
-                    if (alertElement) {
-                        alertElement.click();
+    $(document).ready(function() {
+        // Initialize start time picker
+        $('#start_time').timepicker({
+            'timeFormat': 'H:i',
+            'minTime': '08:00',
+            'maxTime': '18:00',
+            'step': 15,
+            'scrollDefault': '08:00',
+            'disableTimeRanges': [['00:00', '08:00'], ['18:00', '23:59']],
+            'change': function(time) {
+                if (time) {
+                    var selectedTime = new Date(time);
+                    var minEndTime = new Date(time);
+                    minEndTime.setMinutes(selectedTime.getMinutes() + 30);
+                    
+                    var maxEndTime = new Date(time);
+                    maxEndTime.setHours(18, 0, 0);
+                    
+                    $('#end_time').timepicker('option', {
+                        'minTime': minEndTime,
+                        'maxTime': maxEndTime
+                    });
+                    
+                    var endTime = $('#end_time').timepicker('getTime');
+                    if (endTime && endTime <= time) {
+                        $('#end_time').val('');
                     }
-                }, 5000);
-            }
-
-            const closeButtons = document.querySelectorAll('.btn-close');
-            closeButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    this.closest('.alert').classList.remove('show');
-                    setTimeout(() => {
-                        errorDiv.style.display = 'none';
-                    }, 150);
-                });
-            });
-
-            // Available time slots (8:00 AM to 5:00 PM)
-            const timeSlots = [
-                { value: '08:00', label: '8:00 AM' },
-                { value: '08:30', label: '8:30 AM' },
-                { value: '09:00', label: '9:00 AM' },
-                { value: '09:30', label: '9:30 AM' },
-                { value: '10:00', label: '10:00 AM' },
-                { value: '10:30', label: '10:30 AM' },
-                { value: '11:00', label: '11:00 AM' },
-                { value: '11:30', label: '11:30 AM' },
-                { value: '12:00', label: '12:00 PM' },
-                { value: '12:30', label: '12:30 PM' },
-                { value: '13:00', label: '1:00 PM' },
-                { value: '13:30', label: '1:30 PM' },
-                { value: '14:00', label: '2:00 PM' },
-                { value: '14:30', label: '2:30 PM' },
-                { value: '15:00', label: '3:00 PM' },
-                { value: '15:30', label: '3:30 PM' },
-                { value: '16:00', label: '4:00 PM' },
-                { value: '16:30', label: '4:30 PM' },
-                { value: '17:00', label: '5:00 PM' }
-            ];
-
-            function populateTimeSlots() {
-                startTimeSelect.innerHTML = '<option value="">Select start time</option>';
-                
-                const now = new Date();
-                const selectedDate = new Date(dateInput.value);
-                const isToday = selectedDate.toDateString() === now.toDateString();
-                
-                timeSlots.forEach(slot => {
-                    const [hours, minutes] = slot.value.split(':').map(Number);
-                    const slotTime = new Date(selectedDate);
-                    slotTime.setHours(hours, minutes);
-
-                    // For today, only show future time slots
-                    if (!isToday || slotTime > now) {
-                        const option = new Option(slot.label, slot.value);
-                        startTimeSelect.add(option);
-                    }
-                });
-            }
-
-            function calculateEndTime(startTime, durationMinutes) {
-                const [hours, minutes] = startTime.split(':').map(Number);
-                const totalMinutes = hours * 60 + minutes + parseInt(durationMinutes);
-                const endHour = Math.floor(totalMinutes / 60);
-                const endMinutes = totalMinutes % 60;
-                return `${endHour.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
-            }
-
-            // Date input validation
-            dateInput.addEventListener('change', function() {
-                const selectedDate = new Date(this.value);
-                
-                if (selectedDate.getDay() === 0) { // Sunday
-                    showError('Visits cannot be scheduled on Sundays. Please select another day.');
-                    this.value = '';
-                    startTimeSelect.disabled = true;
-                    durationSelect.disabled = true;
-                } else {
-                    startTimeSelect.disabled = false;
-                    durationSelect.disabled = false;
-                    populateTimeSlots();
                 }
-            });
-
-            // Form validation
-            const form = document.querySelector('form');
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const date = dateInput.value;
-                const startTime = startTimeSelect.value;
-                const duration = durationSelect.value;
-
-                if (!date || !startTime || !duration) {
-                    showError('Please fill in all required fields');
-                    return;
-                }
-
-                // Calculate end time
-                const endTime = calculateEndTime(startTime, duration);
-                
-                // Validate end time is before 6:00 PM
-                const [endHour, endMinutes] = endTime.split(':').map(Number);
-                if (endHour > 18 || (endHour === 18 && endMinutes > 0)) {
-                    showError('Visit must end by 6:00 PM. Please select an earlier start time or shorter duration.');
-                    return;
-                }
-
-                // Add hidden end_time field
-                const endTimeInput = document.createElement('input');
-                endTimeInput.type = 'hidden';
-                endTimeInput.name = 'end_time';
-                endTimeInput.value = endTime;
-                form.appendChild(endTimeInput);
-
-                // Submit the form
-                form.submit();
-            });
-
-            // Initialize the time slots
-            if (dateInput.value) {
-                populateTimeSlots();
             }
+        });
 
-            // Initialize Select2
-            $(startTimeSelect).select2({
-                theme: 'bootstrap4',
-                width: '100%',
-                placeholder: 'Select start time'
-            });
+        // Initialize end time picker
+        $('#end_time').timepicker({
+            'timeFormat': 'H:i',
+            'minTime': '08:30',
+            'maxTime': '18:00',
+            'step': 15,
+            'disableTimeRanges': [['00:00', '08:00'], ['18:00', '23:59']]
+        });
 
-            $(durationSelect).select2({
-                theme: 'bootstrap4',
-                width: '100%',
-                placeholder: 'Select duration'
-            });
-
-            // Team selection handling
-            const teamSelect = document.querySelector('select[name="team"]');
-            const patientSelect = document.querySelector('select[name="patient"]');
+        // Form validation
+        $('form').on('submit', function(e) {
+            e.preventDefault();
             
-            teamSelect.addEventListener('change', function() {
-                const teamId = this.value;
-                if (teamId) {
-                    // Save current scroll position
-                    const scrollPos = window.pageYOffset;
-                    
-                    // Add loading state
-                    teamSelect.disabled = true;
-                    patientSelect.disabled = true;
-                    
-                    // Reload page with selected team
-                    window.location.href = `?team=${teamId}`;
-                }
-            });
+            var startTime = $('#start_time').timepicker('getTime');
+            var endTime = $('#end_time').timepicker('getTime');
 
-            // Initialize Select2 with search
-            $(teamSelect).select2({
-                theme: 'bootstrap4',
-                width: '100%',
-                placeholder: 'Choose a team...',
-                allowClear: true
-            });
+            if (!startTime || !endTime) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Please select both start and end times'
+                });
+                return;
+            }
 
-            // Initialize patient select with search and groups
-            $(patientSelect).select2({
-                theme: 'bootstrap4',
-                width: '100%',
-                placeholder: 'Choose a patient...',
-                allowClear: true
-            });
+            // Format times for Django (HH:MM format)
+            var formatTimeForDjango = function(date) {
+                return date.getHours().toString().padStart(2, '0') + ':' + 
+                       date.getMinutes().toString().padStart(2, '0');
+            };
 
-            // Form validation
-            form.addEventListener('submit', function(e) {
-                if (!teamSelect.value) {
-                    e.preventDefault();
-                    alert('Please select a team');
-                    teamSelect.focus();
-                    return false;
-                }
-                if (!patientSelect.value) {
-                    e.preventDefault();
-                    alert('Please select a patient');
-                    patientSelect.focus();
-                    return false;
+            // Update form values with properly formatted times
+            $('#start_time').val(formatTimeForDjango(startTime));
+            $('#end_time').val(formatTimeForDjango(endTime));
+
+            // Calculate duration in minutes
+            var duration = (endTime - startTime) / (1000 * 60);
+
+            if (duration < 30 || duration > 240) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Visit duration must be between 30 minutes and 4 hours'
+                });
+                return;
+            }
+
+            // Show confirmation dialog
+            Swal.fire({
+                title: 'Confirm Schedule',
+                text: 'Are you sure you want to schedule this team visit?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, schedule it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Format the times one final time before submission
+                    $('#start_time').val(formatTimeForDjango(startTime));
+                    $('#end_time').val(formatTimeForDjango(endTime));
+                    this.submit();
                 }
             });
         });
+    });
     </script>
-
-    <!-- Add Select2 CSS and JS -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme/dist/select2-bootstrap4.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </body>
 </html>

@@ -66,11 +66,83 @@
             background-position: right calc(0.375em + 0.1875rem) center;
             background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
         }
+        .topbar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 15px 0;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            gap: 2rem;
+        }
+
+        .nav-menu > li {
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+        }
     </style>
 </head>
 <body>
-    <!-- Include the same navbar as manage_equipment.html -->
-    
+    <!-- Add Navbar -->
+    <div class="topbar">
+        <div class="nav-container">
+            <div class="logo">
+                <img src="{% static 'img/logo.png' %}" alt="CareFusion">
+            </div>
+            <ul class="nav-menu">
+                <li>
+                    <a href="{% url 'palliatives_dashboard' %}">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'manage_equipment' %}">
+                        <i class="fas fa-wheelchair"></i> Equipment
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'rental_requests' %}">
+                        <i class="fas fa-tasks"></i> Rental Requests
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'delivery_management' %}">
+                        <i class="fas fa-truck"></i> Deliveries
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'org_logout' %}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
     <div class="container mt-4">
         <div class="row justify-content-center">
             <div class="col-lg-8">
@@ -204,7 +276,7 @@
                             <div class="text-end">
                                 <button type="submit" class="btn btn-primary" id="EqpsaveBtn">
                                     <i class="fas fa-save me-2"></i>
-                                    {% if is_edit %}Update{% else %}Save{% endif %} Equipment
+                                    Save Equipment
                                 </button>
                             </div>
                         </form>

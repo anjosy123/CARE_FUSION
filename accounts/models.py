@@ -73,6 +73,8 @@ class UserLocation(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     is_verified = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now=True)
+    
     def __str__(self):
         return f"Location for {self.user.username}"
     

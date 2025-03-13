@@ -538,74 +538,6 @@
         .progress-bar {
             transition: width 0.3s ease;
         }
-
-        /* Chat widget additional styles */
-        .chat-widget {
-            transition: all 0.3s ease;
-        }
-
-        .chat-widget.minimized .chat-body {
-            display: none;
-        }
-
-        .btn-minimize {
-            background: transparent;
-            border: none;
-            color: white;
-            cursor: pointer;
-            padding: 5px;
-            transition: transform 0.2s;
-        }
-
-        .btn-minimize:hover {
-            transform: scale(1.1);
-        }
-
-        .typing-indicator {
-            padding: 8px;
-            background: #f8f9fa;
-            border-top: 1px solid #eee;
-            font-size: 0.9em;
-            color: #666;
-        }
-
-        .message {
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            max-width: 80%;
-            word-break: break-word;
-        }
-
-        .message-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.8em;
-            margin-bottom: 5px;
-            color: #666;
-        }
-
-        .message-text {
-            line-height: 1.4;
-        }
-
-        /* Improve scrollbar appearance */
-        .messages::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .messages::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        .messages::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 3px;
-        }
-
-        .messages::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
     </style>
 </head>
 <body>
@@ -709,19 +641,22 @@
                                         <td>{{ visit.start_time|time:"g:i A" }} - {{ visit.end_time|time:"g:i A" }}</td>
                                         <td>{{ visit.purpose|truncatechars:30 }}</td>
                                         <td>
-                                            <span class="badge bg-{{ visit.status|lower }}">
+                                            <span class="badge bg-{% if visit.status == 'SCHEDULED' %}primary{% else %}success{% endif %}">
                                                 {{ visit.get_status_display }}
                                             </span>
                                         </td>
                                         <td>
                                             <div class="btn-group">
                                                 <a href="{% url 'record_visit' visit.id %}" 
-                                                   class="btn btn-sm btn-outline-primary">
+                                                   class="btn btn-sm btn-outline-primary me-2">
                                                     <i class="bi bi-clipboard-plus"></i> Record Visit
                                                 </a>
+                                                <button class="btn btn-info btn-sm" onclick="trackLocation({{ visit.id }})">
+                                                    <i class="fas fa-map-marker-alt"></i> Track Location
+                                                </button>
                                                 {% if visit.is_reschedulable %}
                                                     <a href="{% url 'reschedule_team_visit' visit.id %}" 
-                                                       class="btn btn-sm btn-outline-warning">
+                                                       class="btn btn-sm btn-outline-warning ms-2">
                                                         <i class="bi bi-calendar-check"></i> Reschedule
                                                     </a>
                                                 {% endif %}
@@ -1186,6 +1121,17 @@
 
             // Update your form submission handler
             document.getElementById('patientDataForm').addEventListener('submit', handleFormSubmission);
+
+            function trackLocation(visitId) {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        const url = `/track-location/${visitId}/?staff_lat=${position.coords.latitude}&staff_lng=${position.coords.longitude}`;
+                        window.location.href = url;
+                    });
+                } else {
+                    alert('Geolocation is not supported by your browser');
+                }
+            }
         </script>
     </div>
 
@@ -1213,66 +1159,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Add this before the closing body tag -->
-    {% include 'staff/shared/team_chat.html' %}
-
-    <!-- Add this before the closing body tag, after including team_chat.html -->
-    <script src="{% static 'js/chat.js' %}"></script>
-    <script>
-        // Initialize chat for team members
-        const staffId = '{{ request.session.staff_id }}';
-        const teamId = '{{ team.id }}';
-        let chatSocket;
-
-        document.addEventListener('DOMContentLoaded', function() {
-            chatSocket = initializeWebSocket();
-            
-            // Add any existing team-specific chat initialization
-            if (teamId) {
-                loadTeamMessages();
-            }
-        });
-
-        function loadTeamMessages() {
-            fetch(`/api/team/${teamId}/messages/`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const messageContainer = document.getElementById('messageContainer');
-                        messageContainer.innerHTML = ''; // Clear existing messages
-                        
-                        data.messages.forEach(message => {
-                            appendMessage({
-                                message: message.content,
-                                sender: message.sender_name,
-                                timestamp: message.timestamp,
-                                is_self: message.sender_id === staffId
-                            });
-                        });
-                        
-                        scrollToBottom();
-                    }
-                });
-        }
-
-        // Add typing indicator functions
-        function showTypingIndicator(sender) {
-            const indicator = document.getElementById('typingIndicator');
-            indicator.querySelector('.typing-text').textContent = `${sender} is typing...`;
-            indicator.style.display = 'block';
-        }
-
-        function hideTypingIndicator() {
-            document.getElementById('typingIndicator').style.display = 'none';
-        }
-
-        // Add scroll to bottom function
-        function scrollToBottom() {
-            const messageContainer = document.getElementById('messageContainer');
-            messageContainer.scrollTop = messageContainer.scrollHeight;
-        }
-    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

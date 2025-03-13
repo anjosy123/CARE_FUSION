@@ -897,7 +897,7 @@
                     <a href="{% url 'patients_dashboard' %}">
                         <i class="bi bi-house-door-fill"></i> Dashboard
                     </a>
-                </li> {% endcomment %}
+                    </li> {% endcomment %}
                 <li>
                     <a href="#">
                         <i class="bi bi-calendar-check-fill"></i> Appointments
@@ -909,8 +909,8 @@
                                 <i class="bi bi-calendar2-week"></i> Team Visits
                             </a>
                         </li>
-                    </ul>
-                </li>
+                        </ul>
+                    </li>
                 <li>
                     <a href="#">
                         <i class="bi bi-file-medical-fill"></i> Health Records
@@ -927,10 +927,10 @@
                                 <i class="bi bi-clipboard2-pulse"></i> Services
                             </a>
                         </li>
-                    </ul>
+                        </ul>
                 </li>
-            </ul>
-
+                </ul>
+                
             <div class="user-info">
                 <span>
                     <i class="bi bi-person-circle"></i> {{ user.get_full_name }}
@@ -938,10 +938,10 @@
                 <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
                     <i class="bi bi-box-arrow-right"></i> Logout
                 </a>
-            </div>
+                            </div>
         </div>
-    </div>
-
+                </div>
+                
     <!-- Add this right after the topbar navbar and before the main content -->
     <div class="container mt-5 pt-4">
         <!-- Daily Health Advice Alert -->
@@ -957,29 +957,29 @@
                             {{ health_tips.ninja_tip.quote }}
                         {% else %}
                             Remember to drink enough water daily and maintain a healthy lifestyle.
-                        {% endif %}
+                            {% endif %}
                     </span>
-                </div>
             </div>
+        </div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     </div>
 
     <div class="main-content">
-        {% block content %}
-        <div class="container mt-3">
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            </div>
-            {% endif %}
+    {% block content %}
+    <div class="container mt-3">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
         </div>
+        {% endif %}
+    </div>
 
-        <div class="container mt-4">
+    <div class="container mt-4">
             <!-- Welcome Section -->
             {% comment %} <div class="card mb-4 welcome-card">
                 <div class="card-body">
@@ -996,15 +996,15 @@
             </div> {% endcomment %}
 
             <!-- Health Tips Section -->
-            <div class="row mb-4">
+        <div class="row mb-4">
                 <!-- Health.gov Tip -->
                 <div class="col-md-6 mb-3">
                     <div class="card h-100 health-tip-card">
-                        <div class="card-body">
+                    <div class="card-body">
                             <div class="d-flex align-items-start">
                                 <div class="flex-shrink-0">
                                     <i class="bi bi-lightbulb-fill fs-3 text-warning"></i>
-                                </div>
+                            </div>
                                 <div class="ms-3">
                                     <h5 class="card-title text-primary mb-2">Health Tip of the Day</h5>
                                     <p class="card-text">
@@ -1019,20 +1019,20 @@
                                             <i class="bi bi-arrow-right-circle"></i> Learn More
                                         </a>
                                     {% endif %}
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
                 <!-- API Ninjas Health Quote -->
                 <div class="col-md-6 mb-3">
                     <div class="card h-100 health-quote-card">
-                        <div class="card-body">
+                    <div class="card-body">
                             <div class="d-flex align-items-start">
                                 <div class="flex-shrink-0">
                                     <i class="bi bi-quote fs-3 text-info"></i>
-                                </div>
+                            </div>
                                 <div class="ms-3">
                                     <h5 class="card-title text-info mb-2">Daily Health Quote</h5>
                                     <p class="card-text fs-5 mb-2">
@@ -1049,11 +1049,11 @@
                                             Hippocrates
                                           {% endif %}
                                     </p>
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
 
             <!-- Quick Stats Row -->
@@ -1061,41 +1061,41 @@
                 <!-- Upcoming Visits Stats -->
                 <div class="col-md-3 col-sm-6 mb-3">
                     <div class="card h-100 border-start border-primary border-4">
-                        <div class="card-body">
+                    <div class="card-body">
                             <div class="d-flex align-items-center">
                                 <div class="flex-shrink-0 me-3">
                                     <i class="bi bi-calendar2-week fs-1 text-primary"></i>
-                                </div>
+                            </div>
                                 <div>
                                     <h6 class="card-title mb-1">Upcoming Visits</h6>
                                     <h4 class="mb-0">{{ team_visits.count }}</h4>
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
                 <!-- Care Teams Stats -->
                 <div class="col-md-3 col-sm-6 mb-3">
                     <div class="card h-100 border-start border-success border-4">
-                        <div class="card-body">
+                    <div class="card-body">
                             <div class="d-flex align-items-center">
                                 <div class="flex-shrink-0 me-3">
                                     <i class="bi bi-people-fill fs-1 text-success"></i>
-                                </div>
+                            </div>
                                 <div>
                                     <h6 class="card-title mb-1">Care Teams</h6>
                                     <h4 class="mb-0">{{ assigned_teams.count }}</h4>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
 
                 <!-- Prescriptions Stats -->
                 <div class="col-md-3 col-sm-6 mb-3">
                     <div class="card h-100 border-start border-info border-4">
-                        <div class="card-body">
+                    <div class="card-body">
                             <div class="d-flex align-items-center">
                                 <div class="flex-shrink-0 me-3">
                                     <i class="bi bi-journal-medical fs-1 text-info"></i>
@@ -1103,16 +1103,16 @@
                                 <div>
                                     <h6 class="card-title mb-1">Active Prescriptions</h6>
                                     <h4 class="mb-0">{{ active_prescriptions_count|default:"0" }}</h4>
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
                 <!-- Services Stats -->
                 <div class="col-md-3 col-sm-6 mb-3">
                     <div class="card h-100 border-start border-warning border-4">
-                        <div class="card-body">
+                    <div class="card-body">
                             <div class="d-flex align-items-center">
                                 <div class="flex-shrink-0 me-3">
                                     <i class="bi bi-clipboard2-pulse fs-1 text-warning"></i>
@@ -1138,7 +1138,7 @@
                                 Upcoming Team Visits
                             </h5>
                         </div>
-                        <div class="card-body">
+                    <div class="card-body">
                             {% if team_visits %}
                                 {% for visit in team_visits|slice:":3" %}
                                 <div class="visit-item mb-3 p-3 border rounded">
@@ -1156,13 +1156,13 @@
                                                 <i class="bi bi-geo-alt-fill me-2"></i>
                                                 {{ visit.team.organization.org_name }}
                                             </p>
-                                        </div>
+                            </div>
                                         <span class="badge bg-{{ visit.status|lower }}">
                                             <i class="bi bi-circle-fill me-1"></i>
                                             {{ visit.status }}
                                         </span>
-                                    </div>
-                                </div>
+                        </div>
+                    </div>
                                 {% endfor %}
                             {% else %}
                                 <div class="text-center py-4">
@@ -1171,8 +1171,8 @@
                                 </div>
                             {% endif %}
                         </div>
-                    </div>
                 </div>
+            </div>
 
                 <!-- Care Teams Card -->
                 <div class="col-md-6 mb-4">
@@ -1183,7 +1183,7 @@
                                 Your Care Teams
                             </h5>
                         </div>
-                        <div class="card-body">
+                    <div class="card-body">
                             {% if assigned_teams %}
                                 {% for team in assigned_teams %}
                                 <div class="team-item mb-3 p-3 border rounded">
@@ -1206,14 +1206,14 @@
                                                 <div class="d-flex align-items-center">
                                                     <div class="member-icon me-2">
                                                         <i class="bi bi-person-fill text-primary"></i>
-                                                    </div>
+                            </div>
                                                     <div>
                                                         <div class="member-name fw-medium">{{ member.get_full_name }}</div>
                                                         <div class="member-role small text-muted">
                                                             <i class="bi bi-briefcase-fill me-1"></i>
                                                             {{ member.role|default:"Team Member" }}
-                                                        </div>
-                                                    </div>
+                        </div>
+                    </div>
                                                 </div>
                                             </div>
                                             {% endfor %}
@@ -1227,9 +1227,9 @@
                                     <p class="mt-2 text-muted">No care teams assigned yet</p>
                                 </div>
                             {% endif %}
-                        </div>
-                    </div>
                 </div>
+            </div>
+        </div>
 
                 <!-- Prescriptions Card -->
                 <div class="col-md-12 mb-4" id="prescriptions-section">
@@ -1239,46 +1239,46 @@
                                 <i class="bi bi-journal-medical text-info me-2"></i>
                                 Active Prescriptions
                             </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Medication</th>
-                                            <th>Dosage</th>
-                                            <th>Schedule</th>
+            </div>
+            <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Medication</th>
+                                        <th>Dosage</th>
+                                        <th>Schedule</th>
                                             <th>Start Date</th>
                                             <th>End Date</th>
                                             <th>Notes</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                                    </tr>
+                                </thead>
+                                <tbody>
                                         {% if prescriptions %}
-                                            {% for prescription in prescriptions %}
-                                            <tr>
-                                                <td>{{ prescription.medication }}</td>
-                                                <td>{{ prescription.dosage }}</td>
+                                    {% for prescription in prescriptions %}
+                                    <tr>
+                                        <td>{{ prescription.medication }}</td>
+                                        <td>{{ prescription.dosage }}</td>
                                                 <td>{{ prescription.frequency }}</td>
                                                 <td>{{ prescription.start_date|date:"M d, Y" }}</td>
                                                 <td>{{ prescription.end_date|date:"M d, Y" }}</td>
                                                 <td>{{ prescription.notes|default:"-" }}</td>
-                                            </tr>
-                                            {% endfor %}
+                                    </tr>
+                                    {% endfor %}
                                         {% else %}
                                             <tr>
                                                 <td colspan="6" class="text-center py-4">
                                                     <i class="bi bi-x-circle text-muted fs-1"></i>
                                                     <p class="mt-2 text-muted">No active prescriptions</p>
-                                                </td>
-                                            </tr>
-                                        {% endif %}
-                                    </tbody>
-                                </table>
+                                        </td>
+                                    </tr>
+                                                        {% endif %}
+                                            </tbody>
+                                        </table>
+                                    </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
                 <!-- Services Card -->
                 <div class="col-md-12 mb-4" id="services-section">
@@ -1290,18 +1290,18 @@
                             </h5>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Service</th>
-                                            <th>Organization</th>
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Service</th>
+                                                <th>Organization</th>
                                             <th>Start Date</th>
-                                            <th>Status</th>
+                                                <th>Status</th>
                                             <th>Notes</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
                                         {% if services %}
                                             {% for service in services %}
                                             <tr>
@@ -1324,15 +1324,15 @@
                                                 </td>
                                             </tr>
                                         {% endif %}
-                                    </tbody>
-                                </table>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                                    </div>
             </div>
         </div>
-        {% endblock content %}
+    </div>
+    {% endblock content %}
     </div>
 
     <!-- Add necessary modals -->

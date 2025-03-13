@@ -241,9 +241,10 @@ urlpatterns = [
     path('api/rental/<int:rental_id>/end-service/', views.end_rental_service, name='end_rental_service'),
     path('api/rental/<int:rental_id>/org-details/', views.get_rental_org_details, name='rental_org_details'),
     path('team/visit/<int:visit_id>/record/', views.record_visit, name='record_visit'),
+    path('track-location/<int:visit_id>/', views.track_patient_location, name='track_patient_location'),
 ]
 
-websocket_urlpatterns = [
-    path('ws/patient/chat/', consumers.PatientChatConsumer.as_asgi()),
-]
+# websocket_urlpatterns = [
+#     path('ws/patient/chat/', consumers.PatientChatConsumer.as_asgi()),
+# ]
 

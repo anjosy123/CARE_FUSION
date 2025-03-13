@@ -1,0 +1,32 @@
+{% extends 'emails/base_email.html' %}
+
+{% block content %}
+<div style="padding: 20px; background-color: #ffffff; border-radius: 5px;">
+    <h2 style="color: #2c3e50;">Team Visit Scheduled</h2>
+    
+    <p>Dear {{ patient_name }},</p>
+    
+    <p>A team visit has been scheduled for you by {{ organization }}.</p>
+    
+    <div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+        <h3 style="color: #2c3e50; margin-bottom: 15px;">Visit Details</h3>
+        <p><strong>Date:</strong> {{ visit_date }}</p>
+        <p><strong>Time:</strong> {{ start_time }} to {{ end_time }}</p>
+        <p><strong>Team:</strong> {{ team_name }}</p>
+        {% if purpose %}
+        <p><strong>Purpose:</strong> {{ purpose }}</p>
+        {% endif %}
+    </div>
+    
+    <div style="margin: 20px 0; padding: 15px; background-color: #e8f5e9; border-radius: 5px;">
+        <h4 style="color: #2e7d32; margin-bottom: 10px;">Important Notes</h4>
+        <ul style="list-style-type: none; padding-left: 0;">
+            <li style="margin-bottom: 8px;">✓ Please ensure someone is available at the scheduled time</li>
+            <li style="margin-bottom: 8px;">✓ Keep any relevant medical records ready</li>
+            <li style="margin-bottom: 8px;">✓ Contact us if you need to reschedule</li>
+        </ul>
+    </div>
+    
+    <p>If you have any questions or need to make changes, please contact us.</p>
+</div>
+{% endblock %} 
