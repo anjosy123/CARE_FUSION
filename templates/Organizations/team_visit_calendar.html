@@ -1,312 +1,188 @@
+{% extends 'Organizations/palliative_base.html' %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team Visit Calendar</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <style>
-        body {
-            background-color: #f5f7fb;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
+{% block title %}Team Visit Calendar{% endblock %}
 
-        .topbar {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            padding: 15px 0;
-            color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .calendar-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        margin: 2rem auto;
+        padding: 2rem;
+    }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
+    .calendar-navigation {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
 
-        .logo img {
-            height: 40px;
-            object-fit: contain;
-        }
+    .calendar-navigation a {
+        color: #1e3c72;
+        text-decoration: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+    }
 
-        .top-link {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            gap: 20px;
-        }
+    .calendar-navigation a:hover {
+        background: #f0f4f8;
+    }
 
-        .top-link a {
-            color: white;
-            text-decoration: none;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
+    .calendar-navigation span {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2c3e50;
+    }
 
-        .top-link a:hover {
-            opacity: 0.8;
-        }
+    .calendar {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+    }
 
-        .top-link .dropdown {
-            position: absolute;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            display: none;
-            min-width: 200px;
-            z-index: 1000;
-        }
+    .calendar th {
+        background: #f8f9fa;
+        padding: 12px;
+        text-align: center;
+        font-weight: 600;
+        color: #2c3e50;
+        border-bottom: 1px solid #e1e4e8;
+    }
 
-        .top-link li:hover .dropdown {
-            display: block;
-        }
+    .calendar td {
+        border: 1px solid #e1e4e8;
+        padding: 8px;
+        vertical-align: top;
+        height: 120px;
+    }
 
-        .top-link .dropdown a {
-            color: #333;
-            padding: 10px 15px;
-            display: block;
-        }
+    .day-number {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 8px;
+    }
 
-        .top-link .dropdown a:hover {
-            background: #f5f5f5;
-        }
+    .visit {
+        background: #f8f9fa;
+        border-radius: 4px;
+        padding: 8px;
+        margin-bottom: 8px;
+        font-size: 0.875rem;
+        border-left: 3px solid #1e3c72;
+    }
 
-        .calendar-container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-            margin: 2rem auto;
-            padding: 2rem;
-        }
+    .team {
+        font-weight: 600;
+        color: #1e3c72;
+        display: block;
+    }
 
-        .calendar-navigation {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
+    .patient {
+        color: #2c3e50;
+        display: block;
+        margin: 4px 0;
+    }
 
-        .calendar-navigation a {
-            color: #1e3c72;
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-        }
+    .time {
+        color: #6c757d;
+        font-size: 0.8125rem;
+        display: block;
+    }
 
-        .calendar-navigation a:hover {
-            background: #f0f4f8;
-        }
+    .reschedule-link {
+        display: inline-block;
+        margin-top: 4px;
+        color: #1e3c72;
+        text-decoration: none;
+        font-size: 0.8125rem;
+    }
 
-        .calendar-navigation span {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #2c3e50;
-        }
+    .reschedule-link:hover {
+        text-decoration: underline;
+    }
 
-        .calendar {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            border: 1px solid #e1e4e8;
-            border-radius: 8px;
-        }
-
-        .calendar th {
-            background: #f8f9fa;
-            padding: 12px;
-            text-align: center;
-            font-weight: 600;
-            color: #2c3e50;
-            border-bottom: 1px solid #e1e4e8;
-        }
-
-        .calendar td {
-            border: 1px solid #e1e4e8;
-            padding: 8px;
-            vertical-align: top;
-            height: 120px;
-        }
-
-        .day-number {
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 8px;
+    @media (max-width: 768px) {
+        .calendar th, .calendar td {
+            padding: 4px;
+            font-size: 0.875rem;
         }
 
         .visit {
-            background: #f8f9fa;
-            border-radius: 4px;
-            padding: 8px;
-            margin-bottom: 8px;
-            font-size: 0.875rem;
-            border-left: 3px solid #1e3c72;
-        }
-
-        .team {
-            font-weight: 600;
-            color: #1e3c72;
-            display: block;
-        }
-
-        .patient {
-            color: #2c3e50;
-            display: block;
-            margin: 4px 0;
-        }
-
-        .time {
-            color: #6c757d;
-            font-size: 0.8125rem;
-            display: block;
-        }
-
-        .reschedule-link {
-            display: inline-block;
-            margin-top: 4px;
-            color: #1e3c72;
-            text-decoration: none;
+            padding: 4px;
             font-size: 0.8125rem;
         }
 
-        .reschedule-link:hover {
-            text-decoration: underline;
+        .calendar td {
+            height: 100px;
         }
 
-        @media (max-width: 768px) {
-            .calendar th, .calendar td {
-                padding: 4px;
-                font-size: 0.875rem;
-            }
-
-            .visit {
-                padding: 4px;
-                font-size: 0.8125rem;
-            }
-
-            .calendar td {
-                height: 100px;
-            }
-
-            .top-link {
-                flex-direction: column;
-                gap: 10px;
-            }
+        .calendar-navigation {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
         }
-    </style>
-</head>
-<body>
-    <div class="topbar">
-        <div class="container">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="logo">
-                    <a href="{% url 'palliatives_dashboard' %}">
-                        <img src="{% static 'img/logo.png' %}" alt="Logo">
-                    </a>
-                </div>
-                
-                <ul class="top-link">
-                    <li><a href="{% url 'service_list' %}">Services</a></li>
-                    <li>
-                        <a href="#">Service Requests <i class="fas fa-chevron-down"></i></a>
-                        <ul class="dropdown">
-                            <li><a href="{% url 'pending_requests' %}">Pending Requests</a></li>
-                            <li><a href="{% url 'approved_rejected_requests' %}">Approved/Rejected Requests</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="#">Staff Corner <i class="fas fa-chevron-down"></i></a>
-                        <ul class="dropdown">
-                            <li><a href="{% url 'staff_list' %}">Manage Staff</a></li>
-                            <li><a href="{% url 'patient_assignment_list' %}">Patient Assignments</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="#">Team Management <i class="fas fa-chevron-down"></i></a>
-                        <ul class="dropdown">
-                            <li><a href="{% url 'team_list' %}">Manage Teams</a></li>
-                            <li><a href="{% url 'team_visit_list' %}">Team Visits</a></li>
-                            <li><a href="{% url 'team_visit_calendar' %}">Team Visit Calendar</a></li>
-                        </ul>
-                    </li>
-                </ul>
-                
-                {% if request.session.org_name %}
-                <div class="user-info">
-                    <span class="me-2 text-white">Welcome {{request.session.org_name}}</span>
-                    <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </div>
-                {% endif %}
-            </div>
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="calendar-container">
+        <h2 class="mb-4">Team Visit Calendar</h2>
+        <div class="calendar-navigation">
+            <a href="?month={{ prev_month|date:'m' }}&year={{ prev_month|date:'Y' }}">
+                <i class="fas fa-chevron-left"></i> Previous Month
+            </a>
+            <span>{{ month|date:"F Y" }}</span>
+            <a href="?month={{ next_month|date:'m' }}&year={{ next_month|date:'Y' }}">
+                Next Month <i class="fas fa-chevron-right"></i>
+            </a>
         </div>
-    </div>
-
-    <div class="container">
-        <div class="calendar-container">
-            <h2 class="mb-4">Team Visit Calendar</h2>
-            <div class="calendar-navigation">
-                <a href="?month={{ prev_month|date:'m' }}&year={{ prev_month|date:'Y' }}">
-                    <i class="fas fa-chevron-left"></i> Previous Month
-                </a>
-                <span>{{ month|date:"F Y" }}</span>
-                <a href="?month={{ next_month|date:'m' }}&year={{ next_month|date:'Y' }}">
-                    Next Month <i class="fas fa-chevron-right"></i>
-                </a>
-            </div>
-            <table class="calendar">
-                <thead>
+        <table class="calendar">
+            <thead>
+                <tr>
+                    <th>Mon</th>
+                    <th>Tue</th>
+                    <th>Wed</th>
+                    <th>Thu</th>
+                    <th>Fri</th>
+                    <th>Sat</th>
+                    <th>Sun</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for week in calendar_matrix %}
                     <tr>
-                        <th>Mon</th>
-                        <th>Tue</th>
-                        <th>Wed</th>
-                        <th>Thu</th>
-                        <th>Fri</th>
-                        <th>Sat</th>
-                        <th>Sun</th>
+                        {% for day, visits in week %}
+                            <td>
+                                {% if day %}
+                                    <div class="day-number">{{ day }}</div>
+                                    {% for visit in visits %}
+                                        <div class="visit">
+                                            <span class="team">{{ visit.team.name }}</span>
+                                            <span class="patient">{{ visit.patient.get_full_name }}</span>
+                                            <span class="time">{{ visit.start_time|time:"H:i" }} - {{ visit.end_time|time:"H:i" }}</span>
+                                            {% if visit.is_reschedulable %}
+                                                <a href="{% url 'reschedule_team_visit' visit.id %}" class="reschedule-link">
+                                                    <i class="fas fa-clock"></i> Reschedule
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            </td>
+                        {% endfor %}
                     </tr>
-                </thead>
-                <tbody>
-                    {% for week in calendar_matrix %}
-                        <tr>
-                            {% for day, visits in week %}
-                                <td>
-                                    {% if day %}
-                                        <div class="day-number">{{ day }}</div>
-                                        {% for visit in visits %}
-                                            <div class="visit">
-                                                <span class="team">{{ visit.team.name }}</span>
-                                                <span class="patient">{{ visit.patient.get_full_name }}</span>
-                                                <span class="time">{{ visit.start_time|time:"H:i" }} - {{ visit.end_time|time:"H:i" }}</span>
-                                                {% if visit.is_reschedulable %}
-                                                    <a href="{% url 'reschedule_team_visit' visit.id %}" class="reschedule-link">
-                                                        <i class="fas fa-clock"></i> Reschedule
-                                                    </a>
-                                                {% endif %}
-                                            </div>
-                                        {% endfor %}
-                                    {% endif %}
-                                </td>
-                            {% endfor %}
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+{% endblock %}

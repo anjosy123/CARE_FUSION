@@ -73,6 +73,7 @@ from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from .models import User, NotificationPreferences
 from math import radians, sin, cos, sqrt, atan2
+from django.template import TemplateDoesNotExist
 
 def send_appointment_email(appointment, action, recipient='patient'):
     subject = f'Appointment {action.capitalize()}'
@@ -199,10 +200,9 @@ def volunteer_dashboard(request):
         }
         
         return render(request, 'staff/volunteer_dashboard.html', context)
-        
-    except Staff.DoesNotExist:
-        messages.error(request, "Staff member not found.")
-        return redirect('login')
+    except TemplateDoesNotExist:
+        # Redirect to organization login instead of staff login
+        return redirect('org_login')
 
 def service_list(request):
     if 'org_id' not in request.session:
@@ -776,17 +776,6 @@ def patients_dashboard(request):
 
 def get_health_tips():
     """Fetch health tips from both Health.gov and API Ninjas"""
-    cache_key = 'daily_health_tips'
-    cached_tips = cache.get(cache_key)
-    
-    if cached_tips:
-        return cached_tips
-    
-    tips = {
-        'gov_tip': None,
-        'ninja_tip': None
-    }
-    
     try:
         # API Ninjas Health Tip
         ninja_api_url = "https://api.api-ninjas.com/v1/quotes?category=health"
@@ -794,35 +783,51 @@ def get_health_tips():
             'X-Api-Key': settings.API_NINJAS_KEY
         }
         
-        ninja_response = requests.get(ninja_api_url, headers=headers)
-        if ninja_response.status_code == 200:
-            ninja_data = ninja_response.json()
-            if ninja_data:
-                tips['ninja_tip'] = {
-                    'quote': ninja_data[0]['quote'],
-                    'author': ninja_data[0]['author']
-                }
-        
-        # Health.gov Tip (existing code)
-        gov_url = "https://health.gov/myhealthfinder/api/v3/topicsearch.json"
-        params = {
-            "lang": "en",
-            "categoryId": "24",
-            "limit": 1,
+        tips = {
+            'gov_tip': {
+                'title': 'Daily Health Tip',
+                'content': 'Stay hydrated and maintain a balanced diet for better health.',
+                'url': '#'
+            },
+            'ninja_tip': {
+                'quote': 'Health is wealth.',
+                'author': 'Unknown'
+            }
         }
         
-        gov_response = requests.get(gov_url, params=params)
-        if gov_response.status_code == 200:
-            data = gov_response.json()
-            if 'Result' in data and 'Resources' in data['Result']:
-                tips['gov_tip'] = {
-                    'title': data['Result']['Resources']['Resource'][0]['Title'],
-                    'content': data['Result']['Resources']['Resource'][0]['Sections']['section'][0]['Content'],
-                    'url': data['Result']['Resources']['Resource'][0]['AccessibleVersion']
-                }
-        
-        # Cache the tips for 24 hours
-        cache.set(cache_key, tips, timeout=60*60*24)
+        try:
+            ninja_response = requests.get(ninja_api_url, headers=headers)
+            if ninja_response.status_code == 200:
+                ninja_data = ninja_response.json()
+                if ninja_data:
+                    tips['ninja_tip'] = {
+                        'quote': ninja_data[0]['quote'],
+                        'author': ninja_data[0]['author']
+                    }
+        except:
+            pass
+            
+        try:
+            # Health.gov Tip
+            gov_url = "https://health.gov/myhealthfinder/api/v3/topicsearch.json"
+            params = {
+                "lang": "en",
+                "categoryId": "24",
+                "limit": 1,
+            }
+            
+            gov_response = requests.get(gov_url, params=params)
+            if gov_response.status_code == 200:
+                data = gov_response.json()
+                if 'Result' in data and 'Resources' in data['Result']:
+                    tips['gov_tip'] = {
+                        'title': data['Result']['Resources']['Resource'][0]['Title'],
+                        'content': data['Result']['Resources']['Resource'][0]['Sections']['section'][0]['Content'],
+                        'url': data['Result']['Resources']['Resource'][0]['AccessibleVersion']
+                    }
+        except:
+            pass
+            
         return tips
             
     except Exception as e:
@@ -898,6 +903,7 @@ def palliatives_dashboard(request):
     except Exception as e:
         messages.error(request, f"Error loading dashboard: {str(e)}")
         return redirect('login')
+
 
 
 
@@ -1232,7 +1238,7 @@ def register_organization(request):
             org_phone = request.POST['org_phone']
             org_pincode = request.POST['org_pincode']
             org_pass1 = request.POST['org_pass1']
-            org_pass2 = request.POST['org_pass2']
+            org_pass2 = request.POST.get('org_pass2')
             
             # Get location data from POST
             latitude = request.POST.get('latitude')
@@ -2527,13 +2533,10 @@ def schedule_team_visit(request):
         # Get all active teams for the organization
         teams = Team.objects.filter(organization=organization, is_active=True)
         
-        # Get approved patients excluding those with scheduled visits
+        # Get all approved patients with their latest visit records
         patients = User.objects.filter(
             servicerequest__organization=organization,
             servicerequest__status='approved'
-        ).exclude(
-            # Exclude patients who already have scheduled visits
-            team_visits__status='SCHEDULED'
         ).prefetch_related('visit_records').distinct()
 
         # Group patients by priority based on their latest visit records
@@ -2546,6 +2549,7 @@ def schedule_team_visit(request):
             latest_record = patient.visit_records.order_by('-visit_date').first()
             
             if latest_record:
+                # Calculate priority score using the same formula as priority dashboard
                 priority_score = (
                     float(latest_record.fall_risk_score or 0) * 0.3 +
                     float(latest_record.deterioration_risk or 0) * 0.4 +
@@ -2553,6 +2557,7 @@ def schedule_team_visit(request):
                 )
                 patient.visit_priority_score = priority_score
             else:
+                # If no visit record exists, use default priority score
                 patient.visit_priority_score = 0.0
 
             # Group based on priority score
@@ -2563,11 +2568,17 @@ def schedule_team_visit(request):
             else:
                 low_priority.append(patient)
 
-        # Sort each group by priority score
+        # Sort each group by priority score in descending order
         high_priority.sort(key=lambda x: x.visit_priority_score, reverse=True)
         medium_priority.sort(key=lambda x: x.visit_priority_score, reverse=True)
         low_priority.sort(key=lambda x: x.visit_priority_score, reverse=True)
 
+        # Get team if selected
+        team = None
+        if selected_team:
+            team = get_object_or_404(Team, id=selected_team, organization=organization)
+
+        # Handle form submission
         if request.method == 'POST':
             team_id = request.POST.get('team')
             patient_id = request.POST.get('patient')
@@ -2576,41 +2587,25 @@ def schedule_team_visit(request):
             end_time = request.POST.get('end_time')
             purpose = request.POST.get('purpose', '')
 
-            # Validate time range (8 AM to 6 PM)
-            start_hour = int(start_time.split(':')[0])
-            end_hour = int(end_time.split(':')[0])
-            
-            if start_hour < 8 or end_hour > 18:
-                messages.error(request, 'Visits can only be scheduled between 8:00 AM and 6:00 PM')
-                return redirect('schedule_team_visit')
-
-            # Check for scheduling conflicts
-            if TeamVisit.objects.filter(
-                team_id=team_id,
-                scheduled_date=scheduled_date,
-                status='SCHEDULED'
-            ).filter(
-                Q(start_time__lt=end_time, end_time__gt=start_time)
-            ).exists():
-                messages.error(request, 'This time slot is already booked')
-                return redirect('schedule_team_visit')
-
-            # Create the visit if validation passes
-            team = get_object_or_404(Team, id=team_id)
-            patient = get_object_or_404(User, id=patient_id)
-            
-            visit = TeamVisit.objects.create(
-                team=team,
-                patient=patient,
-                scheduled_date=scheduled_date,
-                start_time=start_time,
-                end_time=end_time,
-                purpose=purpose,
-                status='SCHEDULED'
-            )
-            
-            messages.success(request, 'Team visit scheduled successfully.')
-            return redirect('team_visit_list')
+            # Validate and create visit
+            if team_id and patient_id and scheduled_date and start_time and end_time:
+                team = get_object_or_404(Team, id=team_id)
+                patient = get_object_or_404(User, id=patient_id)
+                
+                visit = TeamVisit.objects.create(
+                    team=team,
+                    patient=patient,
+                    scheduled_date=scheduled_date,
+                    start_time=start_time,
+                    end_time=end_time,
+                    purpose=purpose,
+                    status='SCHEDULED'
+                )
+                
+                messages.success(request, 'Team visit scheduled successfully.')
+                return redirect('team_visit_list')
+            else:
+                messages.error(request, 'Please fill all required fields.')
 
         context = {
             'organization': organization,
@@ -2626,8 +2621,9 @@ def schedule_team_visit(request):
         return render(request, 'Organizations/schedule_team_visit.html', context)
         
     except Exception as e:
-        messages.error(request, f'Error scheduling visit: {str(e)}')
+        messages.error(request, f"Error scheduling visit: {str(e)}")
         return redirect('team_visit_list')
+
 
 
 def team_visit_list(request):
@@ -6134,3 +6130,66 @@ def track_patient_location(request, visit_id):
     except UserLocation.DoesNotExist:
         messages.error(request, "Patient location not found")
         return redirect('staff_dashboard')
+
+def verify_code(request, email):
+    if request.method == 'POST':
+        entered_pin = request.POST.get('pin')
+        stored_pin = request.session.get('reset_pin')
+        
+        if stored_pin and entered_pin == stored_pin:
+            # PIN matches, clear it from session and redirect to reset password
+            del request.session['reset_pin']
+            return redirect('reset_password', email=email)
+        else:
+            messages.error(request, 'Invalid PIN. Please try again.')
+            return redirect('verify_code', email=email)
+    
+    return render(request, 'Forgot_Password/verifycode.html', {'email': email})
+
+def forgot_password(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        user = User.objects.filter(email=email).first()
+        
+        if user:
+            # Generate a 4-digit PIN
+            pin = ''.join(random.choices('0123456789', k=4))
+            # Store PIN in session
+            request.session['reset_pin'] = pin
+            
+            # Send email with PIN
+            subject = 'Password Reset PIN'
+            message = f'Your password reset PIN is: {pin}'
+            from_email = settings.DEFAULT_FROM_EMAIL
+            recipient_list = [email]
+            
+            try:
+                send_mail(subject, message, from_email, recipient_list)
+                messages.success(request, 'A PIN has been sent to your email.')
+                return redirect('verify_code', email=email)
+            except Exception as e:
+                messages.error(request, 'Error sending email. Please try again.')
+                return redirect('forgot_password')
+        else:
+            messages.error(request, 'No user found with this email address.')
+            return redirect('forgot_password')
+    
+    return render(request, 'Forgot_Password/forgot_password.html')
+
+@login_required
+def patient_dashboard(request):
+    try:
+        # Get health tips without using cache
+        health_tips = get_health_tips()
+        
+        # Rest of your dashboard context
+        context = {
+            'health_tips': health_tips,
+            # ... other context data ...
+        }
+        
+        return render(request, 'Users/patients_dashboard.html', context)
+    except Exception as e:
+        messages.error(request, "Error loading dashboard. Please try again.")
+        logger.error(f"Error in patient dashboard: {str(e)}")
+        return redirect('login')

@@ -34,10 +34,15 @@ SECRET_KEY = 'django-insecure-#m03pq=byn40l19yd*7$$4mwcj%(+0^%%yiu+08wsx#-m*e0yx
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    '*',  # Be cautious with this in production
+    'localhost',
+    '127.0.0.1',
+    '2749-2401-4900-667d-7f87-4c05-6a3-b637-30a1.ngrok-free.app'  # Add your ngrok URL here
+]
 
-# BASE_URL = 'http://localhost:8000'
-BASE_URL = 'https://care-fusion.onrender.com'
+BASE_URL = 'https://2749-2401-4900-667d-7f87-4c05-6a3-b637-30a1.ngrok-free.app'  # Add your ngrok URL
+# BASE_URL = 'https://care-fusion.onrender.com'
 
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
@@ -158,33 +163,33 @@ LOGGING = {
 }
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'care_fusion',
-#         'USER': 'root',
-#         'PASSWORD': '',
-#         'HOST': 'localhost',
-#         'PORT': '3306',
-#         'OPTIONS': {
-#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-#         },
-#     }
-# }
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'carefusion_fiftydaily',
-        'USER': 'carefusion_fiftydaily',
-        'PASSWORD': 'e6c2c5ffb350fe8fe6acf292d99e877b7df894be',
-        'HOST': 'c3qbc.h.filess.io',
-        'PORT': '3307',
+        'NAME': 'care_fusion',
+        'USER': 'root',
+        'PASSWORD': '',
+        'HOST': 'localhost',
+        'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'carefusion_fiftydaily',
+#         'USER': 'carefusion_fiftydaily',
+#         'PASSWORD': 'e6c2c5ffb350fe8fe6acf292d99e877b7df894be',
+#         'HOST': 'c3qbc.h.filess.io',
+#         'PORT': '3307',
+#         'OPTIONS': {
+#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+#         },
+#     }
+# }
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -315,4 +320,10 @@ ASGI_TIMEOUT = 60  # 60 seconds timeout
 
 # Add Daphne to the list of INSTALLED_SERVERS
 INSTALLED_SERVERS = ['daphne']
+
+# Update CSRF settings to work with ngrok
+CSRF_TRUSTED_ORIGINS = [
+    'https://a683-136-232-57-110.ngrok-free.app' ,
+    'https://2749-2401-4900-667d-7f87-4c05-6a3-b637-30a1.ngrok-free.app'
+]
 

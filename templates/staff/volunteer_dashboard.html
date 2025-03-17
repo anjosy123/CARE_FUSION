@@ -158,11 +158,6 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    {% comment %} <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'volunteer_dashboard' %}">
-                            <i class="fas fa-home"></i> Dashboard
-                        </a>
-                    </li> {% endcomment %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'staff_deliveries' %}">
                             <i class="fas fa-truck"></i> My Deliveries
@@ -173,12 +168,12 @@
                             <i class="fas fa-history"></i> History
                         </a>
                     </li>
-</ul>
+                </ul>
                 <div class="d-flex align-items-center">
                     <span class="welcome-text">
                         <i class="fas fa-user"></i> Welcome, {{ staff.get_full_name }}
                     </span>
-                    <a class="nav-link" href="{% url 'staff_logout' %}">
+                    <a class="nav-link" href="{% url 'org_logout' %}">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </a>
                 </div>
@@ -487,6 +482,8 @@
             });
         }
     </script>
-    {% include 'staff/shared/team_chat.html' %}
+    {% if team_chat_enabled %}
+        {% include 'staff/shared/team_chat.html' %}
+    {% endif %}
 </body>
 </html>

@@ -1,441 +1,214 @@
+{% extends 'Organizations/palliative_base.html' %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Approved and Rejected Requests</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <style>
-          :root {
-            --primary-color: #1e3c72;
-            --secondary-color: #2a5298;
-            --success-color: #2ecc71;
-            --danger-color: #e74c3c;
-            --warning-color: #f1c40f;
-            --light-bg: #f5f7fb;
-            --white: #ffffff;
-            --text-dark: #2c3e50;
-            --text-light: #95a5a6;
-            --border-color: #e9ecef;
-        }
+{% block title %}Approved and Rejected Requests{% endblock %}
 
-        body {
-            background-color: var(--light-bg);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .request-section {
+        background: var(--white);
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+        padding: 2rem;
+    }
 
-        .topbar {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            padding: 15px 0;
-            color: var(--white);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+    .section-title {
+        color: var(--text-dark);
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--primary-color);
+        font-size: 1.5rem;
+    }
 
-        .nav-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
+    .request-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
 
-        .logo img {
-            height: 40px;
-            object-fit: contain;
-        }
+    .request-table th {
+        background: var(--light-bg);
+        padding: 1rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        text-align: left;
+    }
 
-        .nav-menu {
-            display: flex;
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            gap: 2rem;
-        }
+    .request-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
 
-        .nav-menu > li {
-            position: relative;
-            padding: 0.5rem 0;
-        }
+    .request-table tr:last-child td {
+        border-bottom: none;
+    }
 
-        .nav-menu a {
-            color: var(--white);
-            text-decoration: none;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 0;
-        }
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: inline-block;
+    }
 
-        .nav-menu .dropdown {
-          position: absolute;
-          top: 100%;
-          left: 0;
-          background: var(--white);  /* White background */
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          min-width: 220px;
-          opacity: 0;
-          visibility: hidden;
-          transform: translateY(10px);
-          transition: all 0.3s ease;
-          z-index: 1000;
-          padding: 0.5rem 0;
-          margin-top: 0.5rem;
-      }
-  
-      .nav-menu > li:hover .dropdown {
-          opacity: 1;
-          visibility: visible;
-          transform: translateY(0);
-      }
-  
-      .nav-menu .dropdown li {
-          margin: 0;
-          padding: 0;
-          list-style: none;
-      }
-  
-      .nav-menu .dropdown a {
-          color: var(--text-dark);  /* Dark text color for contrast */
-          padding: 0.75rem 1.5rem;
-          display: block;
-          text-decoration: none;
-          font-size: 0.9rem;
-          transition: all 0.3s ease;
-          white-space: nowrap;
-      }
-  
-      .nav-menu .dropdown a:hover {
-          background-color: var(--light-bg);
-          color: var(--primary-color);  /* Primary color on hover */
-      }
-  
-      /* Mobile Dropdown Styles */
-      @media (max-width: 991px) {
-          .nav-menu .dropdown {
-              position: static;
-              background: var(--white);
-              box-shadow: none;
-              margin: 0;
-              border-radius: 0;
-              display: none;
-          }
-  
-          .nav-menu > li:hover .dropdown {
-              display: block;
-          }
-  
-          .nav-menu .dropdown a {
-              padding: 0.75rem 2rem;
-              color: var(--text-dark);
-          }
-  
-          .nav-menu .dropdown a:hover {
-              background-color: var(--light-bg);
-              color: var(--primary-color);
-          }
-      }
+    .status-approved {
+        background-color: var(--success-color);
+        color: var(--white);
+    }
 
-        .nav-menu li:hover .dropdown {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
+    .status-rejected {
+        background-color: var(--danger-color);
+        color: var(--white);
+    }
 
-        .nav-menu .dropdown a:hover {
-          background-color: var(--light-bg);
-          color: var(--primary-color);
-      }
+    .btn-view {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        background: var(--primary-color);
+        color: var(--white);
+        text-decoration: none;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
 
-        .main-content {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 2rem;
-        }
+    .btn-view:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        color: var(--white);
+    }
 
+    :root {
+        --primary-color: #1e3c72;
+        --secondary-color: #2a5298;
+        --success-color: #2ecc71;
+        --danger-color: #e74c3c;
+        --warning-color: #f1c40f;
+        --light-bg: #f5f7fb;
+        --white: #ffffff;
+        --text-dark: #2c3e50;
+        --text-light: #95a5a6;
+        --border-color: #e9ecef;
+    }
+
+    @media (max-width: 768px) {
         .request-section {
-            background: var(--white);
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-            margin-bottom: 2rem;
-            padding: 2rem;
-        }
-
-        .section-title {
-            color: var(--text-dark);
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid var(--primary-color);
-            font-size: 1.5rem;
+            padding: 1rem;
         }
 
         .request-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
+            display: block;
+            overflow-x: auto;
         }
+    }
+</style>
+{% endblock %}
 
-        .request-table th {
-            background: var(--light-bg);
-            padding: 1rem;
-            font-weight: 600;
-            color: var(--text-dark);
-            text-align: left;
-        }
+{% block content %}
+<div class="main-content">
+    {% if messages %}
+    <div class="messages mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-        .request-table td {
-            padding: 1rem;
-            vertical-align: middle;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .request-table tr:hover {
-            background-color: var(--light-bg);
-        }
-
-        .status-badge {
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .status-approved {
-            background-color: rgba(46, 204, 113, 0.1);
-            color: var(--success-color);
-        }
-
-        .status-rejected {
-            background-color: rgba(231, 76, 60, 0.1);
-            color: var(--danger-color);
-        }
-
-        .btn-view {
-            background-color: var(--primary-color);
-            color: var(--white);
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .btn-view:hover {
-            background-color: var(--secondary-color);
-            color: var(--white);
-            transform: translateY(-2px);
-        }
-
-        @media (max-width: 768px) {
-            .nav-menu {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                background: var(--primary-color);
-                padding: 1rem;
-                flex-direction: column;
-            }
-
-            .nav-menu.active {
-                display: flex;
-            }
-
-            .mobile-menu-toggle {
-                display: block;
-            }
-
-            .main-content {
-                margin: 1rem;
-                padding: 1rem;
-            }
-
-            .request-table {
-                display: block;
-                overflow-x: auto;
-            }
-
-            .request-section {
-                padding: 1rem;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="topbar">
-        <div class="nav-container">
-            <div class="logo">
-                <a href="{% url 'palliatives_dashboard' %}">
-                    <img src="{% static 'img/logo.png' %}" alt="Logo" width="178px" height="37px">
-                </a>
-            </div>
-            
-            <button class="mobile-menu-toggle d-md-none">
-                <i class="fas fa-bars"></i>
-            </button>
-            
-            <ul class="nav-menu">
-                <li><a href="{% url 'service_list' %}">Services</a></li>
-                <li>
-                    <a href="javascript:void(0)">Service Requests <i class="fas fa-chevron-down"></i></a>
-                    <ul class="dropdown">
-                        <li><a href="{% url 'pending_requests' %}">Pending Requests</a></li>
-                        <li><a href="{% url 'approved_rejected_requests' %}">Approved/Rejected Requests</a></li>
-                    </ul>
-                </li>
-                <li>
-                    <a href="javascript:void(0)">Staff Corner <i class="fas fa-chevron-down"></i></a>
-                    <ul class="dropdown">
-                        <li><a href="{% url 'staff_list' %}">Manage Staff</a></li>
-                        <li><a href="{% url 'patient_assignment_list' %}">Patient Assignments</a></li>
-                    </ul>
-                </li>
-                <li>
-                    <a href="javascript:void(0)">Team Management <i class="fas fa-chevron-down"></i></a>
-                    <ul class="dropdown">
-                        <li><a href="{% url 'team_list' %}">Manage Teams</a></li>
-                        <li><a href="{% url 'team_visit_list' %}">Team Visits</a></li>
-                        <li><a href="{% url 'team_visit_calendar' %}">Team Visit Calendar</a></li>
-                    </ul>
-                </li>
-            </ul>
-            
-            {% if request.session.org_name %}
-            <div class="user-info">
-                <span>Welcome {{request.session.org_name}}</span>
-                <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-            {% endif %}
+    <div class="request-section">
+        <h2 class="section-title">Approved Requests</h2>
+        <div class="table-responsive">
+            <table class="request-table">
+                <thead>
+                    <tr>
+                        <th>Patient Name</th>
+                        <th>Service Type</th>
+                        <th>Date Submitted</th>
+                        <th>Date Approved</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request in approved_requests %}
+                    <tr>
+                        <td>{{ request.patient.get_full_name }}</td>
+                        <td>{{ request.service.name }}</td>
+                        <td>{{ request.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>{{ request.updated_at|date:"Y-m-d H:i" }}</td>
+                        <td><span class="status-badge status-approved">Approved</span></td>
+                        <td>
+                            <a href="{% url 'patient_details' request.id %}" class="btn-view">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">No approved requests found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <div class="main-content">
-        {% if messages %}
-        <div class="messages mb-4">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        <div class="request-section">
-            <h2 class="section-title">Approved Requests</h2>
-            <div class="table-responsive">
-                <table class="request-table">
-                    <thead>
-                        <tr>
-                            <th>Patient Name</th>
-                            <th>Service Type</th>
-                            <th>Date Submitted</th>
-                            <th>Date Approved</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for request in approved_requests %}
-                        <tr>
-                            <td>{{ request.patient.get_full_name }}</td>
-                            <td>{{ request.service.name }}</td>
-                            <td>{{ request.created_at|date:"Y-m-d H:i" }}</td>
-                            <td>{{ request.updated_at|date:"Y-m-d H:i" }}</td>
-                            <td><span class="status-badge status-approved">Approved</span></td>
-                            <td>
-                                <a href="{% url 'patient_details' request.id %}" class="btn-view">
-                                    <i class="fas fa-eye"></i> View Details
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center">No approved requests found.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="request-section">
-            <h2 class="section-title">Rejected Requests</h2>
-            <div class="table-responsive">
-                <table class="request-table">
-                    <thead>
-                        <tr>
-                            <th>Patient Name</th>
-                            <th>Service Type</th>
-                            <th>Date Submitted</th>
-                            <th>Date Rejected</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for request in rejected_requests %}
-                        <tr>
-                            <td>{{ request.patient.get_full_name }}</td>
-                            <td>{{ request.service.name }}</td>
-                            <td>{{ request.created_at|date:"Y-m-d H:i" }}</td>
-                            <td>{{ request.updated_at|date:"Y-m-d H:i" }}</td>
-                            <td><span class="status-badge status-rejected">Rejected</span></td>
-                            <td>
-                                <a href="{% url 'patient_details' request.id %}" class="btn-view">
-                                    <i class="fas fa-eye"></i> View Details
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center">No rejected requests found.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+    <div class="request-section">
+        <h2 class="section-title">Rejected Requests</h2>
+        <div class="table-responsive">
+            <table class="request-table">
+                <thead>
+                    <tr>
+                        <th>Patient Name</th>
+                        <th>Service Type</th>
+                        <th>Date Submitted</th>
+                        <th>Date Rejected</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request in rejected_requests %}
+                    <tr>
+                        <td>{{ request.patient.get_full_name }}</td>
+                        <td>{{ request.service.name }}</td>
+                        <td>{{ request.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>{{ request.updated_at|date:"Y-m-d H:i" }}</td>
+                        <td><span class="status-badge status-rejected">Rejected</span></td>
+                        <td>
+                            <a href="{% url 'patient_details' request.id %}" class="btn-view">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">No rejected requests found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
+</div>
+{% endblock %}
 
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Mobile menu toggle
-            const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
-            const navMenu = document.querySelector('.nav-menu');
-            
-            if (mobileMenuToggle) {
-                mobileMenuToggle.addEventListener('click', function() {
-                    navMenu.classList.toggle('active');
-                });
-            }
-
-            // Auto-hide alerts after 5 seconds
-            setTimeout(function() {
-                document.querySelectorAll('.alert').forEach(function(alert) {
-                    alert.classList.remove('show');
-                    setTimeout(() => alert.remove(), 300);
-                });
-            }, 5000);
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // Auto-hide alerts after 5 seconds
+    setTimeout(function() {
+        document.querySelectorAll('.alert').forEach(function(alert) {
+            alert.classList.remove('show');
+            setTimeout(() => alert.remove(), 300);
         });
-    </script>
-</body>
-</html>
+    }, 5000);
+</script>
+{% endblock %}

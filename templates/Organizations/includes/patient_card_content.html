@@ -1,0 +1,38 @@
+<div class="card-body">
+    <div class="row">
+        <div class="col-md-8">
+            <h5>{{ patient.full_name }}</h5>
+            <p class="text-muted">
+                ID: {{ patient.patient_id }} | 
+                Age: {{ patient.age }} | 
+                Gender: {{ patient.gender }}
+            </p>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Blood Pressure:</strong> {{ patient.blood_pressure }}</p>
+                    <p><strong>Heart Rate:</strong> {{ patient.heart_rate }}</p>
+                    <p><strong>SpO2:</strong> {{ patient.oxygen_level }}%</p>
+                    <p><strong>Phone:</strong> {{ patient.phone }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Temperature:</strong> {{ patient.temperature }}°C</p>
+                    <p><strong>Pain Score:</strong> {{ patient.pain_score }}/10</p>
+                    <p><strong>Visit Priority:</strong> {{ patient.visit_priority_score }}/10</p>
+                    <p><strong>Last Visit:</strong> {{ patient.last_visit_date }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <!-- Risk Scores -->
+            <div class="mb-3">
+                <p><strong>Fall Risk:</strong> {{ patient.fall_risk }}</p>
+                <p><strong>Deterioration Risk:</strong> {{ patient.deterioration_risk }}</p>
+                <p><strong>Overall Health:</strong> {{ patient.overall_health }}</p>
+            </div>
+            <!-- Action Buttons -->
+            <div class="text-end">
+                <a href="{% url 'patient_detail' patient.patient_id %}" class="btn btn-primary mb-2">View Details</a>
+            </div>
+        </div>
+    </div>
+</div> 

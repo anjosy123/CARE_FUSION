@@ -140,6 +140,27 @@
         .service-type-1 { border-left-color: var(--success-color); }
         .service-type-2 { border-left-color: var(--warning-color); }
         .service-type-3 { border-left-color: var(--danger-color); }
+
+        .required-field::after {
+            content: "*";
+            color: var(--danger-color);
+            margin-left: 4px;
+        }
+
+        .invalid-feedback {
+            display: none;
+            color: var(--danger-color);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .form-control.is-invalid {
+            border-color: var(--danger-color);
+        }
+
+        .form-control.is-invalid + .invalid-feedback {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -215,27 +236,34 @@
 
                 <!-- Phone Number Field -->
                 <div class="mb-4">
-                    <label class="form-label" for="phone">Phone Number</label>
-                    <input type="tel" class="form-control" id="phone" name="phone" 
-                           placeholder="Enter your phone number" required
-                           pattern="[6-9][0-9]{9}" 
+                    <label class="form-label required-field" for="phone">Phone Number</label>
+                    <input type="tel" 
+                           class="form-control" 
+                           id="phone" 
+                           name="phone" 
+                           placeholder="Enter your phone number" 
+                           required
+                           pattern="[6-9][0-9]{9}"
+                           maxlength="10"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)"
                            title="Please enter a valid 10-digit phone number starting with 6-9">
                     <small class="text-muted">Enter a 10-digit mobile number starting with 6-9</small>
+                    <div class="invalid-feedback">Please enter a valid 10-digit phone number starting with 6-9</div>
                 </div>
 
                 <!-- Doctor's Referral -->
                 <div class="mb-4">
-                    <label class="form-label" for="doctor_referral">Doctor's Referral Letter (Optional)</label>
+                    <label class="form-label required-field" for="doctor_referral">Doctor's Referral Letter</label>
                     <input type="file" class="form-control" id="doctor_referral" 
-                           name="doctor_referral" accept=".pdf,.jpg,.jpeg,.png">
-                    <small class="text-muted">Upload PDF or image files (max 5MB)</small>
+                           name="doctor_referral" accept=".pdf" required>
+                    <small class="text-muted">Upload PDF files only (max 5MB)</small>
                 </div>
 
                 <!-- Additional Notes -->
                 <div class="mb-4">
-                    <label class="form-label" for="additional_notes">Additional Notes (Optional)</label>
+                    <label class="form-label required-field" for="additional_notes">Additional Notes</label>
                     <textarea class="form-control" id="additional_notes" name="additional_notes" 
-                              rows="4" placeholder="Enter any additional information..."></textarea>
+                              rows="4" placeholder="Enter any additional information..." required></textarea>
                 </div>
 
                 <!-- Submit Buttons -->
@@ -268,23 +296,95 @@
             card.querySelector('input[type="radio"]').checked = true;
         }
 
-        // File size validation
+        // File validation
         document.getElementById('doctor_referral').addEventListener('change', function(e) {
             const file = e.target.files[0];
-            if (file && file.size > 5 * 1024 * 1024) { // 5MB
-                alert('File size must be less than 5MB');
-                this.value = '';
+            const fileInput = e.target;
+            const feedbackDiv = fileInput.nextElementSibling;
+
+            // Remove previous validation classes
+            fileInput.classList.remove('is-invalid');
+            
+            if (file) {
+                // Check file type
+                if (!file.type.match('application/pdf')) {
+                    fileInput.classList.add('is-invalid');
+                    feedbackDiv.textContent = 'Only PDF files are allowed';
+                    fileInput.value = '';
+                    return;
+                }
+                
+                // Check file size
+                if (file.size > 5 * 1024 * 1024) { // 5MB
+                    fileInput.classList.add('is-invalid');
+                    feedbackDiv.textContent = 'File size must be less than 5MB';
+                    fileInput.value = '';
+                    return;
+                }
             }
         });
 
-        // Phone number validation
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Check if service is selected
+            const serviceSelected = document.querySelector('input[name="service"]:checked');
+            if (!serviceSelected) {
+                alert('Please select a service');
+                return;
+            }
+
+            // Check phone number
+            const phone = document.getElementById('phone').value;
+            if (!/^[6-9][0-9]{9}$/.test(phone)) {
+                alert('Please enter a valid 10-digit phone number starting with 6-9');
+                return;
+            }
+
+            // Check file
+            const file = document.getElementById('doctor_referral').files[0];
+            if (!file) {
+                alert('Please upload a Doctor\'s Referral Letter');
+                return;
+            }
+
+            // Check notes
+            const notes = document.getElementById('additional_notes').value.trim();
+            if (!notes) {
+                alert('Please provide additional notes');
+                return;
+            }
+
+            // If all validations pass, submit the form
+            this.submit();
+        });
+
+        // Enhanced phone number validation
         document.getElementById('phone').addEventListener('input', function(e) {
             const phone = e.target.value;
-            const isValid = /^[6-9][0-9]{9}$/.test(phone);
             
-            if (phone && !isValid) {
-                e.target.setCustomValidity('Please enter a valid 10-digit phone number starting with 6-9');
+            // Remove any non-numeric characters
+            let cleaned = phone.replace(/[^0-9]/g, '');
+            
+            // Limit to 10 digits
+            cleaned = cleaned.slice(0, 10);
+            
+            // Update the input value
+            e.target.value = cleaned;
+            
+            // Validate the number
+            const isValid = /^[6-9][0-9]{9}$/.test(cleaned);
+            
+            if (cleaned && !isValid) {
+                e.target.classList.add('is-invalid');
+                if (cleaned.length === 10 && !/^[6-9]/.test(cleaned)) {
+                    e.target.setCustomValidity('Phone number must start with 6-9');
+                } else if (cleaned.length !== 10) {
+                    e.target.setCustomValidity('Phone number must be exactly 10 digits');
+                }
             } else {
+                e.target.classList.remove('is-invalid');
                 e.target.setCustomValidity('');
             }
         });

@@ -152,16 +152,17 @@
         top: 100%;
         right: 0;
         background: white;
-        border-radius: 4px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        min-width: 180px;
+        border-radius: 8px;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+        min-width: 220px;
         opacity: 0;
         visibility: hidden;
         transform: translateY(10px);
-        transition: all 0.3s ease;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 1000;
-        margin-top: 5px;
-        padding: 5px 0;
+        margin-top: 8px;
+        padding: 8px 0;
+        border: 1px solid rgba(0,0,0,0.08);
       }
 
       .user-login li:hover .dropdown {
@@ -173,13 +174,14 @@
       .user-login .dropdown::before {
         content: '';
         position: absolute;
-        top: -5px;
+        top: -6px;
         right: 20px;
-        width: 10px;
-        height: 10px;
+        width: 12px;
+        height: 12px;
         background: white;
         transform: rotate(45deg);
-        box-shadow: -2px -2px 4px rgba(0,0,0,0.05);
+        border-left: 1px solid rgba(0,0,0,0.08);
+        border-top: 1px solid rgba(0,0,0,0.08);
       }
 
       .user-login .dropdown li {
@@ -195,19 +197,18 @@
 
       .user-login .dropdown li a {
         color: #333;
-        padding: 10px 20px;
-        display: block;
-        text-decoration: none;
-        font-size: 13px;
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
         transition: all 0.2s ease;
-        white-space: nowrap;
-        position: relative;
+        font-weight: 500;
       }
 
       .user-login .dropdown li a:hover {
-        background: #E3F2FD;
+        background: #f8f9fa;
         color: #1A76D1;
-        padding-left: 25px;
       }
 
       /* Fix for dropdown positioning on mobile */
@@ -278,11 +279,6 @@
           order: 1;
         }
       }
-      <style>
-        .login-container {
-          max-width: 400px;
-          margin: 0 auto;
-        }
 
       /* Updated Dropdown Menu Styles */
       .top-link li {
@@ -383,6 +379,74 @@
           background: rgba(255,255,255,0.1);
         }
       }
+
+      /* Submenu styles */
+      .user-login .submenu {
+        position: absolute;
+        left: 100%;
+        top: 0;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+        min-width: 200px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(10px);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(0,0,0,0.08);
+        margin-left: 2px;
+      }
+
+      .user-login .dropdown li:hover .submenu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0);
+      }
+
+      .user-login .submenu-link {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+        color: #2c3e50 !important;
+      }
+
+      .user-login .submenu li a {
+        padding: 12px 20px;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .user-login .submenu {
+          position: static;
+          box-shadow: none;
+          transform: none;
+          padding-left: 25px;
+          min-width: auto;
+          border: none;
+          margin-left: 0;
+          background: #f8f9fa;
+        }
+        
+        .user-login .dropdown {
+          position: absolute;
+          width: 280px;
+          right: 0;
+        }
+
+        .user-login .login-link {
+          padding: 6px 12px;
+        }
+        
+        .user-login .submenu-link i.fas.fa-chevron-right {
+          transform: rotate(90deg);
+        }
+      }
+
+      /* Active State */
+      .user-login li.active > a {
+        color: #1A76D1;
+        background: #E3F2FD;
+      }
     </style>
 
     {% endblock extra_css %}
@@ -438,7 +502,7 @@
           <!-- Contact -->
           <ul class="top-link">
             {% comment %} <li><a href="/about">About</a></li> {% endcomment %}
-            <li><a href="{% url 'organizations_home' %}">Organizations</a></li>
+            {% comment %} <li><a href="{% url 'organizations_home' %}">Organizations</a></li> {% endcomment %}
             {% comment %} <li><a href="/contact">Contact</a></li> {% endcomment %}
           </ul>
           
@@ -448,19 +512,47 @@
             <li class="{% if active_page == 'user' %}active{% endif %}">
               <a href="#" class="login-link">
                 <i class="fas fa-user-circle"></i>
-                New user? 
+                Login/Register
                 <i class="fas fa-chevron-down"></i>
               </a>
               <ul class="dropdown">
+                <!-- User Login Options -->
                 <li>
-                  <a href="{% url 'login' %}">
-                    <i class="fas fa-sign-in-alt"></i> Sign In
+                  <a href="#" class="submenu-link">
+                    <i class="fas fa-user"></i> Patient/Caretaker
+                    <i class="fas fa-chevron-right"></i>
                   </a>
+                  <ul class="submenu">
+                    <li>
+                      <a href="{% url 'login' %}">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                      </a>
+                    </li>
+                    <li>
+                      <a href="{% url 'signup' %}">
+                        <i class="fas fa-user-plus"></i> Sign Up
+                      </a>
+                    </li>
+                  </ul>
                 </li>
+                <!-- Organization Login Options -->
                 <li>
-                  <a href="{% url 'signup' %}">
-                    <i class="fas fa-user-plus"></i> Sign Up
+                  <a href="#" class="submenu-link">
+                    <i class="fas fa-building"></i> Organization
+                    <i class="fas fa-chevron-right"></i>
                   </a>
+                  <ul class="submenu">
+                    <li>
+                      <a href="{% url 'handle_org_login' %}">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                      </a>
+                    </li>
+                    <li>
+                      <a href="{% url 'org_signup' %}">
+                        <i class="fas fa-plus-circle"></i> Register
+                      </a>
+                    </li>
+                  </ul>
                 </li>
               </ul>
             </li>

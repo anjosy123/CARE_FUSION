@@ -895,9 +895,19 @@
             <ul class="nav-menu">
                 {% comment %} <li>
                     <a href="{% url 'patients_dashboard' %}">
-                        <i class="bi bi-house-door-fill"></i> Dashboard
+                        <i class="bi bi-speedometer2"></i> Dashboard
                     </a>
-                    </li> {% endcomment %}
+                </li> {% endcomment %}
+                {% comment %} <li>
+                    <a href="{% url 'organizations_list' %}">
+                        <i class="bi bi-building"></i> Organizations
+                    </a>
+                </li> {% endcomment %}
+                <li>
+                    <a href="{% url 'patient_rentals' %}">
+                        <i class="bi bi-box-seam"></i> Equipment Rentals
+                    </a>
+                </li>
                 <li>
                     <a href="#">
                         <i class="bi bi-calendar-check-fill"></i> Appointments

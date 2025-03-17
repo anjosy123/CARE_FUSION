@@ -107,42 +107,6 @@
     </style>
 </head>
 <body>
-    <!-- Add Navbar -->
-    <div class="topbar">
-        <div class="nav-container">
-            <div class="logo">
-                <img src="{% static 'img/logo.png' %}" alt="CareFusion">
-            </div>
-            <ul class="nav-menu">
-                <li>
-                    <a href="{% url 'palliatives_dashboard' %}">
-                        <i class="fas fa-home"></i> Dashboard
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'manage_equipment' %}">
-                        <i class="fas fa-wheelchair"></i> Equipment
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'rental_requests' %}">
-                        <i class="fas fa-tasks"></i> Rental Requests
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'delivery_management' %}">
-                        <i class="fas fa-truck"></i> Deliveries
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'org_logout' %}">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </div>
-
     <div class="container mt-4">
         <div class="row justify-content-center">
             <div class="col-lg-8">

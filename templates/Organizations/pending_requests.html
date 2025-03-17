@@ -1,354 +1,173 @@
+{% extends 'Organizations/palliative_base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pending Service Requests</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <style>
-        :root {
-            --primary-color: #1e3c72;
-            --secondary-color: #2a5298;
-            --success-color: #2ecc71;
-            --danger-color: #e74c3c;
-            --warning-color: #f1c40f;
-            --light-bg: #f5f7fb;
-            --white: #ffffff;
-            --text-dark: #2c3e50;
-            --text-light: #95a5a6;
-            --border-color: #e9ecef;
-        }
 
-        body {
-            background-color: var(--light-bg);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+{% block title %}Pending Service Requests{% endblock %}
 
-        .topbar {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            padding: 0;
-            color: var(--white);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .request-table {
+        width: 100%;
+        background: var(--white);
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
 
-        .nav-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0.5rem 1rem;
-        }
+    .request-table th {
+        background: var(--light-bg);
+        padding: 1rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        text-align: left;
+    }
 
-        .logo img {
-            height: 40px;
-            object-fit: contain;
-        }
+    .request-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
 
-        .nav-menu {
-            display: flex;
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            align-items: center;
-        }
+    .request-table tr:last-child td {
+        border-bottom: none;
+    }
 
-        .nav-menu > li {
-            position: relative;
-            margin: 0 1rem;
-        }
+    .btn-action {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        margin: 0 0.25rem;
+    }
 
-        .nav-menu > li > a {
-            color: var(--white);
-            text-decoration: none;
-            font-size: 0.95rem;
-            padding: 1rem 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+    .btn-view {
+        background: var(--primary-color);
+        color: var(--white);
+    }
 
-        .nav-menu .dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background: var(--white);
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            min-width: 220px;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(10px);
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
+    .btn-approve {
+        background: var(--success-color);
+        color: var(--white);
+    }
 
-        .nav-menu li:hover .dropdown {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
+    .btn-reject {
+        background: var(--danger-color);
+        color: var(--white);
+    }
 
-        .nav-menu .dropdown a {
-            color: var(--text-dark);
-            padding: 0.75rem 1.5rem;
-            display: block;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        color: var(--white);
+    }
 
-        .nav-menu .dropdown a:hover {
-            background-color: var(--light-bg);
-            color: var(--primary-color);
-        }
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
 
-        .main-content {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-        }
+    .status-pending {
+        background-color: #f1c40f;
+        color: #2c3e50;
+    }
 
-        .page-title {
-            color: var(--text-dark);
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid var(--primary-color);
-        }
+    :root {
+        --primary-color: #1e3c72;
+        --secondary-color: #2a5298;
+        --success-color: #2ecc71;
+        --danger-color: #e74c3c;
+        --warning-color: #f1c40f;
+        --light-bg: #f5f7fb;
+        --white: #ffffff;
+        --text-dark: #2c3e50;
+        --text-light: #95a5a6;
+        --border-color: #e9ecef;
+    }
+</style>
+{% endblock %}
 
-        .request-table {
-            width: 100%;
-            background: var(--white);
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-            overflow: hidden;
-        }
-
-        .request-table th {
-            background: var(--light-bg);
-            padding: 1rem;
-            font-weight: 600;
-            color: var(--text-dark);
-            text-align: left;
-        }
-
-        .request-table td {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-color);
-            vertical-align: middle;
-        }
-
-        .request-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .btn-action {
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            margin: 0 0.25rem;
-        }
-
-        .btn-view {
-            background: var(--primary-color);
-            color: var(--white);
-        }
-
-        .btn-approve {
-            background: var(--success-color);
-            color: var(--white);
-        }
-
-        .btn-reject {
-            background: var(--danger-color);
-            color: var(--white);
-        }
-
-        .btn-action:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            color: var(--white);
-        }
-
-        .status-badge {
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .status-pending {
-            background-color: var(--warning-color);
-            color: var(--text-dark);
-        }
-
-        @media (max-width: 768px) {
-            .nav-container {
-                flex-direction: column;
-                padding: 1rem;
-            }
-
-            .nav-menu {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .nav-menu > li {
-                margin: 0.5rem 0;
-            }
-
-            .nav-menu .dropdown {
-                position: static;
-                display: none;
-                width: 100%;
-                box-shadow: none;
-            }
-
-            .nav-menu li:hover .dropdown {
-                display: block;
-            }
-
-            .request-table {
-                display: block;
-                overflow-x: auto;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Navigation Bar -->
-    <div class="topbar">
-        <div class="nav-container">
-            <div class="logo">
-                <a href="{% url 'palliatives_dashboard' %}">
-                    <img src="{% static 'img/logo.png' %}" alt="Logo" width="178px" height="37px">
-                </a>
-            </div>
-            
-            <ul class="nav-menu">
-                <li><a href="{% url 'service_list' %}">Services</a></li>
-                <li>
-                    <a href="javascript:void(0)">Service Requests <i class="fas fa-chevron-down"></i></a>
-                    <ul class="dropdown">
-                        <li><a href="{% url 'pending_requests' %}">Pending Requests</a></li>
-                        <li><a href="{% url 'approved_rejected_requests' %}">Approved/Rejected Requests</a></li>
-                    </ul>
-                </li>
-                <li>
-                    <a href="javascript:void(0)">Staff Corner <i class="fas fa-chevron-down"></i></a>
-                    <ul class="dropdown">
-                        <li><a href="{% url 'staff_list' %}">Manage Staff</a></li>
-                        <li><a href="{% url 'patient_assignment_list' %}">Patient Assignments</a></li>
-                    </ul>
-                </li>
-                <li>
-                    <a href="javascript:void(0)">Team Management <i class="fas fa-chevron-down"></i></a>
-                    <ul class="dropdown">
-                        <li><a href="{% url 'team_list' %}">Manage Teams</a></li>
-                        <li><a href="{% url 'team_visit_list' %}">Team Visits</a></li>
-                        <li><a href="{% url 'team_visit_calendar' %}">Team Visit Calendar</a></li>
-                    </ul>
-                </li>
-            </ul>
-            
-            {% if request.session.org_name %}
-            <div class="user-info">
-                <span>Welcome {{request.session.org_name}}</span>
-                <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-            {% endif %}
-        </div>
+{% block content %}
+<div class="main-content">
+    <div class="page-title">
+        <h2>Pending Service Requests</h2>
     </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <div class="page-title">
-            <h2>Pending Service Requests</h2>
+    {% if messages %}
+    <div class="messages mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-
-        {% if messages %}
-        <div class="messages mb-4">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        <div class="table-responsive">
-            <table class="request-table">
-                <thead>
-                    <tr>
-                        <th>Request ID</th>
-                        <th>Patient Name</th>
-                        <th>Phone</th>
-                        <th>Service</th>
-                        <th>Request Date</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for request in pending_requests %}
-                    <tr>
-                        <td>#{{ request.id }}</td>
-                        <td>{{ request.patient.get_full_name }}</td>
-                        <td>{{ request.phone }}</td>
-                        <td>{{ request.service.name }}</td>
-                        <td>{{ request.created_at|date:"M d, Y h:i A" }}</td>
-                        <td>
-                            <span class="status-badge status-pending">Pending</span>
-                        </td>
-                        <td>
-                            <a href="{% url 'view_request' request.id %}" class="btn-action btn-view">
-                                <i class="fas fa-eye"></i> View
-                            </a>
-                            <a href="{% url 'approve_request' request.id %}" class="btn-action btn-approve">
-                                <i class="fas fa-check"></i> Approve
-                            </a>
-                            <a href="{% url 'reject_request' request.id %}" class="btn-action btn-reject">
-                                <i class="fas fa-times"></i> Reject
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center">No pending requests found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        {% endfor %}
     </div>
+    {% endif %}
 
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        // Auto-hide alerts after 5 seconds
-        setTimeout(function() {
-            document.querySelectorAll('.alert').forEach(function(alert) {
-                const closeButton = alert.querySelector('.btn-close');
-                if (closeButton) closeButton.click();
-            });
-        }, 5000);
-    </script>
-</body>
-</html>
+    <div class="table-responsive">
+        <table class="request-table">
+            <thead>
+                <tr>
+                    <th>Request ID</th>
+                    <th>Patient Name</th>
+                    <th>Phone</th>
+                    <th>Service</th>
+                    <th>Request Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in pending_requests %}
+                <tr>
+                    <td>#{{ request.id }}</td>
+                    <td>{{ request.patient.get_full_name }}</td>
+                    <td>{{ request.phone }}</td>
+                    <td>{{ request.service.name }}</td>
+                    <td>{{ request.created_at|date:"M d, Y h:i A" }}</td>
+                    <td>
+                        <span class="status-badge status-pending">Pending</span>
+                    </td>
+                    <td>
+                        <a href="{% url 'view_request' request.id %}" class="btn-action btn-view">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        <a href="{% url 'approve_request' request.id %}" class="btn-action btn-approve">
+                            <i class="fas fa-check"></i> Approve
+                        </a>
+                        <a href="{% url 'reject_request' request.id %}" class="btn-action btn-reject">
+                            <i class="fas fa-times"></i> Reject
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">No pending requests found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // Auto-hide alerts after 5 seconds
+    setTimeout(function() {
+        document.querySelectorAll('.alert').forEach(function(alert) {
+            const closeButton = alert.querySelector('.btn-close');
+            if (closeButton) closeButton.click();
+        });
+    }, 5000);
+</script>
+{% endblock %}
