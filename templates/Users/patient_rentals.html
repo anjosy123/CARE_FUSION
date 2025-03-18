@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% comment %} {% extends 'base.html' %} {% endcomment %}
 {% load static %}
 
 {% block content %}
@@ -534,23 +534,7 @@
                                                             <div class="usage-actions">
                                                                 <h6>Actions</h6>
                                                                 <div class="d-grid gap-2">
-                                                                    {% if rental.status == 'END' %}
-                                                                        <button class="btn btn-primary mb-2" onclick="payRentalBill({{ rental.id }})">
-                                                                            <i class="fas fa-money-bill me-2"></i> Pay Rental Bill
-                                                                            <span class="badge bg-light text-dark ms-2">₹{{ rental.get_current_bill_amount }}</span>
-                                                                        </button>
-                                                                        
-                                                                        <button class="btn btn-warning mb-2" onclick="requestRentalExtension({{ rental.id }})">
-                                                                            <i class="fas fa-clock me-2"></i> Extend Rental Period
-                                                                        </button>
-                                                                        
-                                                                        <div class="alert alert-warning">
-                                                                            <small>
-                                                                                <i class="fas fa-info-circle me-2"></i>
-                                                                                Your rental period has ended. Please either pay the bill or request an extension.
-                                                                            </small>
-                                                                        </div>
-                                                                    {% elif rental.status == 'ACTIVE' %}
+                                                                    {% if rental.status == 'ACTIVE' %}
                                                                         <button class="btn btn-warning mb-2" onclick="requestRentalExtension({{ rental.id }})">
                                                                             <i class="fas fa-clock me-2"></i> Extend Rental Period
                                                                         </button>
@@ -559,6 +543,18 @@
                                                                             <small>
                                                                                 <i class="fas fa-info-circle me-2"></i>
                                                                                 Current rental period ends on {{ rental.rental_end_date|date:"M d, Y" }}
+                                                                            </small>
+                                                                        </div>
+                                                                    {% elif rental.status == 'END' %}
+                                                                        <button class="btn btn-primary mb-2" onclick="payRentalBill({{ rental.id }})">
+                                                                            <i class="fas fa-money-bill me-2"></i> Pay Rental Bill
+                                                                            <span class="badge bg-light text-dark ms-2">₹{{ rental.get_current_bill_amount }}</span>
+                                                                        </button>
+                                                                        
+                                                                        <div class="alert alert-warning">
+                                                                            <small>
+                                                                                <i class="fas fa-info-circle me-2"></i>
+                                                                                Your rental period has ended. Please pay the bill.
                                                                             </small>
                                                                         </div>
                                                                     {% endif %}
@@ -1024,16 +1020,44 @@
                         // Ensure amount is a number
                         const amount = parseFloat(amountData.amount);
                         console.log("amount",amount)
+                        const amountInPaise = amount * 100; // Convert to paise
+                        
+                        // Update the handler in Razorpay options
                         const options = {
                             key: '{{ razorpay_key }}',
-                            amount: amount * 100,  // Convert to paise
+                            amount: amountInPaise,
                             currency: 'INR',
                             name: 'CareFusion',
                             description: 'Rental Payment',
                             order_id: orderData.order_id,
                             handler: function(response) {
-                                // Redirect to verify payment
-                                window.location.href = `/rental/verify-payment/?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}&signature=${response.razorpay_signature}`;
+                                // Verify payment
+                                fetch(`/rental/verify-payment/?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}&signature=${response.razorpay_signature}`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Success!',
+                                            text: data.message,
+                                            showConfirmButton: true,
+                                            confirmButtonText: 'OK'
+                                        }).then((result) => {
+                                            if (result.isConfirmed) {
+                                                window.location.href = data.redirect_url;
+                                            }
+                                        });
+                                    } else {
+                                        throw new Error(data.error || 'Payment verification failed');
+                                    }
+                                })
+                                .catch(error => {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Payment Error',
+                                        text: error.message || 'Could not verify payment'
+                                    });
+                                });
                             },
                             prefill: {
                                 name: '{{ rental.patient.get_full_name }}',
@@ -1044,8 +1068,15 @@
                             },
                             modal: {
                                 ondismiss: function() {
-                                    // Redirect if payment is cancelled
-                                    window.location.href = "/patient/rentals/";
+                                    Swal.fire({
+                                        icon: 'warning',
+                                        title: 'Payment Cancelled',
+                                        text: 'You have cancelled the payment process.',
+                                        showConfirmButton: true,
+                                        confirmButtonText: 'OK'
+                                    }).then(() => {
+                                        window.location.href = "/patient/rentals/";
+                                    });
                                 }
                             }
                         };

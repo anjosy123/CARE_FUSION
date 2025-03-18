@@ -6280,11 +6280,11 @@ def request_rental_extension(request):
             patient_id=request.session.get('user_id')
         )
         
-        # Check rental status
-        if rental.status not in ['END', 'ACTIVE']:
+        # Check rental status - allow extension for ACTIVE rentals
+        if rental.status not in ['ACTIVE']:  # Changed from ['END', 'ACTIVE'] to ['ACTIVE']
             return JsonResponse({
                 'success': False,
-                'error': 'Rental is not eligible for extension'
+                'error': 'Only active rentals can be extended'
             })
         
         # Check if there's already a pending extension request
@@ -6374,13 +6374,13 @@ def verify_rental_payment(request):
             messages.error(request, "Could not verify payment.")
             return redirect('patient_rentals')
         
-        # Create payment record
+        # Create payment record - using correct field names
         payment = RentalPayment.objects.create(
             rental=rental,
             amount=rental.get_current_bill_amount(),
             payment_date=timezone.now(),
-            payment_id=payment_id,
-            order_id=order_id,
+            razorpay_payment_id=payment_id,  # Changed from payment_id to razorpay_payment_id
+            razorpay_order_id=order_id,      # Changed from order_id to razorpay_order_id
             status='PAID',
             payment_type='RENTAL_BILL'
         )
@@ -6402,10 +6402,16 @@ def verify_rental_payment(request):
         except Exception as receipt_error:
             logger.warning(f"Receipt generation failed: {str(receipt_error)}")
         
-        messages.success(request, "Payment successful! Thank you.")
-        return redirect('patient_rentals')
+        # Return JSON response for success
+        return JsonResponse({
+            'success': True,
+            'message': 'Payment successful! Thank you.',
+            'redirect_url': reverse('patient_rentals')
+        })
         
     except Exception as e:
         logger.error(f"Unexpected error in payment verification: {str(e)}")
-        messages.error(request, f"Unexpected error: {str(e)}")
-        return redirect('patient_rentals')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })

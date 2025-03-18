@@ -944,23 +944,24 @@ class EquipmentRental(models.Model):
         return False
 
 class RentalPayment(models.Model):
-    PAYMENT_TYPE_CHOICES = [
-        ('INITIAL', 'Initial Payment'),
-        ('EXTENSION', 'Rental Extension'),
-        ('DAMAGE', 'Damage Charges'),
-        ('REFUND', 'Security Deposit Refund')
-    ]
-    
     rental = models.ForeignKey(EquipmentRental, on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES)
+    payment_date = models.DateTimeField(auto_now_add=True)
     razorpay_payment_id = models.CharField(max_length=100)
     razorpay_order_id = models.CharField(max_length=100)
-    payment_date = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=EquipmentRental.PAYMENT_STATUS_CHOICES)
+    status = models.CharField(max_length=20, choices=[
+        ('PENDING', 'Pending'),
+        ('PAID', 'Paid'),
+        ('FAILED', 'Failed')
+    ])
+    payment_type = models.CharField(max_length=20, choices=[
+        ('INITIAL', 'Initial Payment'),
+        ('RENTAL_BILL', 'Rental Bill'),
+        ('REFUND', 'Refund')
+    ])
     
     def __str__(self):
-        return f"Payment for {self.rental} - {self.payment_type}"
+        return f"Payment {self.razorpay_payment_id} for {self.rental}"
 
 class EquipmentDelivery(models.Model):
     STATUS_CHOICES = (
