@@ -943,6 +943,31 @@ class EquipmentRental(models.Model):
             return True
         return False
 
+    def get_payment_status(self):
+        """Get the current payment status with details"""
+        latest_payment = self.payments.order_by('-payment_date').first()
+        if latest_payment:
+            return {
+                'status': 'PAID',
+                'date': latest_payment.payment_date,
+                'amount': latest_payment.amount,
+                'payment_id': latest_payment.razorpay_payment_id
+            }
+        return {
+            'status': 'UNPAID',
+            'amount': self.get_current_bill_amount()
+        }
+
+    def get_status_display(self):
+        """Get a human-readable status with icon class"""
+        status_map = {
+            'ACTIVE': {'text': 'Active', 'icon': 'clock', 'class': 'primary'},
+            'END': {'text': 'Ended', 'icon': 'exclamation-circle', 'class': 'warning'},
+            'COMPLETED': {'text': 'Completed', 'icon': 'check-circle', 'class': 'success'},
+            'CANCELLED': {'text': 'Cancelled', 'icon': 'times-circle', 'class': 'danger'}
+        }
+        return status_map.get(self.status, {'text': self.status, 'icon': 'question-circle', 'class': 'secondary'})
+
 class RentalPayment(models.Model):
     rental = models.ForeignKey(EquipmentRental, on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=10, decimal_places=2)

@@ -245,5 +245,6 @@ urlpatterns = [
     path('api/rental/<int:rental_id>/final-amount/', views.get_rental_final_amount, name='get_rental_final_amount'),
     path('rental/<int:rental_id>/payment/', views.rental_payment, name='rental_payment'),
     path('api/rental/request-extension/', views.request_rental_extension, name='request_rental_extension'),
+    path('rental/<int:rental_id>/invoice/download/', views.download_rental_invoice, name='download_rental_invoice'),
 ]
 

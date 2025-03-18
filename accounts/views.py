@@ -74,6 +74,11 @@ from django.http import JsonResponse
 from .models import User, NotificationPreferences
 from math import radians, sin, cos, sqrt, atan2
 from django.template import TemplateDoesNotExist
+from django.http import FileResponse
+import io
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
+from reportlab.lib.pagesizes import letter
 
 def send_appointment_email(appointment, action, recipient='patient'):
     subject = f'Appointment {action.capitalize()}'
@@ -6414,4 +6419,150 @@ def verify_rental_payment(request):
         return JsonResponse({
             'success': False,
             'error': str(e)
+        })
+
+@patient_login_required
+def download_rental_invoice(request, rental_id):
+    try:
+        rental = get_object_or_404(
+            EquipmentRental, 
+            id=rental_id,
+            patient_id=request.session.get('user_id'),
+            status='COMPLETED'
+        )
+        
+        payment = rental.payments.filter(status='PAID').last()
+        if not payment:
+            return JsonResponse({
+                'success': False,
+                'error': 'No payment found for this rental'
+            })
+
+        # Create a file-like buffer to receive PDF data
+        buffer = io.BytesIO()
+        
+        try:
+            # Create the PDF object using letter size
+            p = canvas.Canvas(buffer, pagesize=letter)
+            width, height = letter
+            
+            # Try to add logo - with error handling
+            try:
+                logo_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'logo.png')
+                if os.path.exists(logo_path):
+                    p.drawImage(logo_path, 40, height - 120, width=150, height=80)
+            except Exception as logo_error:
+                logger.warning(f"Could not add logo to invoice: {str(logo_error)}")
+                # Continue without logo if there's an error
+            
+            # Add company details
+            p.setFont("Helvetica-Bold", 10)
+            p.drawString(40, height - 140, "CareFusion Healthcare Services")
+            p.setFont("Helvetica", 9)
+            p.drawString(40, height - 155, "CareFusion")
+            p.drawString(40, height - 170, "Idukki, Kerala")
+            p.drawString(40, height - 185, "Phone: +91 98 46423564")
+            p.drawString(40, height - 200, "Email: carefusion@gmail.com")
+            
+            # Add invoice details on the right
+            p.setFont("Helvetica-Bold", 24)
+            p.drawString(400, height - 80, "INVOICE")
+            p.setFont("Helvetica", 10)
+            p.drawString(400, height - 100, f"Invoice No: INV-{rental.id}")
+            p.drawString(400, height - 115, f"Date: {payment.payment_date.strftime('%d %b, %Y')}")
+            
+            # Add customer details
+            p.setFont("Helvetica-Bold", 11)
+            p.drawString(40, height - 250, "Bill To:")
+            p.setFont("Helvetica", 10)
+            p.drawString(40, height - 270, f"Patient Name: {rental.patient.get_full_name()}")
+            p.drawString(40, height - 285, f"Email: {rental.patient.email}")
+            
+            # Add rental details in a table format
+            y_position = height - 350
+            
+            # Draw table background
+            p.setFillColorRGB(0.95, 0.95, 0.95)
+            p.rect(40, y_position, width-80, 20, fill=True)
+            p.setFillColorRGB(0, 0, 0)
+            
+            # Table headers
+            p.setFont("Helvetica-Bold", 10)
+            headers = ["Description", "Duration", "Rate", "Amount"]
+            x_positions = [40, 300, 400, 480]
+            for header, x in zip(headers, x_positions):
+                p.drawString(x, y_position + 7, header)
+            
+            # Table content
+            y_position -= 30
+            p.setFont("Helvetica", 10)
+            
+            # Equipment rental line
+            duration = (rental.rental_end_date - rental.rental_start_date).days
+            total_amount = float(rental.daily_rental_price) * duration
+            
+            p.drawString(40, y_position, rental.equipment.name)
+            p.drawString(300, y_position, f"{duration} days")
+            p.drawString(400, y_position, f"₹{rental.daily_rental_price}/day")
+            p.drawString(480, y_position, f"₹{total_amount:,.2f}")
+            
+            # Add total
+            y_position -= 50
+            p.line(40, y_position + 15, width-40, y_position + 15)
+            p.setFont("Helvetica-Bold", 10)
+            p.drawString(400, y_position, "Total Amount:")
+            p.drawString(480, y_position, f"₹{payment.amount:,.2f}")
+            
+            # Add payment details
+            y_position -= 50
+            p.setFont("Helvetica-Bold", 11)
+            p.drawString(40, y_position, "Payment Information")
+            p.setFont("Helvetica", 10)
+            y_position -= 20
+            p.drawString(40, y_position, f"Payment ID: {payment.razorpay_payment_id}")
+            y_position -= 15
+            p.drawString(40, y_position, f"Payment Date: {payment.payment_date.strftime('%d %b, %Y')}")
+            y_position -= 15
+            p.drawString(40, y_position, "Payment Status: Paid")
+            
+            # Add footer with line
+            p.line(40, 70, width-40, 70)
+            p.setFont("Helvetica", 9)
+            p.drawString(40, 50, "Thank you for choosing CareFusion Healthcare Services!")
+            p.drawString(40, 35, "For any queries, please contact our support team.")
+            
+            # Add page number
+            p.setFont("Helvetica", 8)
+            p.drawString(width/2 - 20, 20, "Page 1 of 1")
+            
+            # Close the PDF object cleanly
+            p.showPage()
+            p.save()
+            
+            # FileResponse sets the Content-Disposition header so that browsers
+            # present the option to save the file.
+            buffer.seek(0)
+            response = FileResponse(
+                buffer, 
+                as_attachment=True, 
+                filename=f'CareFusion_Invoice_{rental.id}.pdf',
+                content_type='application/pdf'
+            )
+            
+            # Add headers to prevent caching
+            response['Cache-Control'] = 'no-cache'
+            response['Pragma'] = 'no-cache'
+            response['Expires'] = '0'
+            
+            return response
+            
+        except Exception as pdf_error:
+            logger.error(f"Error generating PDF: {str(pdf_error)}")
+            raise Exception("Failed to generate PDF document")
+            
+    except Exception as e:
+        logger.error(f"Error generating invoice: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Failed to generate invoice'
         })

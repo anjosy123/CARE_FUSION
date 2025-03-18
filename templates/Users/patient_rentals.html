@@ -199,6 +199,44 @@
             background-color: var(--warning-color) !important;
             color: #000;
         }
+
+        .badge {
+            font-size: 0.85rem;
+            padding: 0.35em 0.65em;
+        }
+        
+        .badge i {
+            font-size: 0.8rem;
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(0,0,0,.02);
+        }
+        
+        .text-muted {
+            font-size: 0.85rem;
+        }
+        
+        .table td {
+            vertical-align: middle;
+        }
+        
+        /* Status-specific colors */
+        .bg-success {
+            background-color: #1cc88a !important;
+        }
+        
+        .bg-warning {
+            background-color: #f6c23e !important;
+        }
+        
+        .bg-danger {
+            background-color: #e74a3b !important;
+        }
+        
+        .bg-primary {
+            background-color: #4e73df !important;
+        }
     </style>
 </head>
 <body>
@@ -533,7 +571,7 @@
                                                         <div class="col-md-6">
                                                             <div class="usage-actions">
                                                                 <h6>Actions</h6>
-                                                                <div class="d-grid gap-2">
+                                                                    <div class="d-grid gap-2">
                                                                     {% if rental.status == 'ACTIVE' %}
                                                                         <button class="btn btn-warning mb-2" onclick="requestRentalExtension({{ rental.id }})">
                                                                             <i class="fas fa-clock me-2"></i> Extend Rental Period
@@ -549,31 +587,32 @@
                                                                         <button class="btn btn-primary mb-2" onclick="payRentalBill({{ rental.id }})">
                                                                             <i class="fas fa-money-bill me-2"></i> Pay Rental Bill
                                                                             <span class="badge bg-light text-dark ms-2">₹{{ rental.get_current_bill_amount }}</span>
-                                                                        </button>
-                                                                        
+                                                                    </button>
+                                                                    
                                                                         <div class="alert alert-warning">
-                                                                            <small>
+                                                                        <small>
                                                                                 <i class="fas fa-info-circle me-2"></i>
                                                                                 Your rental period has ended. Please pay the bill.
-                                                                            </small>
-                                                                        </div>
-                                                                    {% endif %}
+                                                                        </small>
+                                                                    </div>
+                                                                {% endif %}
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     
-                                                    {% comment %} <!-- Usage History -->
+                                                    <!-- Usage History -->
                                                     <div class="usage-history mt-4">
                                                         <h6>Usage History</h6>
                                                         <div class="table-responsive">
-                                                            <table class="table table-sm">
-                                                                <thead>
+                                                            <table class="table table-hover">
+                                                                <thead class="table-light">
                                                                     <tr>
                                                                         <th>Period</th>
                                                                         <th>Duration</th>
                                                                         <th>Amount</th>
                                                                         <th>Status</th>
+                                                                        <th>Payment</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody id="usage-history-{{ rental.id }}">
@@ -583,22 +622,46 @@
                                                                         <td>{{ period.duration }} days</td>
                                                                         <td>₹{{ period.amount }}</td>
                                                                         <td>
-                                                                            <span class="badge bg-{{ period.status|lower }}">
-                                                                                {{ period.status }}
+                                                                            {% if period.status == 'COMPLETED' %}
+                                                                                <span class="badge bg-success">
+                                                                                    <i class="fas fa-check-circle me-1"></i> Completed
                                                                             </span>
+                                                                            {% elif period.status == 'ACTIVE' %}
+                                                                                <span class="badge bg-primary">
+                                                                                    <i class="fas fa-clock me-1"></i> Active
+                                                                                </span>
+                                                                            {% elif period.status == 'END' %}
+                                                                                <span class="badge bg-warning text-dark">
+                                                                                    <i class="fas fa-exclamation-circle me-1"></i> Ended
+                                                                                </span>
+                                                                            {% endif %}
+                                                                        </td>
+                                                                        <td>
+                                                                            {% if rental.payments.exists %}
+                                                                                <span class="badge bg-success">
+                                                                                    <i class="fas fa-check-circle me-1"></i> Paid
+                                                                                </span>
+                                                                                <small class="text-muted ms-2">
+                                                                                    {{ rental.payments.last.payment_date|date:"M d, Y" }}
+                                                                                </small>
+                                                                            {% else %}
+                                                                                <span class="badge bg-danger">
+                                                                                    <i class="fas fa-times-circle me-1"></i> Unpaid
+                                                                                </span>
+                                                                            {% endif %}
                                                                         </td>
                                                                     </tr>
                                                                     {% empty %}
                                                                     <tr>
-                                                                        <td colspan="4" class="text-center text-muted">
-                                                                            <small>No usage history available</small>
+                                                                        <td colspan="5" class="text-center text-muted">
+                                                                            <i class="fas fa-info-circle me-2"></i>No usage history available
                                                                         </td>
                                                                     </tr>
                                                                     {% endfor %}
                                                                 </tbody>
                                                             </table>
                                                         </div>
-                                                    </div> {% endcomment %}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -619,56 +682,103 @@
 
                     <!-- Rental History -->
                     <div class="tab-pane fade" id="history" role="tabpanel">
-                        <div class="card">
-                            <div class="card-header bg-secondary text-white">
-                                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Rental History</h5>
-                            </div>
-                            <div class="card-body">
-                                {% for rental in rental_history %}
-                                <div class="card mb-3">
-                                    <div class="card-body">
-                                        <div class="row align-items-center">
-                                            <div class="col-md-4">
-                                                <h6>{{ rental.equipment.name }}</h6>
-                                                <p class="mb-1"><i class="fas fa-hospital me-2"></i>{{ rental.equipment.organization.org_name }}</p>
-                                                <p class="mb-0"><i class="fas fa-calendar me-2"></i>{{ rental.created_at|date:"M d, Y" }}</p>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <p class="mb-1"><strong>Daily Rate:</strong> ₹{{ rental.daily_rental_price }}</p>
-                                                <p class="mb-1"><strong>Security Deposit:</strong> ₹{{ rental.deposit_amount }}</p>
-                                                {% if rental.rental_start_date %}
-                                                <p class="mb-0">
-                                                    <strong>Rental Period:</strong> 
-                                                    {{ rental.rental_start_date|date:"M d, Y" }} - 
-                                                    {{ rental.rental_end_date|date:"M d, Y" }}
-                                                </p>
-                                                {% endif %}
-                                            </div>
-                                            <div class="col-md-4 text-end">
-                                                <span class="badge bg-{{ rental.status|lower }} mb-2">{{ rental.get_status_display }}</span>
-                                                <p class="mb-0">
+                        <div class="table-responsive mt-3">
+                            <table class="table table-hover">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Equipment</th>
+                                        <th>Rental Period</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Payment Details</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for rental in rental_history %}
+                                        {% if rental.status == 'COMPLETED' %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    {% if rental.equipment.image %}
+                                                        <img src="{{ rental.equipment.image.url }}" alt="{{ rental.equipment.name }}" 
+                                                             class="me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                                    {% endif %}
+                                                    <div>
+                                                        <h6 class="mb-0">{{ rental.equipment.name }}</h6>
+                                                        <small class="text-muted">{{ rental.equipment.organization.org_name }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <div>{{ rental.rental_start_date|date:"M d, Y" }}</div>
+                                                    <small class="text-muted">to</small>
+                                                    <div>{{ rental.rental_end_date|date:"M d, Y" }}</div>
                                                     <small class="text-muted">
-                                                        <i class="fas fa-money-check me-1"></i>
-                                                        Payment: {{ rental.payment_status }}
+                                                        ({{ rental.rental_end_date|timeuntil:rental.rental_start_date }})
                                                     </small>
-                                                </p>
-                                                {% if rental.razorpay_payment_id %}
-                                                <small class="text-muted d-block">
-                                                    <i class="fas fa-receipt me-1"></i>
-                                                    Payment ID: {{ rental.razorpay_payment_id }}
-                                                </small>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% empty %}
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    No rental history available.
-                                </div>
-                                {% endfor %}
-                            </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <h6 class="mb-0">₹{{ rental.get_total_amount }}</h6>
+                                                    <small class="text-muted">
+                                                        ₹{{ rental.daily_rental_price }}/day
+                                                    </small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check-circle me-1"></i>
+                                                    Completed
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% with payment=rental.payments.last %}
+                                                    {% if payment %}
+                                                        <div>
+                                                            <span class="badge bg-success">
+                                                                <i class="fas fa-check-circle me-1"></i> Paid
+                                                            </span>
+                                                            <div class="small text-muted mt-1">
+                                                                {{ payment.payment_date|date:"M d, Y" }}
+                                                            </div>
+                                                            <div class="small text-muted">
+                                                                ID: {{ payment.razorpay_payment_id|truncatechars:10 }}
+                                                            </div>
+                                                        </div>
+                                                    {% else %}
+                                                        <span class="badge bg-warning">
+                                                            <i class="fas fa-clock me-1"></i> Pending
+                                                        </span>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            </td>
+                                            <td>
+                                                {% with payment=rental.payments.last %}
+                                                    {% if payment %}
+                                                        <button class="btn btn-sm btn-outline-primary" 
+                                                                onclick="downloadInvoice('{{ rental.id }}')">
+                                                            <i class="fas fa-download me-1"></i> Invoice
+                                                        </button>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4">
+                                                <div class="text-muted">
+                                                    <i class="fas fa-history fa-2x mb-2"></i>
+                                                    <p>No rental history available</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -1129,14 +1239,14 @@
             title: 'Request Rental Extension',
             html: `
                 <form id="extensionForm">
-                    <div class="form-group">
+                <div class="form-group">
                         <label>Number of Days</label>
-                        <input type="number" id="extension-days" class="form-control" min="1" max="30" value="7">
-                    </div>
-                    <div class="form-group mt-3">
-                        <label>Reason for Extension</label>
+                    <input type="number" id="extension-days" class="form-control" min="1" max="30" value="7">
+                </div>
+                <div class="form-group mt-3">
+                    <label>Reason for Extension</label>
                         <textarea id="extension-reason" class="form-control" rows="3" placeholder="Please provide a reason for the extension"></textarea>
-                    </div>
+                </div>
                 </form>
             `,
             showCancelButton: true,
@@ -1187,11 +1297,11 @@
                     }
                 })
                 .catch(error => {
-                    Swal.fire({
+                        Swal.fire({
                         icon: 'error',
-                        title: 'Error',
+                            title: 'Error',
                         text: error.message || 'Failed to submit extension request'
-                    });
+                        });
                 });
             }
         });
@@ -1289,6 +1399,36 @@
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
         // Rest of your existing script
+    </script>
+
+    <!-- Add this JavaScript for invoice download -->
+    <script>
+    function downloadInvoice(rentalId) {
+        fetch(`/rental/${rentalId}/invoice/download/`)
+            .then(response => {
+                if (response.ok) {
+                    return response.blob();
+                }
+                throw new Error('Invoice generation failed');
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `invoice_${rentalId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            })
+            .catch(error => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to download invoice. Please try again.'
+                });
+            });
+    }
     </script>
 </body>
 </html> 
