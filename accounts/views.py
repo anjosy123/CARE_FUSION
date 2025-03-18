@@ -1428,7 +1428,7 @@ def password_reset_request(request):
             user.password_reset_token = token
             user.save()
             
-            reset_url = request.build_absolute_uri(reverse('password_reset_confirm', args=[token]))
+            reset_url = f"{settings.BASE_URL}{reverse('password_reset_confirm', args=[token])}"
             send_mail(
                 'Password Reset Request',
                 f'Click here to reset your password: {reset_url}',
@@ -1741,9 +1741,7 @@ def add_staff(request):
                 context = {
                     'staff_name': f"{staff.first_name} {staff.last_name}",
                     'organization_name': organization.org_name,
-                    'confirmation_link': request.build_absolute_uri(
-                        reverse('confirm_staff_email', args=[uid, token])
-                    ),
+                    'confirmation_link': f"{settings.BASE_URL}{reverse('confirm_staff_email', args=[uid, token])}",
                     'temp_password': temp_password,
                 }
                 html_message = render_to_string('Organizations/staff_confirmation_email.html', context)
@@ -1795,7 +1793,7 @@ def confirm_staff_email(request, uidb64, token):
                 'staff_name': f"{staff.first_name} {staff.last_name}",
                 'email': staff.email,
                 'temp_password': temp_password,
-                'login_url': request.build_absolute_uri(reverse('login'))
+                'login_url': f"{settings.BASE_URL}{reverse('login')}"
             }
             html_message = render_to_string('staff/login_credentials_email.html', context)
             plain_message = strip_tags(html_message)

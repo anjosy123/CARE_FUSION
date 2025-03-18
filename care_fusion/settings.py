@@ -41,8 +41,9 @@ ALLOWED_HOSTS = [
     '2749-2401-4900-667d-7f87-4c05-6a3-b637-30a1.ngrok-free.app'  # Add your ngrok URL here
 ]
 
-BASE_URL = 'https://2749-2401-4900-667d-7f87-4c05-6a3-b637-30a1.ngrok-free.app'  # Add your ngrok URL
+# BASE_URL = 'https://2749-2401-4900-667d-7f87-4c05-6a3-b637-30a1.ngrok-free.app'  # Add your ngrok URL
 # BASE_URL = 'https://care-fusion.onrender.com'
+BASE_URL = 'https://52.66.240.255/.com'
 
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
@@ -282,9 +283,6 @@ EMAIL_HOST_USER = os.getenv('email')
 EMAIL_HOST_PASSWORD = os.getenv('password')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 ACCOUNT_UNIQUE_EMAIL = True
-
-
-
 
 ACCOUNT_TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates', 'account')
 
