@@ -5916,6 +5916,7 @@ def end_rental_service(request, rental_id):
 @organization_login_required
 def get_rental_org_details(request, rental_id):
     try:
+        # Get the rental
         rental = get_object_or_404(
             EquipmentRental, 
             id=rental_id,
@@ -5923,30 +5924,60 @@ def get_rental_org_details(request, rental_id):
         )
         
         # Get usage history
-        usage_history = [{
-            'start_date': period.start_date.strftime('%b %d, %Y'),
-            'end_date': period.end_date.strftime('%b %d, %Y'),
-            'duration': period.duration,
-            'amount': str(period.amount),
-            'status': period.status
-        } for period in rental.get_usage_periods()]
+        usage_history = []
+        for period in rental.get_usage_periods():
+            usage_history.append({
+                'start_date': period.start_date.strftime('%Y-%m-%d'),
+                'end_date': period.end_date.strftime('%Y-%m-%d'),
+                'duration': (period.end_date - period.start_date).days,
+                'amount': float(period.amount),
+                'status': period.status
+            })
+        
+        # Get payment history
+        payments = []
+        for payment in rental.payments.all().order_by('-payment_date'):
+            payments.append({
+                'date': payment.payment_date.strftime('%Y-%m-%d %H:%M'),
+                'amount': float(payment.amount),
+                'payment_id': payment.razorpay_payment_id,
+                'type': payment.payment_type,
+                'status': payment.status
+            })
+        
+        # Calculate total days
+        total_days = (rental.rental_end_date - rental.rental_start_date).days if rental.rental_end_date else 0
+        
+        # Get patient contact safely
+        try:
+            patient_contact = rental.patient.phone_number
+        except AttributeError:
+            # If phone_number doesn't exist, try mobile or default to email
+            patient_contact = getattr(rental.patient, 'mobile', rental.patient.email)
         
         return JsonResponse({
             'success': True,
             'patient_name': rental.patient.get_full_name(),
-            'patient_contact': rental.patient.phone_number,
+            'patient_contact': patient_contact,
             'delivery_address': rental.delivery_address,
             'equipment_name': rental.equipment.name,
-            'daily_rate': str(rental.daily_rental_price),
-            'start_date': rental.rental_start_date.strftime('%b %d, %Y'),
+            'daily_rate': float(rental.daily_rental_price),
+            'start_date': rental.rental_start_date.strftime('%Y-%m-%d'),
+            'end_date': rental.rental_end_date.strftime('%Y-%m-%d') if rental.rental_end_date else '',
             'status': rental.status,
-            'total_days': rental.get_usage_duration(),
-            'total_amount': str(rental.get_current_bill_amount()),
-            'payment_status': rental.payment_status,
-            'usage_history': usage_history
+            'total_days': total_days,
+            'total_amount': float(rental.get_total_amount()),
+            'payment_status': 'PAID' if rental.payments.filter(status='PAID').exists() else 'UNPAID',
+            'usage_history': usage_history,
+            'payments': payments
         })
+        
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
+        logger.error(f"Error getting rental details: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
 
 def send_delivery_otp(delivery):
     """Send OTP to patient for delivery verification"""

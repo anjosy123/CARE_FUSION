@@ -695,7 +695,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for rental in rental_history %}
+                                {% for rental in rental_history %}
                                         {% if rental.status == 'COMPLETED' %}
                                         <tr>
                                             <td>
@@ -703,11 +703,11 @@
                                                     {% if rental.equipment.image %}
                                                         <img src="{{ rental.equipment.image.url }}" alt="{{ rental.equipment.name }}" 
                                                              class="me-2" style="width: 40px; height: 40px; object-fit: cover;">
-                                                    {% endif %}
+                                                {% endif %}
                                                     <div>
                                                         <h6 class="mb-0">{{ rental.equipment.name }}</h6>
                                                         <small class="text-muted">{{ rental.equipment.organization.org_name }}</small>
-                                                    </div>
+                                            </div>
                                                 </div>
                                             </td>
                                             <td>
@@ -725,8 +725,8 @@
                                                     <h6 class="mb-0">₹{{ rental.get_total_amount }}</h6>
                                                     <small class="text-muted">
                                                         ₹{{ rental.daily_rental_price }}/day
-                                                    </small>
-                                                </div>
+                                                </small>
+                                            </div>
                                             </td>
                                             <td>
                                                 <span class="badge bg-success">
@@ -743,11 +743,11 @@
                                                             </span>
                                                             <div class="small text-muted mt-1">
                                                                 {{ payment.payment_date|date:"M d, Y" }}
-                                                            </div>
+                                        </div>
                                                             <div class="small text-muted">
                                                                 ID: {{ payment.razorpay_payment_id|truncatechars:10 }}
-                                                            </div>
-                                                        </div>
+                                    </div>
+                                </div>
                                                     {% else %}
                                                         <span class="badge bg-warning">
                                                             <i class="fas fa-clock me-1"></i> Pending
@@ -767,16 +767,16 @@
                                             </td>
                                         </tr>
                                         {% endif %}
-                                    {% empty %}
+                                {% empty %}
                                         <tr>
                                             <td colspan="6" class="text-center py-4">
                                                 <div class="text-muted">
                                                     <i class="fas fa-history fa-2x mb-2"></i>
                                                     <p>No rental history available</p>
-                                                </div>
+                                </div>
                                             </td>
                                         </tr>
-                                    {% endfor %}
+                                {% endfor %}
                                 </tbody>
                             </table>
                         </div>
