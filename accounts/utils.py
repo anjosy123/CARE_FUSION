@@ -272,40 +272,27 @@ def notify_payment_success(booking):
         message=f'Payment received for booking #{booking.id}'
     )
 
-def create_rental_payment_order(rental):
-    """Create Razorpay order for equipment rental"""
+def create_rental_payment_order(rental, amount):
+    """Create a Razorpay order for rental payment"""
     client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
     
-    # Calculate total amount (rental amount + security deposit)
-    total_amount = float(rental.daily_rental_price + rental.deposit_amount)
+    # Convert amount to paise (Razorpay expects amount in smallest currency unit)
+    amount_in_paise = int(amount * 100)
     
-    # Convert to paise (Razorpay expects amount in smallest currency unit)
-    amount_in_paise = int(total_amount * 100)
-    
-    # Create order data
+    # Create order
     order_data = {
         'amount': amount_in_paise,
         'currency': 'INR',
-        'payment_capture': 1,  # Auto-capture payment
+        'receipt': f'rental_payment_{rental.id}',
         'notes': {
-            'rental_id': str(rental.id),
-            'equipment_name': rental.equipment.name,
-            'patient_name': rental.patient.get_full_name()
+            'rental_id': rental.id,
+            'equipment': rental.equipment.name,
+            'patient': rental.patient.get_full_name()
         }
     }
     
-    try:
-        # Create Razorpay order
-        order = client.order.create(data=order_data)
-        
-        # Update rental with order ID
-        rental.razorpay_order_id = order['id']
-        rental.save()
-        
-        return order
-    except Exception as e:
-        print(f"Error creating Razorpay order: {str(e)}")
-        return None
+    order = client.order.create(data=order_data)
+    return order
 
 def verify_rental_payment(payment_id, order_id, signature):
     """Verify Razorpay payment signature"""

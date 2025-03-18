@@ -13,13 +13,44 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-timepicker/1.13.18/jquery.timepicker.min.css">
 
 <style>
-    .main-content {
-        max-width: 800px;
-        margin: 2rem auto;
+    .schedule-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
         padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .schedule-form {
         background: white;
+        padding: 2rem;
         border-radius: 12px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+
+    .schedule-info {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+
+    .schedule-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .schedule-title {
+        color: #2c3e50;
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .schedule-subtitle {
+        color: #7f8c8d;
+        font-size: 0.9rem;
     }
 
     .form-group {
@@ -30,12 +61,15 @@
         font-weight: 500;
         margin-bottom: 0.5rem;
         color: #344767;
+        display: block;
     }
 
     .form-select, .form-control {
-        border-radius: 8px;
-        border: 1px solid #e0e0e0;
+        width: 100%;
         padding: 0.625rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        transition: all 0.3s;
     }
 
     .form-select:focus, .form-control:focus {
@@ -43,175 +77,200 @@
         box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.25);
     }
 
-    .high-priority-option {
-        background-color: rgba(220, 53, 69, 0.1);
-        color: #dc3545;
+    .priority-indicator {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.85rem;
         font-weight: 500;
     }
 
-    .medium-priority-option {
-        background-color: rgba(255, 193, 7, 0.1);
-        color: #ffc107;
-        font-weight: 500;
+    .priority-high {
+        background-color: #fee2e2;
+        color: #dc2626;
     }
 
-    .low-priority-option {
-        background-color: rgba(40, 167, 69, 0.1);
-        color: #28a745;
-        font-weight: 500;
+    .priority-medium {
+        background-color: #fef3c7;
+        color: #d97706;
     }
 
-    .form-select optgroup {
-        font-weight: bold;
-        padding: 8px 0;
+    .priority-low {
+        background-color: #d1fae5;
+        color: #059669;
     }
 
-    .form-select option {
-        padding: 8px;
-        margin: 2px 0;
+    .scheduled-visits {
+        margin-top: 1.5rem;
     }
 
-    .required-field::after {
-        content: "*";
-        color: #dc3545;
-        margin-left: 4px;
+    .visit-card {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #1e3c72;
     }
 
-    @media (max-width: 768px) {
-        .main-content {
-            margin: 1rem;
-            padding: 1rem;
+    .visit-time {
+        font-weight: 600;
+        color: #1e3c72;
+    }
+
+    .visit-patient {
+        color: #475569;
+        margin: 0.5rem 0;
+    }
+
+    .visit-status {
+        font-size: 0.85rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        background: #e2e8f0;
+        color: #475569;
+        display: inline-block;
+    }
+
+    @media (max-width: 992px) {
+        .schedule-container {
+            grid-template-columns: 1fr;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="main-content">
-    <h2 class="mb-4">Schedule Team Visit</h2>
-
-    {% if messages %}
-    <div class="messages mb-4">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<div class="schedule-container">
+    <!-- Scheduling Form -->
+    <div class="schedule-form">
+        <div class="schedule-header">
+            <h2 class="schedule-title">Schedule Team Visit</h2>
+            <p class="schedule-subtitle">Create a new team visit appointment</p>
         </div>
-        {% endfor %}
-    </div>
-    {% endif %}
 
-    <form id="scheduleVisitForm" method="POST">
-        {% csrf_token %}
-        
-        <div id="customErrorMessages" class="mb-4" style="display: none;">
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <span id="errorMessageText"></span>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <form id="scheduleVisitForm" method="POST">
+            {% csrf_token %}
+            
+            <div id="customErrorMessages" class="mb-4" style="display: none;">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span id="errorMessageText"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
             </div>
-        </div>
 
-        <div class="form-group mb-3">
-            <label for="team" class="form-label">Select Team</label>
-            <select class="form-select" id="team" name="team" required>
-                <option value="">Choose a team...</option>
-                {% for team in teams %}
-                    <option value="{{ team.id }}" {% if selected_team == team.id|stringformat:"s" %}selected{% endif %}>
-                        {{ team.name }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="form-group mb-3">
-            <label for="patient" class="form-label">Select Patient</label>
-            <select class="form-select" id="patient" name="patient" required>
-                <option value="">Choose a patient...</option>
-                
-                <!-- High Priority Patients -->
-                {% if high_priority_patients %}
-                <optgroup label="High Priority Patients" class="text-danger">
-                    {% for patient in high_priority_patients %}
-                    <option value="{{ patient.id }}" class="high-priority-option">
-                        {{ patient.get_full_name }} 
-                        (Priority: {{ patient.visit_priority_score|floatformat:1 }}/10)
-                    </option>
+            <div class="form-group">
+                <label for="team" class="form-label">Select Team</label>
+                <select class="form-select" id="team" name="team" required>
+                    <option value="">Choose a team...</option>
+                    {% for team in teams %}
+                        <option value="{{ team.id }}" {% if selected_team == team.id|stringformat:"s" %}selected{% endif %}>
+                            {{ team.name }}
+                        </option>
                     {% endfor %}
-                </optgroup>
-                {% endif %}
+                </select>
+            </div>
 
-                <!-- Medium Priority Patients -->
-                {% if medium_priority_patients %}
-                <optgroup label="Medium Priority Patients" class="text-warning">
-                    {% for patient in medium_priority_patients %}
-                    <option value="{{ patient.id }}" class="medium-priority-option">
-                        {{ patient.get_full_name }}
-                        (Priority: {{ patient.visit_priority_score|floatformat:1 }}/10)
-                    </option>
-                    {% endfor %}
-                </optgroup>
-                {% endif %}
+            <div class="form-group">
+                <label for="patient" class="form-label">Select Patient</label>
+                <select class="form-select" id="patient" name="patient" required>
+                    <option value="">Choose a patient...</option>
+                    
+                    {% if high_priority_patients %}
+                    <optgroup label="High Priority Patients">
+                        {% for patient in high_priority_patients %}
+                        <option value="{{ patient.id }}" data-priority="high" data-score="{{ patient.visit_priority_score }}">
+                            {{ patient.get_full_name }} (Priority: {{ patient.visit_priority_score|floatformat:1 }}/10)
+                        </option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
 
-                <!-- Low Priority Patients -->
-                {% if low_priority_patients %}
-                <optgroup label="Low Priority Patients" class="text-success">
-                    {% for patient in low_priority_patients %}
-                    <option value="{{ patient.id }}" class="low-priority-option">
-                        {{ patient.get_full_name }}
-                        (Priority: {{ patient.visit_priority_score|floatformat:1 }}/10)
-                    </option>
-                    {% endfor %}
-                </optgroup>
-                {% endif %}
-            </select>
-        </div>
+                    {% if medium_priority_patients %}
+                    <optgroup label="Medium Priority Patients">
+                        {% for patient in medium_priority_patients %}
+                        <option value="{{ patient.id }}" data-priority="medium" data-score="{{ patient.visit_priority_score }}">
+                            {{ patient.get_full_name }} (Priority: {{ patient.visit_priority_score|floatformat:1 }}/10)
+                        </option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
 
-        <div class="form-group mb-3">
-            <label for="scheduled_date" class="form-label">Visit Date</label>
-            <input type="date" class="form-control" id="scheduled_date" name="scheduled_date" 
-                   required min="{{ min_date|date:'Y-m-d' }}" max="{{ max_date|date:'Y-m-d' }}">
-        </div>
+                    {% if low_priority_patients %}
+                    <optgroup label="Low Priority Patients">
+                        {% for patient in low_priority_patients %}
+                        <option value="{{ patient.id }}" data-priority="low" data-score="{{ patient.visit_priority_score }}">
+                            {{ patient.get_full_name }} (Priority: {{ patient.visit_priority_score|floatformat:1 }}/10)
+                        </option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
+                </select>
+            </div>
 
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="start_time" class="form-label required-field">Start Time</label>
-                    <div class="input-group">
+            <div class="form-group">
+                <label for="scheduled_date" class="form-label">Visit Date</label>
+                <input type="date" class="form-control" id="scheduled_date" name="scheduled_date" 
+                       required min="{{ min_date|date:'Y-m-d' }}" max="{{ max_date|date:'Y-m-d' }}">
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="start_time" class="form-label">Start Time</label>
                         <input type="text" class="form-control" id="start_time" name="start_time" 
                                placeholder="Select start time" required>
-                        <span class="input-group-text"><i class="fas fa-clock"></i></span>
                     </div>
-                    <small class="form-text text-muted">Available between 8:00 AM and 6:00 PM</small>
                 </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="end_time" class="form-label required-field">End Time</label>
-                    <div class="input-group">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="end_time" class="form-label">End Time</label>
                         <input type="text" class="form-control" id="end_time" name="end_time" 
                                placeholder="Select end time" required>
-                        <span class="input-group-text"><i class="fas fa-clock"></i></span>
                     </div>
-                    <small class="form-text text-muted">Visit duration: 30 min - 4 hours</small>
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label for="purpose" class="form-label">Visit Purpose</label>
+                <textarea class="form-control" id="purpose" name="purpose" rows="3"></textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-calendar-plus"></i> Schedule Visit
+                </button>
+                <a href="{% url 'team_visit_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Schedule Information -->
+    <div class="schedule-info">
+        <div class="schedule-header">
+            <h2 class="schedule-title">Today's Schedule</h2>
+            <p class="schedule-subtitle" id="currentDate"></p>
+        </div>
+
+        <div id="selectedPatientInfo" style="display: none;">
+            <h3 class="mb-3">Selected Patient Details</h3>
+            <div class="visit-card">
+                <div id="patientName" class="mb-2"></div>
+                <div id="priorityScore" class="mb-2"></div>
+                <div id="selectedDateTime" class="mb-2"></div>
             </div>
         </div>
 
-        <div class="form-group mb-3">
-            <label for="purpose" class="form-label">Visit Purpose</label>
-            <textarea class="form-control" id="purpose" name="purpose" rows="3"></textarea>
+        <div class="scheduled-visits">
+            {% comment %} <h3 class="mb-3">Scheduled Visits</h3> {% endcomment %}
+            <div id="scheduledVisitsList">
+                <!-- Visits will be populated here via JavaScript -->
+            </div>
         </div>
-
-        <div class="d-flex gap-2">
-            <button type="submit" id="submitBtn" class="btn btn-primary">
-                <i class="fas fa-calendar-plus"></i> Schedule Visit
-            </button>
-            <a href="{% url 'team_visit_list' %}" class="btn btn-secondary">
-                <i class="fas fa-times"></i> Cancel
-            </a>
-        </div>
-    </form>
+    </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -225,101 +284,155 @@
 
 <script>
     $(document).ready(function() {
-        // Initialize start time picker
+        // Initialize time pickers
         $('#start_time').timepicker({
             'timeFormat': 'H:i',
-            'minTime': '08:00',
-            'maxTime': '18:00',
-            'step': 15,
-            'scrollDefault': '08:00',
-            'disableTimeRanges': [['00:00', '08:00'], ['18:00', '23:59']],
-            'change': function(time) {
-                if (time) {
-                    var selectedTime = new Date(time);
-                    var minEndTime = new Date(time);
-                    minEndTime.setMinutes(selectedTime.getMinutes() + 30);
-                    
-                    var maxEndTime = new Date(time);
-                    maxEndTime.setHours(18, 0, 0);
-                    
-                    $('#end_time').timepicker('option', {
-                        'minTime': minEndTime,
-                        'maxTime': maxEndTime
-                    });
-                    
-                    var endTime = $('#end_time').timepicker('getTime');
-                    if (endTime && endTime <= time) {
-                        $('#end_time').val('');
-                    }
-                }
-            }
+            'minTime': '09:00',
+            'maxTime': '17:00',
+            'step': 30,
+            'showDuration': true,
+            'disableTextInput': true,
+            'scrollDefault': '09:00'
         });
 
-        // Initialize end time picker
         $('#end_time').timepicker({
             'timeFormat': 'H:i',
-            'minTime': '08:30',
-            'maxTime': '18:00',
-            'step': 15,
-            'disableTimeRanges': [['00:00', '08:00'], ['18:00', '23:59']]
+            'minTime': '09:30',
+            'maxTime': '17:00',
+            'step': 30,
+            'showDuration': true,
+            'disableTextInput': true
         });
 
-        // Form validation
-        $('form').on('submit', function(e) {
+        // Form submission handling with SweetAlert2
+        $('#scheduleVisitForm').on('submit', function(e) {
             e.preventDefault();
             
-            var startTime = $('#start_time').timepicker('getTime');
-            var endTime = $('#end_time').timepicker('getTime');
+            // Get form values
+            const team = $('#team').val();
+            const patient = $('#patient').val();
+            const date = $('#scheduled_date').val();
+            const startTime = $('#start_time').val();
+            const endTime = $('#end_time').val();
 
-            if (!startTime || !endTime) {
+            // Validate required fields
+            if (!team || !patient || !date || !startTime || !endTime) {
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Please select both start and end times'
+                    icon: 'warning',
+                    title: 'Missing Information',
+                    html: 'Please fill in all required fields:<br>' +
+                          (!team ? '• Select a team<br>' : '') +
+                          (!patient ? '• Select a patient<br>' : '') +
+                          (!date ? '• Select a date<br>' : '') +
+                          (!startTime ? '• Select start time<br>' : '') +
+                          (!endTime ? '• Select end time<br>' : ''),
+                    confirmButtonColor: '#3085d6'
                 });
-                return;
-            }
-
-            // Format times for Django (HH:MM format)
-            var formatTimeForDjango = function(date) {
-                return date.getHours().toString().padStart(2, '0') + ':' + 
-                       date.getMinutes().toString().padStart(2, '0');
-            };
-
-            // Update form values with properly formatted times
-            $('#start_time').val(formatTimeForDjango(startTime));
-            $('#end_time').val(formatTimeForDjango(endTime));
-
-            // Calculate duration in minutes
-            var duration = (endTime - startTime) / (1000 * 60);
-
-            if (duration < 30 || duration > 240) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Visit duration must be between 30 minutes and 4 hours'
-                });
-                return;
+                return false;
             }
 
             // Show confirmation dialog
             Swal.fire({
                 title: 'Confirm Schedule',
-                text: 'Are you sure you want to schedule this team visit?',
+                html: `Are you sure you want to schedule this visit?<br><br>` +
+                      `<strong>Date:</strong> ${new Date(date).toLocaleDateString('en-US', { 
+                          weekday: 'long', 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                      })}<br>` +
+                      `<strong>Time:</strong> ${startTime} - ${endTime}`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, schedule it!'
+                confirmButtonText: 'Yes, schedule it!',
+                cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Format the times one final time before submission
-                    $('#start_time').val(formatTimeForDjango(startTime));
-                    $('#end_time').val(formatTimeForDjango(endTime));
+                    // Show loading state
+                    Swal.fire({
+                        title: 'Scheduling Visit...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    // Submit the form
                     this.submit();
                 }
             });
         });
+
+        // Update patient info when selected
+        $('#patient').change(function() {
+            const selectedOption = $(this).find('option:selected');
+            if (selectedOption.val()) {
+                const priority = selectedOption.data('priority');
+                const score = selectedOption.data('score');
+                
+                $('#selectedPatientInfo').show();
+                $('#patientName').html(`<strong>Patient:</strong> ${selectedOption.text()}`);
+                $('#priorityScore').html(`
+                    <strong>Priority:</strong> 
+                    <span class="priority-indicator priority-${priority}">
+                        ${score.toFixed(1)}/10
+                    </span>
+                `);
+            } else {
+                $('#selectedPatientInfo').hide();
+            }
+        });
+
+        // Update selected date/time info
+        function updateSelectedDateTime() {
+            const date = $('#scheduled_date').val();
+            const startTime = $('#start_time').val();
+            const endTime = $('#end_time').val();
+            
+            if (date && startTime && endTime) {
+                $('#selectedDateTime').html(`
+                    <strong>Selected Time:</strong><br>
+                    ${new Date(date).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    })}<br>
+                    ${startTime} - ${endTime}
+                `);
+            }
+        }
+
+        $('#scheduled_date, #start_time, #end_time').change(updateSelectedDateTime);
+
+        // Set current date
+        const today = new Date();
+        $('#currentDate').text(today.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        }));
+
+        // Add validation for time selection
+        $('#start_time').on('change', function() {
+            const startTime = $(this).val();
+            if (startTime) {
+                // Update end time minimum
+                const [hours, minutes] = startTime.split(':');
+                const startDate = new Date();
+                startDate.setHours(parseInt(hours), parseInt(minutes) + 30);
+                
+                $('#end_time').timepicker('option', 'minTime', 
+                    `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`
+                );
+            }
+        });
+
+        // Add validation for date selection
+        $('#scheduled_date').attr('min', new Date().toISOString().split('T')[0]);
     });
 </script>
 {% endblock %}

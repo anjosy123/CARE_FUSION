@@ -1,3 +1,10 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Add CSRF token at the top of your content -->
+{% csrf_token %}
+
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -7,47 +14,250 @@
     <title>Medical Equipment Rentals - CareFusion</title>
     
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <!-- SweetAlert2 -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     
     <style>
-        /* Copy the relevant styles from patients_dashboard.html */
-        /* ... */
+        /* Copy all the navbar-related styles from patients_dashboard.html */
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --light-color: #f8f9fc;
+            --dark-color: #5a5c69;
+        }
+
+        /* Navbar Styles */
+        .topbar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 15px 0;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .logo img {
+            height: 40px;
+            object-fit: contain;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            gap: 2rem;
+        }
+
+        .nav-menu > li {
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+        }
+
+        .nav-menu .dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 220px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .nav-menu li:hover .dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-menu .dropdown li {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-menu .dropdown a {
+            color: #333;
+            padding: 0.75rem 1rem;
+            display: block;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .nav-menu .dropdown a:hover {
+            background-color: #f8f9fa;
+            color: #1e3c72;
+            padding-left: 1.5rem;
+        }
+
+        .nav-menu > li > a:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: white;
+            transition: width 0.3s ease;
+        }
+
+        .nav-menu > li:hover > a:after {
+            width: 100%;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: white;
+        }
+
+        .user-info .btn-outline-light {
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .user-info .btn-outline-light:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        /* Add padding to body to prevent content from hiding under fixed navbar */
+        body {
+            padding-top: 80px;
+            background-color: #f5f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-wrap: wrap;
+            }
+
+            .nav-menu {
+                flex-direction: column;
+                width: 100%;
+                gap: 0.5rem;
+            }
+
+            .nav-menu .dropdown {
+                position: static;
+                opacity: 1;
+                visibility: visible;
+                transform: none;
+                box-shadow: none;
+                background: transparent;
+                min-width: auto;
+            }
+
+            .nav-menu .dropdown a {
+                color: white;
+                padding-left: 1rem;
+            }
+        }
+
+        /* Keep your existing styles below */
+        /* ... rest of your existing styles ... */
+
+        .rental-expired {
+            border: 2px solid var(--warning-color);
+        }
+
+        .rental-expired .card-header {
+            background-color: var(--warning-color) !important;
+            color: #000;
+        }
     </style>
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'patients_dashboard' %}">
-                <img src="{% static 'img/logo.png' %}" alt="CareFusion" height="40">
+    <div class="topbar">
+        <div class="nav-container">
+            <a href="{% url 'patients_dashboard' %}" class="logo">
+                <img src="{% static 'img/logo.png' %}" alt="CareFusion" />
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'patient_rentals' %}">
-                            <i class="fas fa-wheelchair"></i> Equipment Rentals
-                        </a>
-                    </li>
-                    <!-- Add other navigation items as needed -->
-                </ul>
-                <div class="d-flex align-items-center">
-                    <span class="text-white me-3">
-                        <i class="fas fa-user"></i> {{ user.get_full_name }}
-                    </span>
-                    <a href="{% url 'logout' %}" class="btn btn-light btn-sm">
-                        <i class="fas fa-sign-out-alt"></i> Logout
+            
+            <ul class="nav-menu">
+                <li>
+                    <a href="{% url 'patient_rentals' %}">
+                        <i class="bi bi-box-seam"></i> Equipment Rentals
                     </a>
-                </div>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class="bi bi-calendar-check-fill"></i> Appointments
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+                    <ul class="dropdown">
+                        <li>
+                            <a href="{% url 'upcoming_team_visits' %}">
+                                <i class="bi bi-calendar2-week"></i> Team Visits
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class="bi bi-file-medical-fill"></i> Health Records
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+                    <ul class="dropdown">
+                        <li>
+                            <a href="#" onclick="scrollToSection('prescriptions-section')">
+                                <i class="bi bi-capsule"></i> Prescriptions
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" onclick="scrollToSection('services-section')">
+                                <i class="bi bi-clipboard2-pulse"></i> Services
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+            
+            <div class="user-info">
+                <span>
+                    <i class="bi bi-person-circle"></i> {{ user.get_full_name }}
+                </span>
+                <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
             </div>
         </div>
-    </nav>
+    </div>
 
     <!-- Messages Container -->
     <div class="container mt-3">
@@ -290,7 +500,7 @@
                                             {% endif %}
                                         </div>
                                         <div class="rental-usage-details mt-3">
-                                            <div class="card">
+                                            <div class="card" id="rental-{{ rental.id }}" data-rental-id="{{ rental.id }}">
                                                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                                                     <h5 class="mb-0">Current Usage Details</h5>
                                                     <span class="badge bg-light text-dark">Rate: ₹{{ rental.daily_rental_price }}/day</span>
@@ -312,8 +522,9 @@
                                                                 
                                                                 <div class="usage-period text-muted">
                                                                     <small>
-                                                                        Started: {{ rental.rental_start_date|date:"M d, Y" }}<br>
-                                                                        Last Updated: <span id="last-updated-{{ rental.id }}">{% now "F d, Y H:i" %}</span>
+                                                                        Start Date: {{ rental.rental_start_date|date:"M d, Y" }}<br>
+                                                                        End Date: {{ rental.rental_end_date|date:"M d, Y" }}<br>
+                                                                        Daily Rate: ₹{{ rental.daily_rental_price }}
                                                                     </small>
                                                                 </div>
                                                             </div>
@@ -322,22 +533,41 @@
                                                         <div class="col-md-6">
                                                             <div class="usage-actions">
                                                                 <h6>Actions</h6>
-                                                                <button class="btn btn-danger mb-2" onclick="endRental({{ rental.id }})">
-                                                                    <i class="fas fa-stop-circle"></i> End Rental Service
-                                                                </button>
-                                                                
-                                                                <div class="alert alert-info">
-                                                                    <small>
-                                                                        <i class="fas fa-info-circle"></i>
-                                                                        Ending the rental service will generate a final bill based on your usage.
-                                                                        The equipment must be returned within 24 hours after ending the service.
-                                                                    </small>
+                                                                <div class="d-grid gap-2">
+                                                                    {% if rental.status == 'END' %}
+                                                                        <button class="btn btn-primary mb-2" onclick="payRentalBill({{ rental.id }})">
+                                                                            <i class="fas fa-money-bill me-2"></i> Pay Rental Bill
+                                                                            <span class="badge bg-light text-dark ms-2">₹{{ rental.get_current_bill_amount }}</span>
+                                                                        </button>
+                                                                        
+                                                                        <button class="btn btn-warning mb-2" onclick="requestRentalExtension({{ rental.id }})">
+                                                                            <i class="fas fa-clock me-2"></i> Extend Rental Period
+                                                                        </button>
+                                                                        
+                                                                        <div class="alert alert-warning">
+                                                                            <small>
+                                                                                <i class="fas fa-info-circle me-2"></i>
+                                                                                Your rental period has ended. Please either pay the bill or request an extension.
+                                                                            </small>
+                                                                        </div>
+                                                                    {% elif rental.status == 'ACTIVE' %}
+                                                                        <button class="btn btn-warning mb-2" onclick="requestRentalExtension({{ rental.id }})">
+                                                                            <i class="fas fa-clock me-2"></i> Extend Rental Period
+                                                                        </button>
+                                                                        
+                                                                        <div class="alert alert-info">
+                                                                            <small>
+                                                                                <i class="fas fa-info-circle me-2"></i>
+                                                                                Current rental period ends on {{ rental.rental_end_date|date:"M d, Y" }}
+                                                                            </small>
+                                                                        </div>
+                                                                    {% endif %}
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     
-                                                    <!-- Usage History -->
+                                                    {% comment %} <!-- Usage History -->
                                                     <div class="usage-history mt-4">
                                                         <h6>Usage History</h6>
                                                         <div class="table-responsive">
@@ -351,30 +581,28 @@
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody id="usage-history-{{ rental.id }}">
-                                                                    {% if rental.usage_periods.all %}
-                                                                        {% for period in rental.usage_periods.all %}
-                                                                        <tr>
-                                                                            <td>{{ period.start_date|date }} - {{ period.end_date|date }}</td>
-                                                                            <td>{{ period.duration }} days</td>
-                                                                            <td>₹{{ period.amount }}</td>
-                                                                            <td>
-                                                                                <span class="badge bg-{{ period.status|lower }}">
-                                                                                    {{ period.status }}
-                                                                                </span>
-                                                                            </td>
-                                                                        </tr>
-                                                                        {% endfor %}
-                                                                    {% else %}
-                                                                        <tr>
-                                                                            <td colspan="4" class="text-center text-muted">
-                                                                                <small>No usage history available</small>
-                                                                            </td>
-                                                                        </tr>
-                                                                    {% endif %}
+                                                                    {% for period in rental.get_usage_periods %}
+                                                                    <tr>
+                                                                        <td>{{ period.start_date|date }} - {{ period.end_date|date }}</td>
+                                                                        <td>{{ period.duration }} days</td>
+                                                                        <td>₹{{ period.amount }}</td>
+                                                                        <td>
+                                                                            <span class="badge bg-{{ period.status|lower }}">
+                                                                                {{ period.status }}
+                                                                            </span>
+                                                                        </td>
+                                                                    </tr>
+                                                                    {% empty %}
+                                                                    <tr>
+                                                                        <td colspan="4" class="text-center text-muted">
+                                                                            <small>No usage history available</small>
+                                                                        </td>
+                                                                    </tr>
+                                                                    {% endfor %}
                                                                 </tbody>
                                                             </table>
                                                         </div>
-                                                    </div>
+                                                    </div> {% endcomment %}
                                                 </div>
                                             </div>
                                         </div>
@@ -568,118 +796,469 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    document.getElementById(`usage-duration-${rentalId}`).textContent = data.duration;
-                    document.getElementById(`current-amount-${rentalId}`).textContent = data.amount;
-                    document.getElementById(`last-updated-${rentalId}`).textContent = new Date().toLocaleString();
+                    // Calculate days between start date and today or end date
+                    const startDate = new Date(data.rental_start_date);
+                    const endDate = new Date(data.rental_end_date);
+                    const today = new Date();
                     
-                    // Update usage history
-                    if (data.history) {
-                        const historyHtml = data.history.map(period => `
-                            <tr>
-                                <td>${period.start_date} - ${period.end_date}</td>
-                                <td>${period.duration} days</td>
-                                <td>₹${period.amount}</td>
-                                <td>
-                                    <span class="badge bg-${period.status.toLowerCase()}">
-                                        ${period.status}
-                                    </span>
-                                </td>
-                            </tr>
-                        `).join('');
-                        document.getElementById(`usage-history-${rentalId}`).innerHTML = historyHtml;
+                    // Use the earlier of today or end date
+                    const currentDate = today < endDate ? today : endDate;
+                    
+                    // Calculate days elapsed (including the current day)
+                    const daysElapsed = Math.floor((currentDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                    
+                    // Calculate current amount based on days elapsed
+                    const dailyRate = parseFloat(data.daily_rate);
+                    const currentAmount = daysElapsed * dailyRate;
+                    
+                    // Update the display
+                    const durationElement = document.getElementById(`usage-duration-${rentalId}`);
+                    if (durationElement) {
+                        durationElement.textContent = daysElapsed;
+                    }
+
+                    const amountElement = document.getElementById(`current-amount-${rentalId}`);
+                    if (amountElement) {
+                        amountElement.textContent = currentAmount.toFixed(2);
                     }
                 }
-            });
+            })
+            .catch(error => console.error('Error updating usage details:', error));
     }
 
-    function endRental(rentalId) {
+    // Update usage details every day at midnight
+    function scheduleNextUpdate() {
+        const now = new Date();
+        const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const timeUntilMidnight = tomorrow - now;
+        
+        setTimeout(() => {
+            updateAllUsageDetails();
+            scheduleNextUpdate();
+        }, timeUntilMidnight);
+    }
+
+    // Update all rentals when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+        updateAllUsageDetails();
+        scheduleNextUpdate();
+        
+        // Also update every hour to handle any changes
+        setInterval(updateAllUsageDetails, 3600000); // 1 hour
+    });
+
+    function updateAllUsageDetails() {
+        document.querySelectorAll('[data-rental-id]').forEach(element => {
+            const rentalId = element.dataset.rentalId;
+            updateUsageDetails(rentalId);
+        });
+    }
+    </script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Add this JavaScript code right before the closing </body> tag -->
+    <script>
+    // Function to update usage details for all active rentals
+    function updateAllUsageDetails() {
+        document.querySelectorAll('[id^="usage-duration-"]').forEach(element => {
+            const rentalId = element.id.split('-').pop();
+            updateUsageDetails(rentalId);
+        });
+    }
+
+    // Function to update usage details for a specific rental
+    function updateUsageDetails(rentalId) {
+        fetch(`/api/rental/${rentalId}/usage-details/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update usage duration
+                    const durationElement = document.getElementById(`usage-duration-${rentalId}`);
+                    if (durationElement) {
+                        durationElement.textContent = data.duration;
+                    }
+
+                    // Update current bill amount
+                    const amountElement = document.getElementById(`current-amount-${rentalId}`);
+                    if (amountElement) {
+                        amountElement.textContent = data.amount;
+                    }
+
+                    // Update last updated timestamp
+                    const lastUpdatedElement = document.getElementById(`last-updated-${rentalId}`);
+                    if (lastUpdatedElement) {
+                        lastUpdatedElement.textContent = new Date().toLocaleString();
+                    }
+
+                    // Update usage history if available
+                    if (data.history && data.history.length > 0) {
+                        updateUsageHistory(rentalId, data.history);
+                    }
+                }
+            })
+            .catch(error => console.error('Error updating usage details:', error));
+    }
+
+    // Update usage details when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+        updateAllUsageDetails();
+        
+        // Update every minute
+        setInterval(updateAllUsageDetails, 60000);
+    });
+    </script>
+
+    <script>
+    function checkRentalStatus(rentalId) {
+        fetch(`/api/rental/${rentalId}/usage-details/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const actionsDiv = document.querySelector(`#rental-${rentalId} .usage-actions`);
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    if (data.rental_end_date <= today) {
+                        actionsDiv.innerHTML = `
+                            <h6>Actions</h6>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary mb-2" onclick="payRentalBill(${rentalId})">
+                                    <i class="fas fa-money-bill me-2"></i> Pay Rental Bill
+                                    <span class="badge bg-light text-dark ms-2">₹${data.amount}</span>
+                                </button>
+                                
+                                <button class="btn btn-warning mb-2" onclick="requestRentalExtension(${rentalId})">
+                                    <i class="fas fa-clock me-2"></i> Extend Rental Period
+                                </button>
+                                
+                                <div class="alert alert-warning">
+                                    <small>
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Your rental period has ended. Please either pay the bill or request an extension.
+                                    </small>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Update usage details
+                    document.getElementById(`usage-duration-${rentalId}`).textContent = data.duration;
+                    document.getElementById(`current-amount-${rentalId}`).textContent = data.amount;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // Check rental status when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        const rentalCards = document.querySelectorAll('[id^="rental-"]');
+        rentalCards.forEach(card => {
+            const rentalId = card.id.split('-')[1];
+            checkRentalStatus(rentalId);
+        });
+    });
+
+    // Check rental status every minute
+    setInterval(() => {
+        const rentalCards = document.querySelectorAll('[id^="rental-"]');
+        rentalCards.forEach(card => {
+            const rentalId = card.id.split('-')[1];
+            checkRentalStatus(rentalId);
+        });
+    }, 60000);
+    </script>
+
+    <script>
+    function payRentalBill(rentalId) {
+        // Check if Razorpay script is loaded
+        if (typeof Razorpay === 'undefined') {
+            // Dynamically load Razorpay script
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = () => initializeRazorpayPayment(rentalId);
+            script.onerror = () => {
         Swal.fire({
-            title: 'End Rental Service?',
-            html: `
-                <div class="text-left">
-                    <p>Please confirm that you want to end this rental service.</p>
-                    <ul class="text-muted" style="font-size: 0.9em;">
-                        <li>Equipment must be returned within 24 hours</li>
-                        <li>Caution deposit will be refunded after equipment inspection</li>
-                        <li>Any damages will be deducted from the deposit</li>
-                    </ul>
-                </div>
-            `,
-            icon: 'warning',
+                    icon: 'error',
+                    title: 'Payment Error',
+                    text: 'Failed to load payment gateway. Please check your internet connection.'
+                });
+            };
+            document.head.appendChild(script);
+            return;
+        }
+
+        // If Razorpay is already loaded, proceed with payment
+        initializeRazorpayPayment(rentalId);
+    }
+
+    function initializeRazorpayPayment(rentalId) {
+        // Fetch final amount details first
+        fetch(`/api/rental/${rentalId}/final-amount/`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(amountData => {
+            console.log('Amount Data:', amountData);  // Detailed logging
+            
+            if (amountData.success) {
+                // Then fetch Razorpay order details
+                return fetch(`/rental/${rentalId}/payment/`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(orderData => {
+                    console.log('Order Data:', orderData);  // Detailed logging
+                    
+                    if (orderData.success) {
+                        // Explicitly log the amount
+                        console.log('Calculated Amount:', amountData.amount);
+                        console.log('Amount Type:', typeof amountData.amount);
+                        
+                        // Ensure amount is a number
+                        const amount = parseFloat(amountData.amount);
+                        console.log("amount",amount)
+                        const options = {
+                            key: '{{ razorpay_key }}',
+                            amount: amount * 100,  // Convert to paise
+                            currency: 'INR',
+                            name: 'CareFusion',
+                            description: 'Rental Payment',
+                            order_id: orderData.order_id,
+                            handler: function(response) {
+                                // Redirect to verify payment
+                                window.location.href = `/rental/verify-payment/?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}&signature=${response.razorpay_signature}`;
+                            },
+                            prefill: {
+                                name: '{{ rental.patient.get_full_name }}',
+                                email: '{{ rental.patient.email }}'
+                            },
+                            theme: {
+                                color: '#4e73df'
+                            },
+                            modal: {
+                                ondismiss: function() {
+                                    // Redirect if payment is cancelled
+                                    window.location.href = "/patient/rentals/";
+                                }
+                            }
+                        };
+
+                        // Create detailed payment summary
+                        const paymentSummary = `
+                            <div class="payment-details">
+                                <p><strong>Rental Period:</strong> ${amountData.start_date} to ${amountData.end_date}</p>
+                                <p><strong>Total Days:</strong> ${amountData.days} days</p>
+                                <p><strong>Daily Rate:</strong> ₹${amountData.daily_rate}</p>
+                                <p><strong>Total Amount:</strong> ₹${amount.toFixed(2)}</p>
+                    </div>
+                        `;
+
+                        // Confirm payment details before Razorpay checkout
+                        Swal.fire({
+                            title: 'Confirm Rental Payment',
+                            html: paymentSummary,
             showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, End Rental',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Show loading state
-                Swal.fire({
-                    title: 'Processing...',
-                    html: 'Initiating rental end process...',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
+            confirmButtonText: 'Proceed to Payment',
+            cancelButtonText: 'Cancel',
+                            preConfirm: () => {
+                                // Initialize and open Razorpay checkout
+                                const rzp = new Razorpay(options);
+                                rzp.open();
+                            }
+                        });
+                    } else {
+                        throw new Error(orderData.error || 'Could not create payment order');
                     }
                 });
+            } else {
+                throw new Error(amountData.error || 'Could not fetch payment details');
+            }
+        })
+        .catch(error => {
+            console.error('Payment initialization error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Payment Error', 
+                text: error.message || 'Could not process payment'
+            });
+        });
+    }
 
-                fetch(`/api/rental/${rentalId}/end-service/`, {
+    function requestRentalExtension(rentalId) {
+        console.log('Extension requested for rental:', rentalId); // Debug log
+
+        Swal.fire({
+            title: 'Request Rental Extension',
+            html: `
+                <form id="extensionForm">
+                    <div class="form-group">
+                        <label>Number of Days</label>
+                        <input type="number" id="extension-days" class="form-control" min="1" max="30" value="7">
+                    </div>
+                    <div class="form-group mt-3">
+                        <label>Reason for Extension</label>
+                        <textarea id="extension-reason" class="form-control" rows="3" placeholder="Please provide a reason for the extension"></textarea>
+                    </div>
+                </form>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Submit Request',
+            cancelButtonText: 'Cancel',
+            preConfirm: () => {
+                const days = document.getElementById('extension-days').value;
+                const reason = document.getElementById('extension-reason').value;
+                
+                if (!days || !reason) {
+                    Swal.showValidationMessage('Please fill in all fields');
+                    return false;
+                }
+                
+                return {
+                    days: parseInt(days),
+                    reason: reason.trim()
+                };
+            }
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                
+                fetch('/api/rental/request-extension/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    }
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        rental_id: rentalId,
+                        days: result.value.days,
+                        reason: result.value.reason
+                    })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         Swal.fire({
-                            title: 'Rental Service Ended',
-                            html: `
-                                <div class="text-left">
-                                    <p>Your rental service has been ended successfully.</p>
-                                    <p class="mt-2"><strong>Next Steps:</strong></p>
-                                    <ul class="text-muted" style="font-size: 0.9em;">
-                                        <li>Return equipment within 24 hours</li>
-                                        <li>Deposit refund of ₹${data.deposit_amount} will be processed</li>
-                                        <li>You will receive confirmation emails</li>
-                                    </ul>
-                                </div>
-                            `,
                             icon: 'success',
-                            confirmButtonText: 'OK'
+                            title: 'Request Submitted',
+                            text: 'Your extension request has been submitted for review.'
                         }).then(() => {
-                            location.reload();
+                            window.location.reload();
                         });
                     } else {
-                        Swal.fire({
-                            title: 'Error',
-                            text: data.error || 'Failed to end rental service',
-                            icon: 'error'
-                        });
+                        throw new Error(data.error || 'Failed to submit extension request');
                     }
                 })
                 .catch(error => {
                     Swal.fire({
+                        icon: 'error',
                         title: 'Error',
-                        text: 'An error occurred while processing your request',
-                        icon: 'error'
+                        text: error.message || 'Failed to submit extension request'
                     });
                 });
             }
         });
     }
 
-    // Update usage details every minute
-    setInterval(() => {
-        document.querySelectorAll('[id^="usage-duration-"]').forEach(element => {
-            const rentalId = element.id.split('-').pop();
+    // Add this to your existing DOMContentLoaded event listener
+    document.addEventListener('DOMContentLoaded', () => {
+        // ... existing code ...
+        
+        // Check rental end dates and update UI
+        document.querySelectorAll('[data-rental-end-date]').forEach(element => {
+            const endDate = new Date(element.dataset.rentalEndDate);
+            const today = new Date();
+            if (endDate <= today) {
+                element.closest('.rental-card').classList.add('rental-expired');
+            }
+        });
+    });
+    </script>
+
+    <!-- Add this to your existing JavaScript -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check all rentals on page load
+        document.querySelectorAll('[data-rental-id]').forEach(element => {
+            const rentalId = element.dataset.rentalId;
             updateUsageDetails(rentalId);
+        });
+    });
+    </script>
+
+    <!-- Add this function to check rental status on page load -->
+    <script>
+    function checkRentalStatus(rentalId) {
+        fetch(`/api/rental/${rentalId}/usage-details/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Rental status:', data.status);
+                    console.log('End date:', data.rental_end_date);
+                    
+                    const actionsDiv = document.querySelector(`#rental-${rentalId} .usage-actions`);
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    if (data.rental_end_date <= today) {
+                        actionsDiv.innerHTML = `
+                            <h6>Actions</h6>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary mb-2" onclick="payRentalBill(${rentalId})">
+                                    <i class="fas fa-money-bill me-2"></i> Pay Rental Bill
+                                    <span class="badge bg-light text-dark ms-2">₹${data.amount}</span>
+                                </button>
+                                
+                                <button class="btn btn-warning mb-2" onclick="requestRentalExtension(${rentalId})">
+                                    <i class="fas fa-clock me-2"></i> Extend Rental Period
+                                </button>
+                                
+                                <div class="alert alert-warning">
+                                    <small>
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Your rental period has ended. Please either pay the bill or request an extension.
+                                    </small>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Update usage details
+                    document.getElementById(`usage-duration-${rentalId}`).textContent = data.duration;
+                    document.getElementById(`current-amount-${rentalId}`).textContent = data.amount;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // Check rental status when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        const rentalCards = document.querySelectorAll('[id^="rental-"]');
+        rentalCards.forEach(card => {
+            const rentalId = card.id.split('-')[1];
+            checkRentalStatus(rentalId);
+        });
+    });
+
+    // Check rental status every minute
+    setInterval(() => {
+        const rentalCards = document.querySelectorAll('[id^="rental-"]');
+        rentalCards.forEach(card => {
+            const rentalId = card.id.split('-')[1];
+            checkRentalStatus(rentalId);
         });
     }, 60000);
     </script>
 
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        // Rest of your existing script
+    </script>
 </body>
 </html> 
+{% endblock %} 

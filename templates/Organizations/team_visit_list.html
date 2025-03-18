@@ -227,9 +227,27 @@
 {{ block.super }}
 <script>
     function confirmCancelVisit(cancelUrl) {
-        if (confirm('Are you sure you want to cancel this team visit?')) {
+        Swal.fire({
+            title: 'Cancel Visit?',
+            text: 'Are you sure you want to cancel this team visit?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, cancel it!',
+            cancelButtonText: 'No, keep it'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Cancelling Visit...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
             window.location.href = cancelUrl;
         }
+        });
     }
 
     // Filter functionality

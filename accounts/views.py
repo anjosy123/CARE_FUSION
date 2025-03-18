@@ -28,7 +28,7 @@ from .models import (
     TaxiDriver, TaxiBooking, FareStage, DriverLeave, DriverEarning, 
     TaxiComplaint, PatientVisitRecord, EmergencyContact, CaretakerDetails, UserLocation,
     MedicalEquipment, EquipmentRental, EquipmentDelivery, RentalPayment, RentalPaymentAnalytics,
-    MonthlyRentalPayment, RentalUsagePeriod
+    MonthlyRentalPayment, RentalUsagePeriod, EquipmentRental, RentalExtensionRequest, Notification
 )
 from .forms import AppointmentRequestForm, ServiceRequestForm,ServiceForm,StaffForm,PatientAssignmentForm,PrescriptionForm,AppointmentForm,TeamForm, TeamVisitForm, RescheduleTeamVisitForm, TeamMessageForm, VisitChecklistForm, VisitNoteForm, ProfileUpdateForm,TeamVisit, TaxiBookingForm, DriverForm, FareStageForm, DriverLeaveForm, DriverEarningForm, ComplaintForm, TeamMemberDetailForm, EquipmentForm
 from .utils import (
@@ -2765,46 +2765,6 @@ def get_available_slots(request, team_id, date):
     
     return JsonResponse({'available_slots': available_slots})
 
-# def team_communication(request, team_id):
-#     role = request.session.get('role')
-#     org_id = request.session.get('org_id')
-
-#     if not role or not org_id:
-#         messages.error(request, "Please log in to access this page.")
-#         return redirect('login')
-
-#     organization = get_object_or_404(Organizations, id=org_id)
-#     team = get_object_or_404(Team, id=team_id, organization=organization)
-
-#     if role == 'staff':
-#         staff_id = request.session.get('staff_id')
-#         if not staff_id:
-#             messages.error(request, "Staff information not found. Please log in again.")
-#             return redirect('login')
-
-#         staff = get_object_or_404(Staff, id=staff_id)
-#         if staff not in team.members.all():
-#             messages.error(request, "You are not a member of this team.")
-#             return redirect('team_list')
-
-#         sender_id = staff_id
-#         sender_type = 'staff'
-#     elif role == 'organization':
-#         sender_id = org_id
-#         sender_type = 'organization'
-#     else:
-#         messages.error(request, "You don't have permission to access this page.")
-#         return redirect('login')
-
-#     team_messages = TeamMessage.objects.filter(team=team)
-
-#     context = {
-#         'team': team,
-#         'team_messages': team_messages,
-#         'sender_id': sender_id,
-#         'sender_type': sender_type,
-#     }
-#     return render(request, 'Organizations/team_communication.html', context)
 
 def visit_checklist_notes(request, visit_id):
     org_id = request.session.get('org_id')
@@ -2870,29 +2830,6 @@ def team_dashboard(request):
     }
     
     return render(request, 'staff/team_dashboard.html', context)
-
-# def get_team_messages(request, team_id):
-#     staff_id = request.session.get('staff_id')
-#     if not staff_id:
-#         return JsonResponse({'error': 'Not authenticated'}, status=401)
-    
-#     staff = get_object_or_404(Staff, id=staff_id)
-#     team = get_object_or_404(Team, id=team_id)
-    
-#     if staff not in team.members.all():
-#         return JsonResponse({'error': 'Not a member of this team'}, status=403)
-    
-#     messages = TeamMessage.objects.filter(team=team).order_by('created_at')
-#     message_data = [
-#         {
-#             'sender_name': msg.sender.get_full_name() if msg.sender else msg.organization.org_name,
-#             'content': msg.content,
-#             'created_at': msg.created_at.strftime('%Y-%m-%d %H:%M:%S')
-#         }
-#         for msg in messages
-#     ]
-    
-#     return JsonResponse({'messages': message_data})
 
 @staff_login_required
 def team_dashboard_change_password(request):
@@ -5909,26 +5846,22 @@ def get_rental_usage_details(request, rental_id):
         rental = get_object_or_404(
             EquipmentRental, 
             id=rental_id,
-            patient_id=request.session.get('user_id'),
-            status='ACTIVE'
+            patient_id=request.session.get('user_id')
         )
-        
-        usage_periods = [{
-            'start_date': period.start_date.strftime('%b %d, %Y'),
-            'end_date': period.end_date.strftime('%b %d, %Y'),
-            'duration': period.duration,
-            'amount': str(period.amount),
-            'status': period.status
-        } for period in rental.get_usage_periods()]
         
         return JsonResponse({
             'success': True,
+            'rental_start_date': rental.rental_start_date.strftime('%Y-%m-%d'),
+            'rental_end_date': rental.rental_end_date.strftime('%Y-%m-%d'),
+            'daily_rate': float(rental.daily_rental_price),
             'duration': rental.get_usage_duration(),
-            'amount': rental.get_current_bill_amount(),
-            'history': usage_periods
+            'amount': float(rental.get_current_bill_amount())
         })
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
 
 @patient_login_required
 @require_POST
@@ -6193,3 +6126,286 @@ def patient_dashboard(request):
         messages.error(request, "Error loading dashboard. Please try again.")
         logger.error(f"Error in patient dashboard: {str(e)}")
         return redirect('login')
+
+
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+from django.utils import timezone
+from .models import EquipmentRental
+from .decorators import patient_login_required
+
+@patient_login_required
+def get_rental_final_amount(request, rental_id):
+    """Calculate and return the final rental amount"""
+    try:
+        rental = get_object_or_404(
+            EquipmentRental, 
+            id=rental_id,
+            patient_id=request.session.get('user_id')
+        )
+        
+        # Calculate final amount including the entire rental period
+        days_used = (rental.rental_end_date - rental.rental_start_date).days + 1
+        final_amount = days_used * rental.daily_rental_price
+        
+        # Log the calculation details
+        logger.info(f"Rental ID: {rental_id}")
+        logger.info(f"Start Date: {rental.rental_start_date}")
+        logger.info(f"End Date: {rental.rental_end_date}")
+        logger.info(f"Days Used: {days_used}")
+        logger.info(f"Daily Rate: {rental.daily_rental_price}")
+        logger.info(f"Final Amount: {final_amount}")
+        
+        return JsonResponse({
+            'success': True,
+            'amount': float(final_amount),
+            'days': days_used,
+            'daily_rate': float(rental.daily_rental_price),
+            'start_date': rental.rental_start_date.strftime('%Y-%m-%d'),
+            'end_date': rental.rental_end_date.strftime('%Y-%m-%d')
+        })
+    except Exception as e:
+        logger.error(f"Error calculating final amount: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+@patient_login_required
+def rental_payment(request, rental_id):
+    """Handle rental payment processing"""
+    try:
+        rental = get_object_or_404(
+            EquipmentRental, 
+            id=rental_id,
+            patient_id=request.session.get('user_id'),
+            status='END'  # Only allow payment for ended rentals
+        )
+        
+        # Calculate final amount
+        days_used = (rental.rental_end_date - rental.rental_start_date).days + 1
+        final_amount = days_used * rental.daily_rental_price
+        
+        # Log the calculation details
+        logger.info(f"Rental Payment - Rental ID: {rental_id}")
+        logger.info(f"Start Date: {rental.rental_start_date}")
+        logger.info(f"End Date: {rental.rental_end_date}")
+        logger.info(f"Days Used: {days_used}")
+        logger.info(f"Daily Rate: {rental.daily_rental_price}")
+        logger.info(f"Final Amount: {final_amount}")
+        
+        # Create payment order
+        order = create_rental_payment_order(rental, final_amount)
+        
+        # Check if it's an AJAX request
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'order_id': order['id'],
+                'amount': float(final_amount)  # Ensure this matches the amount calculation
+            })
+        
+        # Regular page render
+        context = {
+            'rental': rental,
+            'amount': final_amount,
+            'order_id': order['id'],
+            'razorpay_key': settings.RAZORPAY_KEY_ID,
+            'days_used': days_used,
+            'daily_rate': float(rental.daily_rental_price)
+        }
+        
+        return render(request, 'Users/rental_payment.html', context)
+        
+    except Exception as e:
+        logger.error(f"Rental payment error: {str(e)}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+        
+        messages.error(request, f"Error processing payment: {str(e)}")
+        return redirect('patient_rentals')
+
+def create_rental_payment_order(rental, amount):
+    """Create Razorpay order for rental payment"""
+    try:
+        # Validate Razorpay credentials
+        if not settings.RAZORPAY_KEY_ID or not settings.RAZORPAY_KEY_SECRET:
+            raise ValueError("Razorpay credentials are not configured")
+        
+        # Convert amount to paise (ensure it matches the amount from final calculation)
+        amount_in_paise = int(amount * 100)
+        
+        # Create Razorpay order
+        order = razorpay_client.order.create({
+            'amount': amount_in_paise,
+            'currency': 'INR',
+            'payment_capture': 1,
+            'notes': {
+                'rental_id': rental.id,
+                'payment_type': 'RENTAL_BILL'
+            }
+        })
+        
+        # Update rental with order details
+        rental.razorpay_order_id = order['id']
+        rental.save()
+        
+        return order
+    except Exception as e:
+        logger.error(f"Razorpay order creation failed: {str(e)}")
+        raise Exception(f"Failed to create payment order: {str(e)}")
+@patient_login_required
+@require_POST
+def request_rental_extension(request):
+    """Handle rental extension requests"""
+    try:
+        data = json.loads(request.body)
+        rental_id = data.get('rental_id')
+        days = int(data.get('days', 0))
+        reason = data.get('reason', '')
+        
+        if not all([rental_id, days, reason]):
+            return JsonResponse({
+                'success': False,
+                'error': 'Missing required fields'
+            })
+            
+        # Get the rental without status filter first
+        rental = get_object_or_404(
+            EquipmentRental, 
+            id=rental_id,
+            patient_id=request.session.get('user_id')
+        )
+        
+        # Check rental status
+        if rental.status not in ['END', 'ACTIVE']:
+            return JsonResponse({
+                'success': False,
+                'error': 'Rental is not eligible for extension'
+            })
+        
+        # Check if there's already a pending extension request
+        existing_request = RentalExtensionRequest.objects.filter(
+            rental=rental,
+            status='PENDING'
+        ).exists()
+        
+        if existing_request:
+            return JsonResponse({
+                'success': False,
+                'error': 'You already have a pending extension request'
+            })
+        
+        # Create extension request
+        extension = RentalExtensionRequest.objects.create(
+            rental=rental,
+            requested_days=days,
+            reason=reason,
+            status='PENDING'
+        )
+        
+        # Send notification to organization
+        Notification.objects.create(
+            patient=rental.patient,
+            organization=rental.equipment.organization,
+            message=f"Rental extension requested for {rental.equipment.name} for {days} days. Reason: {reason}"
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Extension request submitted successfully'
+        })
+        
+    except EquipmentRental.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Rental not found'
+        })
+    except Exception as e:
+        logger.error(f"Error in rental extension request: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+@patient_login_required
+def verify_rental_payment(request):
+    """Verify Razorpay payment for rental"""
+    try:
+        # Get payment details from request
+        payment_id = request.GET.get('payment_id')
+        order_id = request.GET.get('order_id')
+        signature = request.GET.get('signature')
+        
+        if not all([payment_id, order_id, signature]):
+            messages.error(request, "Invalid payment details.")
+            return redirect('patient_rentals')
+        
+        # Verify payment signature
+        try:
+            razorpay_client.utility.verify_payment_signature({
+                'razorpay_order_id': order_id,
+                'razorpay_payment_id': payment_id,
+                'razorpay_signature': signature
+            })
+        except Exception as e:
+            logger.error(f"Payment signature verification failed: {str(e)}")
+            messages.error(request, "Payment verification failed.")
+            return redirect('patient_rentals')
+        
+        # Find the rental associated with this order
+        try:
+            rental = EquipmentRental.objects.get(razorpay_order_id=order_id)
+        except EquipmentRental.DoesNotExist:
+            messages.error(request, "Rental not found.")
+            return redirect('patient_rentals')
+        
+        # Fetch payment details from Razorpay
+        try:
+            payment_details = razorpay_client.payment.fetch(payment_id)
+            if payment_details['status'] != 'captured':
+                messages.error(request, "Payment not completed.")
+                return redirect('patient_rentals')
+        except Exception as e:
+            logger.error(f"Error fetching payment details: {str(e)}")
+            messages.error(request, "Could not verify payment.")
+            return redirect('patient_rentals')
+        
+        # Create payment record
+        payment = RentalPayment.objects.create(
+            rental=rental,
+            amount=rental.get_current_bill_amount(),
+            payment_date=timezone.now(),
+            payment_id=payment_id,
+            order_id=order_id,
+            status='PAID',
+            payment_type='RENTAL_BILL'
+        )
+        
+        # Update rental status
+        rental.status = 'COMPLETED'
+        rental.save()
+        
+        # Create notification
+        Notification.objects.create(
+            patient=rental.patient,
+            organization=rental.equipment.organization,
+            message=f"Payment received for rental of {rental.equipment.name}. Total amount: ₹{payment.amount}"
+        )
+        
+        # Generate receipt (optional)
+        try:
+            receipt_path = generate_rental_receipt(rental, payment)
+        except Exception as receipt_error:
+            logger.warning(f"Receipt generation failed: {str(receipt_error)}")
+        
+        messages.success(request, "Payment successful! Thank you.")
+        return redirect('patient_rentals')
+        
+    except Exception as e:
+        logger.error(f"Unexpected error in payment verification: {str(e)}")
+        messages.error(request, f"Unexpected error: {str(e)}")
+        return redirect('patient_rentals')

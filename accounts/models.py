@@ -4,12 +4,14 @@ from django.contrib.auth.models import User,AbstractUser
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils.crypto import get_random_string
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, time
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db import transaction
 import random
 from datetime import timedelta
+from django.core.exceptions import ValidationError
+import json
 
 class User(AbstractUser):
     USER_TYPE_CHOICES = (
@@ -294,6 +296,62 @@ class Team(models.Model):
 
     def __str__(self):
         return self.name
+
+    def check_availability(self, date, start_time, end_time):
+        """
+        Check if team is available for the given time slot
+        Returns (is_available, message)
+        """
+        # Convert times to datetime for comparison
+        start_datetime = datetime.combine(date, start_time)
+        end_datetime = datetime.combine(date, end_time)
+        
+        # Check if team has any visits during this time
+        conflicts = TeamVisit.objects.filter(
+            team=self,
+            scheduled_date=date,
+            status='SCHEDULED'
+        ).filter(
+            models.Q(start_time__lt=end_time, end_time__gt=start_time) |
+            models.Q(start_time=start_time, end_time=end_time)
+        )
+        
+        if conflicts.exists():
+            conflict_times = [
+                f"{visit.start_time.strftime('%H:%M')} - {visit.end_time.strftime('%H:%M')}"
+                for visit in conflicts
+            ]
+            return False, f"Team is already scheduled during: {', '.join(conflict_times)}"
+            
+        return True, "Team is available"
+
+    def get_next_available_slot(self, date, duration_minutes=30):
+        """Find the next available time slot for the team on given date"""
+        visits = TeamVisit.objects.filter(
+            team=self,
+            scheduled_date=date,
+            status='SCHEDULED'
+        ).order_by('start_time')
+        
+        # Start with beginning of work day
+        current_time = datetime.combine(date, time(9, 0))  # 9 AM start
+        end_of_day = datetime.combine(date, time(17, 0))  # 5 PM end
+        
+        for visit in visits:
+            visit_start = datetime.combine(date, visit.start_time)
+            visit_end = datetime.combine(date, visit.end_time)
+            
+            # Check if there's enough time before this visit
+            if (visit_start - current_time).total_seconds() / 60 >= duration_minutes:
+                return current_time.time()
+            
+            current_time = visit_end
+        
+        # Check if there's time after all visits
+        if (end_of_day - current_time).total_seconds() / 60 >= duration_minutes:
+            return current_time.time()
+        
+        return None
 
 class TeamVisit(models.Model):
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='visits')
@@ -800,6 +858,7 @@ class EquipmentRental(models.Model):
         ('PENDING', 'Pending'),
         ('APPROVED', 'Approved'),
         ('ACTIVE', 'Active'),
+        ('END', 'Ended'),
         ('COMPLETED', 'Completed'),
         ('REJECTED', 'Rejected')
     ]
@@ -832,15 +891,25 @@ class EquipmentRental(models.Model):
         return f"{self.patient.username} - {self.equipment.name}"
 
     def get_usage_duration(self):
-        """Calculate the total days of usage"""
-        if self.status == 'ACTIVE':
-            return (timezone.now().date() - self.rental_start_date).days
+        """Calculate the total days of usage up to today or end date"""
+        today = timezone.now().date()
+        if self.rental_start_date:
+            if self.rental_end_date and self.rental_end_date < today:
+                # If rental period is over, calculate until end date
+                return (self.rental_end_date - self.rental_start_date).days + 1
+            else:
+                # If rental is ongoing, calculate until today
+                return (today - self.rental_start_date).days + 1
         return 0
 
     def get_current_bill_amount(self):
         """Calculate the current bill amount based on usage"""
         days = self.get_usage_duration()
         return days * self.daily_rental_price
+
+    def is_rental_period_over(self):
+        """Check if rental period is over"""
+        return self.rental_end_date and self.rental_end_date <= timezone.now().date()
 
     def get_usage_periods(self):
         """Get the usage history in periods"""
@@ -856,6 +925,23 @@ class EquipmentRental(models.Model):
     def get_full_name(self):
         """Get patient's full name"""
         return f"{self.patient.first_name} {self.patient.last_name}"
+
+    def check_and_update_status(self):
+        """Check if rental period is over and update status"""
+        if (self.rental_end_date and 
+            self.rental_end_date < timezone.now().date() and 
+            self.status == 'ACTIVE'):
+            self.status = 'END'
+            self.save()
+            
+            # Create notification
+            Notification.objects.create(
+                patient=self.patient,
+                organization=self.equipment.organization,
+                message=f"Your rental period for {self.equipment.name} has ended. Please process the payment or request an extension."
+            )
+            return True
+        return False
 
 class RentalPayment(models.Model):
     PAYMENT_TYPE_CHOICES = [
@@ -1045,3 +1131,38 @@ class RentalUsagePeriod(models.Model):
 
     class Meta:
         ordering = ['-start_date']
+
+class RentalExtensionRequest(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected')
+    ]
+    
+    rental = models.ForeignKey(EquipmentRental, on_delete=models.CASCADE, related_name='extension_requests')
+    requested_days = models.PositiveIntegerField()
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Extension request for {self.rental} - {self.requested_days} days"
+
+    def approve(self):
+        """Approve the extension request and update rental end date"""
+        with transaction.atomic():
+            self.status = 'APPROVED'
+            self.save()
+            
+            # Update rental end date
+            self.rental.rental_end_date += timedelta(days=self.requested_days)
+            self.rental.status = 'ACTIVE'  # Change status back to active
+            self.rental.save()
+            
+            # Create notification
+            Notification.objects.create(
+                patient=self.rental.patient,
+                organization=self.rental.equipment.organization,
+                message=f"Your extension request for {self.rental.equipment.name} has been approved. New end date: {self.rental.rental_end_date}"
+            )
