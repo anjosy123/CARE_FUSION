@@ -1,38 +1,30 @@
 <div class="card-body">
     <div class="row">
         <div class="col-md-8">
-            <h5>{{ patient.full_name }}</h5>
-            <p class="text-muted">
-                ID: {{ patient.patient_id }} | 
-                Age: {{ patient.age }} | 
-                Gender: {{ patient.gender }}
+            <h5 class="card-title">{{ patient.patient.get_full_name }}</h5>
+            <p class="card-text">
+                <strong>Priority Score:</strong> {{ patient.priority_score|floatformat:2 }}<br>
+                <strong>Last Visit:</strong> {{ patient.visit_date|date:"M d, Y" }}<br>
+                <strong>Team:</strong> {{ patient.team.name }}
             </p>
-            <div class="row">
-                <div class="col-md-6">
-                    <p><strong>Blood Pressure:</strong> {{ patient.blood_pressure }}</p>
-                    <p><strong>Heart Rate:</strong> {{ patient.heart_rate }}</p>
-                    <p><strong>SpO2:</strong> {{ patient.oxygen_level }}%</p>
-                    <p><strong>Phone:</strong> {{ patient.phone }}</p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>Temperature:</strong> {{ patient.temperature }}°C</p>
-                    <p><strong>Pain Score:</strong> {{ patient.pain_score }}/10</p>
-                    <p><strong>Visit Priority:</strong> {{ patient.visit_priority_score }}/10</p>
-                    <p><strong>Last Visit:</strong> {{ patient.last_visit_date }}</p>
-                </div>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group">
+                <a href="{% url 'patient_detail' patient.patient.id %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-info-circle"></i> Details
+                </a>
+                <a href="{% url 'record_visit' patient.id %}" class="btn btn-sm btn-success">
+                    <i class="fas fa-notes-medical"></i> Record Visit
+                </a>
             </div>
         </div>
-        <div class="col-md-4">
-            <!-- Risk Scores -->
-            <div class="mb-3">
-                <p><strong>Fall Risk:</strong> {{ patient.fall_risk }}</p>
-                <p><strong>Deterioration Risk:</strong> {{ patient.deterioration_risk }}</p>
-                <p><strong>Overall Health:</strong> {{ patient.overall_health }}</p>
-            </div>
-            <!-- Action Buttons -->
-            <div class="text-end">
-                <a href="{% url 'patient_detail' patient.patient_id %}" class="btn btn-primary mb-2">View Details</a>
-            </div>
-        </div>
+    </div>
+    <div class="mt-2">
+        <small class="text-muted">
+            <strong>Vital Signs:</strong>
+            BP: {{ patient.blood_pressure|default:"N/A" }},
+            SpO2: {{ patient.oxygen_saturation|default:"N/A" }}%,
+            Pain: {{ patient.pain_score|default:"N/A" }}/10
+        </small>
     </div>
 </div> 

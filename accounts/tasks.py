@@ -2,6 +2,8 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import MonthlyRentalPayment
 from .utils import send_payment_reminder, send_rental_cancellation_notice
+from django_q.tasks import schedule
+from django_q.models import Schedule
 
 def check_overdue_payments():
     # Get overdue payments
@@ -23,4 +25,11 @@ def check_overdue_payments():
             rental = payment.rental
             rental.status = 'CANCELLED'
             rental.save()
-            send_rental_cancellation_notice(rental) 
+            send_rental_cancellation_notice(rental)
+
+# Schedule the priority update task to run every 6 hours
+schedule(
+    'accounts.ml.tasks.update_priority_predictions',
+    schedule_type=Schedule.CRON,
+    cron='0 */6 * * *'  # Every 6 hours
+) 

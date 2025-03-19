@@ -762,18 +762,24 @@ class PatientVisitRecord(models.Model):
     visit_priority_score = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
     next_visit_recommendation = models.IntegerField(null=True, blank=True)  # Days until next recommended visit
     
+    # Add these fields for priority prediction
+    priority_score = models.FloatField(default=0.0)
+    priority_updated_at = models.DateTimeField(null=True, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # Add these fields for priority prediction
-    priority_score = models.FloatField(null=True, blank=True)
-    priority_updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        ordering = ['-visit_date']
-
-    def __str__(self):
-        return f"Visit for {self.patient.get_full_name()} on {self.visit_date}"
+    def save(self, *args, **kwargs):
+        if not self.priority_score:
+            # Initialize predictor
+            from accounts.ml.model_trainer import PriorityPredictor
+            predictor = PriorityPredictor()
+            
+            # Calculate priority score
+            self.priority_score = predictor.predict_from_record(self)
+            self.priority_updated_at = timezone.now()
+            
+        super().save(*args, **kwargs)
 
     def calculate_risk_scores(self):
         """
@@ -795,6 +801,9 @@ class PatientVisitRecord(models.Model):
         """
         # This method will be implemented with ML logic
         pass
+
+    def __str__(self):
+        return f"Visit for {self.patient.get_full_name()} on {self.visit_date}"
 
 
 class EmergencyContact(models.Model):

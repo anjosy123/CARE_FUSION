@@ -3980,88 +3980,54 @@ def model_metrics(request):
     # Add metrics logic here
     return JsonResponse({'accuracy': 0.85})
 
+@organization_login_required
 def priority_dashboard(request):
     try:
-        # Get all records with patient data - adjust select_related based on your model structure
-        records = PatientVisitRecord.objects.select_related('patient').all()
-        
-        print(f"\nDEBUG: Total records found: {records.count()}")
+        # Get all patient visit records for this organization
+        visit_records = PatientVisitRecord.objects.filter(
+            team__organization=request.session.get('org_id')
+        ).select_related('patient', 'team').order_by('-visit_date')
 
-        # Filter based on visit_priority_score
-        high_priority = records.filter(
-            visit_priority_score__isnull=False,
-            visit_priority_score__gt=7.0,
-            visit_priority_score__lte=10.0
-        ).order_by('-visit_priority_score')
+        # Categorize patients by priority
+        high_priority_patients = visit_records.filter(priority_score__gte=0.7)
+        medium_priority_patients = visit_records.filter(priority_score__range=(0.4, 0.7))
+        low_priority_patients = visit_records.filter(priority_score__lte=0.4)
 
-        medium_priority = records.filter(
-            visit_priority_score__isnull=False,
-            visit_priority_score__gt=4.0,
-            visit_priority_score__lte=7.0
-        ).order_by('-visit_priority_score')
-
-        low_priority = records.filter(
-            visit_priority_score__isnull=False,
-            visit_priority_score__gte=0,
-            visit_priority_score__lte=4.0
-        ).order_by('-visit_priority_score')
-
-        def format_patient_data(record):
-            return {
-                # Patient Visit Record data
-                'visit_priority_score': f"{record.visit_priority_score:.1f}" if record.visit_priority_score else 'N/A',
-                'blood_pressure': record.blood_pressure or 'N/A',
-                'heart_rate': record.pulse_rate or 'N/A',
-                'oxygen_level': record.oxygen_saturation or 'N/A',
-                'temperature': record.temperature or 'N/A',
-                'pain_score': record.pain_score or 'N/A',
-                'last_visit_date': record.visit_date.strftime('%Y-%m-%d') if record.visit_date else 'N/A',
-                
-                # Patient data
-                'patient_id': record.patient.id,
-                'full_name': f"{record.patient.first_name} {record.patient.last_name}",
-                'phone': record.patient.phone_number if hasattr(record.patient, 'phone_number') else 'N/A',
-                'address': record.patient.address if hasattr(record.patient, 'address') else 'N/A',
-                'age': record.patient.age if hasattr(record.patient, 'age') else 'N/A',
-                'gender': record.patient.gender if hasattr(record.patient, 'gender') else 'N/A',
-                
-                # Risk scores
-                'fall_risk': record.fall_risk_score or 'N/A',
-                'deterioration_risk': record.deterioration_risk or 'N/A',
-                'overall_health': record.overall_health_score or 'N/A'
+        # Get model metrics
+        metrics_file = os.path.join(os.getcwd(), 'models', 'metrics.json')
+        try:
+            with open(metrics_file, 'r') as f:
+                metrics = json.load(f)
+        except FileNotFoundError:
+            metrics = {
+                'accuracy': 0,
+                'training_accuracy': 0,
+                'last_updated': timezone.now().isoformat(),
+                'chart_labels': [],
+                'chart_data': []
             }
 
         context = {
-            'high_priority_patients': [format_patient_data(record) for record in high_priority],
-            'medium_priority_patients': [format_patient_data(record) for record in medium_priority],
-            'low_priority_patients': [format_patient_data(record) for record in low_priority],
-            'high_priority_count': high_priority.count(),
-            'medium_priority_count': medium_priority.count(),
-            'low_priority_count': low_priority.count(),
-            'total_patients': records.count(),
-            'model_accuracy': 94.87,
-            'model_precision': 93.2,
-            'model_recall': 94.0,
-            'model_f1_score': 93.6,
-            'last_update': timezone.now().strftime('%Y-%m-%d %H:%M'),
-            'chart_labels': ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
-            'chart_data': [92, 93, 94, 94.5, 94.87]
+            'high_priority_patients': high_priority_patients,
+            'medium_priority_patients': medium_priority_patients,
+            'low_priority_patients': low_priority_patients,
+            'high_priority_count': high_priority_patients.count(),
+            'medium_priority_count': medium_priority_patients.count(),
+            'low_priority_count': low_priority_patients.count(),
+            'model_accuracy': metrics.get('accuracy', 0) * 100,
+            'model_precision': metrics.get('precision', 0) * 100,
+            'model_recall': metrics.get('recall', 0) * 100,
+            'model_f1_score': metrics.get('f1_score', 0) * 100,
+            'last_update': metrics.get('last_updated', ''),
+            'chart_labels': metrics.get('chart_labels', []),
+            'chart_data': metrics.get('chart_data', [])
         }
 
         return render(request, 'Organizations/priority_dashboard.html', context)
 
     except Exception as e:
-        print(f"Error in priority dashboard: {str(e)}")
         logger.error(f"Error in priority dashboard: {str(e)}")
-        return render(request, 'Organizations/priority_dashboard.html', {
-            'error': f'An error occurred while loading the dashboard: {str(e)}',
-            'high_priority_patients': [],
-            'medium_priority_patients': [],
-            'low_priority_patients': [],
-            'high_priority_count': 0,
-            'medium_priority_count': 0,
-            'low_priority_count': 0
-        })
+        return render(request, 'Organizations/priority_dashboard.html', {'error': str(e)})
 
 def get_key_indicators(record):
     """Get key health indicators for a patient record"""
@@ -6027,9 +5993,11 @@ def record_visit(request, visit_id):
         if request.method == 'POST':
             try:
                 with transaction.atomic():
-                    # Create visit record
+                    # Create visit record with only the fields that exist in the model
                     visit_record = PatientVisitRecord.objects.create(
                         patient=visit.patient,
+                        team=visit.team,
+                        staff=request.team_membership.staff,
                         visit_date=timezone.now(),
                         blood_pressure=request.POST.get('blood_pressure'),
                         pulse_rate=request.POST.get('pulse_rate'),
@@ -6037,15 +6005,16 @@ def record_visit(request, visit_id):
                         respiratory_rate=request.POST.get('respiratory_rate'),
                         oxygen_saturation=request.POST.get('oxygen_saturation'),
                         pain_score=request.POST.get('pain_score'),
+                        pain_location=request.POST.get('pain_location'),
+                        pain_character=request.POST.get('pain_character'),
+                        medical_conditions=request.POST.get('medical_conditions'),
+                        symptoms=request.POST.get('symptoms'),
+                        medications=request.POST.get('medications'),
+                        clinical_notes=request.POST.get('clinical_notes'),
                         activity_level=request.POST.get('activity_level'),
-                        appetite=request.POST.get('appetite'),
-                        mood_status=request.POST.get('mood_status'),
-                        fall_risk_score=request.POST.get('fall_risk_score'),
-                        pressure_ulcer_risk=request.POST.get('pressure_ulcer_risk'),
-                        deterioration_risk=request.POST.get('deterioration_risk'),
-                        overall_health_score=request.POST.get('overall_health_score'),
-                        notes=request.POST.get('notes'),
-                        recorded_by=request.team_membership.staff
+                        weight=request.POST.get('weight'),
+                        consciousness_level=request.POST.get('consciousness_level'),
+                        mood_status=request.POST.get('mood_status')
                     )
                     
                     # Update visit status
